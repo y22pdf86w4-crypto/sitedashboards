@@ -1,0 +1,14 @@
+# Ver status do repositório
+git status
+
+# Puxar mudanças do GitHub e rebasear na main
+git pull --rebase origin main
+
+# Adicionar todos os arquivos modificados
+git add .
+
+# Criar commit (troque a mensagem pelo que você fez)
+git commit -m "Atualiza dashboards e ajustes gerais"
+
+# Enviar alterações para o GitHub
+git push origin main
