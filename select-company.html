@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Selecione a empresa</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="stylesheet" href="assets/css/global.css" />
+  <script src="assets/js/global.js" defer></script>
+
+  <style>
+    :root {
+      --bg-main: #020617;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.2);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+    }
+
+    body.login-page {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      background: radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%);
+      color: var(--text-main);
+      overflow: hidden;
+    }
+
+    /* header top */
+    .app-header {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      background: linear-gradient(
+        to right,
+        rgba(15, 23, 42, 0.92),
+        rgba(15, 23, 42, 0.85),
+        rgba(15, 23, 42, 0.92)
+      );
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
+      position: relative;
+      z-index: 20;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 0, #22c55e 0, #22c55e33 35%, transparent 70%);
+      box-shadow:
+        0 0 0 1px rgba(15, 23, 42, 1),
+        0 0 30px rgba(34, 197, 94, 0.6);
+    }
+
+    .header-logo img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+
+    .header-text-main {
+      font-size: 1.02rem;
+      font-weight: 600;
+    }
+
+    .header-text-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .btn-icon.back {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: radial-gradient(circle at 30% -30%, #64748b55, rgba(15, 23, 42, 0.95));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #e2e8f0;
+      cursor: pointer;
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease;
+    }
+
+    .btn-icon.back:hover {
+      transform: translateY(-1px) scale(1.02);
+      border-color: var(--accent);
+      box-shadow: 0 14px 32px rgba(34, 197, 94, 0.38);
+    }
+
+    .btn-icon.back:active {
+      transform: translateY(0) scale(0.97);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
+    }
+
+    /* fundo efeitos */
+    .bg-fx {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .bg-fx .particles-container {
+      position: absolute;
+      inset: 0;
+    }
+
+    .bg-fx .wave-container,
+    .bg-fx .glow-orb,
+    .bg-fx .grid-bg {
+      position: absolute;
+    }
+
+    /* conteúdo central */
+    .page-main {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1.25rem 2rem;
+      min-height: calc(100vh - 64px);
+    }
+
+    .company-shell {
+      width: 100%;
+      max-width: 960px;
+      background: radial-gradient(circle at 0 0, #22c55e18 0, rgba(15, 23, 42, 0.96) 45%, rgba(15, 23, 42, 0.99) 100%);
+      border-radius: 1.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      box-shadow:
+        0 24px 70px rgba(0, 0, 0, 0.95),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      padding: 1.7rem 1.7rem 1.4rem;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      animation: card-enter 0.45s ease-out;
+    }
+
+    @keyframes card-enter {
+      from { opacity: 0; transform: translateY(16px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .company-shell-header {
+      text-align: center;
+    }
+
+    .company-shell-title {
+      margin: 0 0 0.25rem;
+      font-size: 1.45rem;
+      font-weight: 600;
+    }
+
+    .company-shell-title .gradient-text {
+      background: linear-gradient(135deg, #22c55e, #a3e635);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .company-shell-subtitle {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* layout horizontal dos cards */
+    .company-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 780px) {
+      .company-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .company-card {
+      background: radial-gradient(circle at 0 0, #22c55e11 0, rgba(15, 23, 42, 0.95) 45%, rgba(15, 23, 42, 0.98) 100%);
+      border-radius: 1.1rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      padding: 1.2rem 1rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.7rem;
+      cursor: pointer;
+      transform: translateY(0) scale(1);
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.22s ease;
+    }
+
+    .company-card:hover {
+      transform: translateY(-4px) scale(1.01);
+      box-shadow:
+        0 22px 55px rgba(34, 197, 94, 0.45),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      border-color: rgba(34, 197, 94, 0.7);
+      background: radial-gradient(circle at 0 0, #22c55e22 0, rgba(15, 23, 42, 0.98) 50%, #020617 100%);
+    }
+
+    .company-card:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .company-card-logo-wrap {
+      width: 72px;
+      height: 72px;
+      border-radius: 1.1rem;
+      background: radial-gradient(circle at 25% 0, #22c55e44, #020617);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 0 0 1px rgba(15, 23, 42, 1),
+        0 0 18px rgba(34, 197, 94, 0.4);
+      overflow: hidden;
+    }
+
+    .company-card-logo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .company-card-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #f9fafb;
+    }
+
+    .company-card-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: center;
+      min-height: 1.2em;
+    }
+
+    .company-card button.btn-access {
+      margin-top: 0.1rem;
+      min-width: 140px;
+    }
+
+    .company-shell-footer {
+      display: flex;
+      justify-content: center;
+    }
+
+    .company-shell-footer .btn-access {
+      max-width: 260px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="login-page" onload="carregarSelecaoEmpresaSimples()">
+  <!-- fundo -->
+  <div class="bg-fx" aria-hidden="true">
+    <div class="animated-bg"></div>
+    <div class="particles-container"></div>
+    <div class="wave-container">
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+    </div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="header-logo">
+        <img src="assets/imagem/logolinhagro.png" alt="Linhagro" />
+      </div>
+      <div>
+        <p class="header-text-main">Selecione a empresa</p>
+        <p class="header-text-sub">Escolha o ambiente que deseja acessar.</p>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="btn-icon back"
+      title="Voltar para login"
+      onclick="window.location.href='index.html'"
+    >
+      ⟵
+    </button>
+  </header>
+
+  <!-- conteúdo -->
+  <main class="page-main">
+    <section class="company-shell" aria-label="Seleção de empresas">
+      <header class="company-shell-header">
+        <h1 class="company-shell-title">
+          Selecione a <span class="gradient-text">empresa</span>
+        </h1>
+        <p class="company-shell-subtitle">
+          Escolha abaixo qual estrutura de dashboards deseja visualizar.
+        </p>
+      </header>
+
+      <div class="company-row">
+        <!-- Linhagro -->
+        <article
+          class="company-card"
+          data-empresa="linhagro"
+          tabindex="0"
+          role="button"
+          aria-label="Acessar dashboards da empresa Linhagro"
+          onclick="irParaEmpresa('linhagro')"
+          onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); irParaEmpresa('linhagro'); }"
+        >
+          <div class="company-card-logo-wrap">
+            <img src="assets/imagem/logolinhagro.png" alt="Linhagro" />
+          </div>
+          <div class="company-card-name">Linhagro</div>
+          <p class="company-card-meta">
+            Matriz e filiais – dashboards comerciais e operacionais.
+          </p>
+          <button
+            type="button"
+            class="btn-access"
+            onclick="event.stopPropagation(); irParaEmpresa('linhagro');"
+          >
+            <span>Acessar</span>
+            <span class="btn-access-glow"></span>
+          </button>
+        </article>
+
+        <!-- Lithoplant -->
+        <article
+          class="company-card"
+          data-empresa="lithoplant"
+          tabindex="0"
+          role="button"
+          aria-label="Acessar dashboards da empresa Lithoplant"
+          onclick="irParaEmpresa('lithoplant')"
+          onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); irParaEmpresa('lithoplant'); }"
+        >
+          <div class="company-card-logo-wrap">
+            <img src="assets/imagem/logolitho.png" alt="Lithoplant" />
+          </div>
+          <div class="company-card-name">Lithoplant</div>
+          <p class="company-card-meta">
+            Indicadores específicos da unidade Lithoplant.
+          </p>
+          <button
+            type="button"
+            class="btn-access"
+            onclick="event.stopPropagation(); irParaEmpresa('lithoplant');"
+          >
+            <span>Acessar</span>
+            <span class="btn-access-glow"></span>
+          </button>
+        </article>
+      </div>
+
+      <div class="company-shell-footer">
+        <button
+          type="button"
+          class="btn-access"
+          onclick="window.location.href='index.html'"
+        >
+          <span>Voltar para login</span>
+          <span class="btn-access-glow"></span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function carregarSelecaoEmpresaSimples() {
+      // partículas
+      const container = document.querySelector(".particles-container");
+      if (container) {
+        const totalParticles = 20;
+        for (let i = 0; i < totalParticles; i++) {
+          const p = document.createElement("div");
+          p.className = "particle";
+          p.style.left = Math.random() * 100 + "vw";
+          p.style.animationDelay = Math.random() * 20 + "s";
+          p.style.opacity = (0.15 + Math.random() * 0.7).toFixed(2);
+          container.appendChild(p);
+        }
+      }
+
+      // --- RBAC simples pelo array empresas ---
+      const user = getUsuarioAtual();
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const empresasUser = user.empresas || [];
+
+      // se só tiver 1 empresa, não faz sentido ficar aqui
+      if (empresasUser.length === 1) {
+        irParaEmpresa(empresasUser[0]);
+        return;
+      }
+
+      // esconde cards que o usuário não pode ver
+      const cardLinhagro = document.querySelector('[data-empresa="linhagro"]');
+      const cardLitho    = document.querySelector('[data-empresa="lithoplant"]');
+
+      if (cardLinhagro && !empresasUser.includes("linhagro")) {
+        cardLinhagro.style.display = "none";
+      }
+      if (cardLitho && !empresasUser.includes("lithoplant")) {
+        cardLitho.style.display = "none";
+      }
+    }
+
+    function irParaEmpresa(empresa) {
+      if (empresa === "linhagro") {
+        window.location.href = "linhagro/menu.html";
+      } else if (empresa === "lithoplant") {
+        window.location.href = "lithoplant/menu.html";
+      }
+    }
+  </script>
+</body>
+</html>

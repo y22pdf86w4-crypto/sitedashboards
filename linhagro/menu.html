@@ -1,0 +1,509 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Dashboards Linhagro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <script src="../assets/js/global.js" defer></script>
+
+  <style>
+    :root {
+      --bg-main: #020617;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.2);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+    }
+
+    body.login-page {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%);
+      color: var(--text-main);
+      overflow: hidden;
+    }
+
+    /* Fundo */
+    .bg-fx {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .bg-fx .particles-container { position: absolute; inset: 0; }
+    .bg-fx .wave-container,
+    .bg-fx .glow-orb,
+    .bg-fx .grid-bg { position: absolute; }
+
+    /* HEADER FULL-WIDTH */
+    .app-header {
+      position: relative;
+      z-index: 20;
+      width: 100%;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      background: linear-gradient(
+        to right,
+        rgba(15, 23, 42, 0.95),
+        rgba(15, 23, 42, 0.9),
+        rgba(15, 23, 42, 0.95)
+      );
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 0, #22c55e 0, #22c55e33 35%, transparent 70%);
+      box-shadow:
+        0 0 0 1px rgba(15, 23, 42, 1),
+        0 0 32px rgba(34, 197, 94, 0.6);
+    }
+    .header-logo img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+    .header-text-main {
+      font-size: 1.02rem;
+      font-weight: 600;
+    }
+    .header-text-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .header-pill {
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      color: var(--accent);
+      background: rgba(22, 163, 74, 0.16);
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.35);
+    }
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.9);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-soft);
+    }
+
+    .btn-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: radial-gradient(circle at 30% -30%, #22c55e33, rgba(15, 23, 42, 0.95));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+      cursor: pointer;
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease;
+    }
+    .btn-icon.logout {
+      border-color: rgba(239, 68, 68, 0.8);
+      background: radial-gradient(circle at 30% -30%, #ef444455, rgba(15, 23, 42, 0.95));
+      color: #fecaca;
+    }
+    .btn-icon:hover {
+      transform: translateY(-1px) scale(1.02);
+      border-color: var(--accent);
+      box-shadow: 0 14px 32px rgba(34, 197, 94, 0.38);
+    }
+    .btn-icon:active {
+      transform: translateY(0) scale(0.97);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
+    }
+
+    /* MAIN: card quadrado centralizado */
+    .page-main {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem 1.5rem 2rem;
+    }
+
+    .hub-panel {
+      width: 100%;
+      max-width: 820px;          /* controla o “quadrado” */
+      min-height: 260px;
+      background: radial-gradient(circle at 0 0, #22c55e18 0, rgba(15, 23, 42, 0.96) 45%, rgba(15, 23, 42, 0.99) 100%);
+      border-radius: 1.7rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      box-shadow:
+        0 24px 70px rgba(0, 0, 0, 0.95),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      padding: 1.4rem 1.6rem 1.4rem;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      display: grid;
+      grid-template-rows: auto auto;
+      row-gap: 1.1rem;
+    }
+
+    .hub-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+
+    .hub-title {
+      margin: 0 0 0.15rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .hub-title .gradient-text {
+      background: linear-gradient(135deg, #22c55e, #a3e635);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hub-subtitle {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .hub-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .hub-badge {
+      border-radius: 999px;
+      padding: 0.22rem 0.7rem;
+      font-size: 0.7rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-muted);
+      background: rgba(15, 23, 42, 0.75);
+    }
+
+    .hub-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .glass-card {
+      position: relative;
+      background: radial-gradient(circle at 0 0, #22c55e11 0, rgba(15, 23, 42, 0.94) 55%, rgba(15, 23, 42, 0.98) 100%);
+      border-radius: 1.05rem;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      padding: 0.9rem 0.95rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      transform: translateY(0) scale(1);
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.22s ease;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-3px) scale(1.01);
+      box-shadow:
+        0 20px 55px rgba(34, 197, 94, 0.45),
+        0 0 0 1px rgba(15, 23, 42, 1);
+      border-color: rgba(34, 197, 94, 0.75);
+      background: radial-gradient(circle at 0 0, #22c55e22 0, rgba(15, 23, 42, 0.98) 55%, #020617 100%);
+    }
+
+    .glass-card__header {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+    }
+    .glass-card__icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 0.9rem;
+      background: radial-gradient(circle at 25% 0, #22c55e44, #020617);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 0 0 1px rgba(15, 23, 42, 1),
+        0 0 18px rgba(34, 197, 94, 0.4);
+      flex-shrink: 0;
+    }
+    .glass-card__icon-wrap img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+    .glass-card__title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 0.15rem;
+    }
+    .glass-card__meta {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .glass-card__description {
+      margin: 0.35rem 0 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .glass-card__footer {
+      margin-top: 0.55rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .glass-card__cta {
+      max-width: 160px;
+    }
+
+    @media (max-width: 640px) {
+      .page-main { padding: 1rem 1rem 1.6rem; }
+      .hub-panel { max-width: 100%; border-radius: 1.4rem; }
+    }
+  </style>
+</head>
+<body class="login-page" onload="carregarMenuLinhagro()">
+  <!-- Fundo -->
+  <div class="bg-fx" aria-hidden="true">
+    <div class="animated-bg"></div>
+    <div class="particles-container"></div>
+    <div class="wave-container">
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+    </div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="header-logo">
+        <img src="../assets/imagem/logolinhagro.png" alt="Linhagro" />
+      </div>
+      <div>
+        <p class="header-text-main">Linhagro – Dashboards</p>
+        <p class="header-text-sub" id="saudacao">
+          Carregando usuário...
+        </p>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <span class="header-pill">Ambiente produção</span>
+      <div class="user-chip" id="userChip">
+        <span class="status-dot"></span>
+        <span id="userName">Usuário</span>
+      </div>
+      <button
+        type="button"
+        class="btn-icon"
+        title="Trocar empresa"
+        onclick="window.location.href='../select-company.html'"
+      >
+        ⇄
+      </button>
+      <button
+        type="button"
+        class="btn-icon logout"
+        title="Sair"
+        onclick="deslogar()"
+      >
+        ⎋
+      </button>
+    </div>
+  </header>
+
+  <!-- Card quadrado central -->
+  <main class="page-main">
+    <section class="hub-panel" aria-label="Seleção de dashboards">
+      <div class="hub-header">
+        <div>
+          <h1 class="hub-title">
+            Dashboards de <span class="gradient-text">performance</span>
+          </h1>
+          <p class="hub-subtitle">
+            Escolha abaixo qual painel deseja abrir. Cada card abre um dashboard em tela cheia.
+          </p>
+        </div>
+        <div class="hub-badges">
+          <span class="hub-badge">DualForce</span>
+          <span class="hub-badge">Comercial</span>
+          <span class="hub-badge">Operacional</span>
+          <span class="hub-badge">Financeiro</span>
+        </div>
+      </div>
+
+      <div id="hubGrid" class="hub-grid">
+        <!-- card(s) via JS -->
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ONDE VOCÊ CADASTRA OS DASHBOARDS
+    const DASHBOARDS = [
+      {
+        titulo: "DualForce Linhagro",
+        descricaoCurta: "Projeto DualForce – visão consolidada.",
+        descricaoLonga:
+          "Dashboard principal com vendas, carteira, metas e indicadores operacionais por consultor, linha e região.",
+        iconEmoji: "📊",
+        iconImg: "../assets/imagem/logolinhagro.png",
+        url: "dashboards/dualforce.html",
+        frequencia: "Atualização: a cada 30 minutos"
+      }
+      // Copie esse objeto para adicionar outros dashboards, se quiser.
+    ];
+
+    function carregarMenuLinhagro() {
+      const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+      const saudacao = document.getElementById("saudacao");
+      const userName = document.getElementById("userName");
+
+      if (user && user.nome) {
+        if (saudacao) {
+          saudacao.textContent =
+            "Bem-vindo, " + user.nome + ". Selecione um dashboard para abrir.";
+        }
+        if (userName) userName.textContent = user.nome;
+      } else if (saudacao) {
+        saudacao.textContent = "Selecione um dashboard para abrir.";
+      }
+
+      const container = document.querySelector(".particles-container");
+      if (container) {
+        const totalParticles = 22;
+        for (let i = 0; i < totalParticles; i++) {
+          const p = document.createElement("div");
+          p.className = "particle";
+          p.style.left = Math.random() * 100 + "vw";
+          p.style.animationDelay = Math.random() * 20 + "s";
+          p.style.opacity = (0.15 + Math.random() * 0.7).toFixed(2);
+          container.appendChild(p);
+        }
+      }
+
+      montarHub();
+    }
+
+    function montarHub() {
+      const grid = document.getElementById("hubGrid");
+      if (!grid) return;
+      grid.innerHTML = "";
+
+      DASHBOARDS.forEach((dash) => {
+        const card = document.createElement("article");
+        card.className = "glass-card";
+        card.tabIndex = 0;
+        card.role = "button";
+        card.setAttribute("aria-label", "Abrir dashboard " + dash.titulo);
+
+        card.innerHTML = `
+          <div class="glass-card__header">
+            <div class="glass-card__icon-wrap">
+              ${
+                dash.iconImg
+                  ? `<img src="${dash.iconImg}" alt="" />`
+                  : `<span>${dash.iconEmoji || "📊"}</span>`
+              }
+            </div>
+            <div>
+              <h2 class="glass-card__title">${dash.titulo}</h2>
+              <p class="glass-card__meta">${dash.descricaoCurta || ""}</p>
+            </div>
+          </div>
+          <p class="glass-card__description">
+            ${dash.descricaoLonga || ""}
+          </p>
+          <div class="glass-card__footer">
+            <span>${dash.frequencia || ""}</span>
+            <button type="button" class="btn-access glass-card__cta">
+              <span>Abrir dashboard</span>
+              <span class="btn-access-glow"></span>
+            </button>
+          </div>
+        `;
+
+        const abrir = () => { if (dash.url) window.location.href = dash.url; };
+
+        const btn = card.querySelector(".glass-card__cta");
+        if (btn) {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            abrir();
+          });
+        }
+        card.addEventListener("click", abrir);
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            abrir();
+          }
+        });
+
+        grid.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>

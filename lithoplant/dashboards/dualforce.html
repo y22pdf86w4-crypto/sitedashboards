@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Power BI – Linhagro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bar-extra: 80px; } /* quanto o iframe passa para fora da tela */
+
+    html, body { height: 100%; margin: 0; background: #000; }
+
+    .wrap {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background:#000;
+    }
+
+    .wrap iframe {
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      bottom: calc(-1 * var(--bar-extra));
+      height: calc(100% + var(--bar-extra));
+      width: 100%;
+      border: 0; display: block;
+    }
+
+    .btn-voltar {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 10;
+      border: none;
+      border-radius: 999px;
+      width: 32px;
+      height: 32px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      background: rgba(15,23,42,0.9);
+      color: #e5e7eb;
+      border: 1px solid rgba(148,163,184,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .btn-voltar:hover {
+      background: rgba(15,23,42,1);
+    }
+  </style>
+</head>
+<body>
+  <!-- Só a seta para voltar ao menu da Linhagro -->
+  <button class="btn-voltar" onclick="window.location.href='../menu.html'">
+    ←
+  </button>
+
+  <div class="wrap">
+    <iframe
+      title="_DASH LINHAGRO"
+      src="https://app.powerbi.com/view?r=eyJrIjoiMzI0YmJlMzMtM2EwOC00MDg0LTlmZWItMGE0MjM4NTMyOTAyIiwidCI6IjhhZWI1NjZjLTZlNGQtNDJiZi04MTA5LWY5OWExYjBkNGQyNCJ9&pageName=30b3eb14f6604bf7e406"
+      allowfullscreen="true">
+    </iframe>
+  </div>
+</body>
+</html>
