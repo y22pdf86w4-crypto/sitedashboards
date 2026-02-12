@@ -2,10 +2,10 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Power BI – Linhagro</title>
+  <title>Power BI – DualForce Lithoplant</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root { --bar-extra: 80px; } /* quanto o iframe passa para fora da tela */
+    :root { --bar-extra: 80px; }
 
     html, body { height: 100%; margin: 0; background: #000; }
 
@@ -51,18 +51,19 @@
     }
   </style>
 </head>
-<body>
-  <!-- Só a seta para voltar ao menu da Linhagro -->
+<body onload="validarAcessoDashboardEmpresa('lithoplant')">
   <button class="btn-voltar" onclick="window.location.href='../menu.html'">
     ←
   </button>
 
   <div class="wrap">
     <iframe
-      title="_DASH LINHAGRO"
-      src="https://app.powerbi.com/view?r=eyJrIjoiMzI0YmJlMzMtM2EwOC00MDg0LTlmZWItMGE0MjM4NTMyOTAyIiwidCI6IjhhZWI1NjZjLTZlNGQtNDJiZi04MTA5LWY5OWExYjBkNGQyNCJ9&pageName=30b3eb14f6604bf7e406"
+      title="DualForce Lithoplant"
+      src="https://app.powerbi.com/view?r=SEU_LINK_DUALFORCE_AQUI"
       allowfullscreen="true">
     </iframe>
   </div>
+
+  <script src="../../assets/js/global.js"></script>
 </body>
 </html>

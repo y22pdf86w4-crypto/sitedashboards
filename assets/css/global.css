@@ -5,7 +5,9 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  /* Antes era overflow: hidden; isso travava o scroll */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 :root {
@@ -42,6 +44,8 @@ body {
   align-items: center;
   justify-content: center;
   position: relative;
+  /* Antes tinha overflow: hidden; aqui, mas para login full-screen tudo bem manter.
+     Para páginas que precisam scroll (menus), vamos sobrescrever localmente. */
   overflow: hidden;
 }
 
@@ -298,12 +302,9 @@ body {
   }
 }
 
-
-
 .logo-image {
   width: 100%;
   height: 100%;
-  object-fit: contain;
   object-fit: contain;
 }
 
@@ -455,7 +456,6 @@ body {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 4px;
   margin: 0 0 4px 0;
 }
 
@@ -609,9 +609,6 @@ body {
   margin: 0;
 }
 
-
-
-
 /* Form Styling */
 .form-group {
   margin-bottom: 24px;
@@ -643,7 +640,6 @@ body {
 
 .input-wrapper {
   position: relative;
-  
 }
 
 .form-input {
@@ -676,7 +672,6 @@ body {
 }
 
 .input-icon {
-  
   position: absolute;
   right: 14px;
   top: 50%;
@@ -764,7 +759,6 @@ body {
   top: 50%;
   transform: translate(-50%, -50%);
 }
-
 
 @keyframes spin {
   to {
