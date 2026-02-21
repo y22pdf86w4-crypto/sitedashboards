@@ -1,0 +1,6 @@
+node_modules
+.wwebjsauth
+npm-debug.log
+Dockerfile
+.git
+.gitignore
