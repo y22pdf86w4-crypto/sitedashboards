@@ -4,6 +4,10 @@
   <meta charset="utf-8" />
   <title>Login – Dashboards</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Favicon -->
+  <link rel="icon" href="assets/imagem/favicon.png" type="image/png" />
+
   <link rel="stylesheet" href="assets/css/global.css" />
   <script src="assets/js/global.js"></script>
 </head>
@@ -49,7 +53,7 @@
         <div class="login-card">
           <div class="card-header">
             <h2>Login</h2>
-            <p>Use seu e-mail corporativo ou usuário admin para acessar.</p>
+            <p>Use seu e-mail corporativo para acessar.</p>
           </div>
 
           <div id="erro" class="error-msg" style="display:none;">
@@ -133,7 +137,6 @@
         } else if (emp === "lithoplant") {
           window.location.href = "lithoplant/menu.html";
         } else {
-          // fallback
           window.location.href = "select-company.html";
         }
         return;

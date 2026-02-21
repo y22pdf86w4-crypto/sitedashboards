@@ -4,10 +4,18 @@
   <meta charset="utf-8" />
   <title>Dashboard – João Paulo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Favicon -->
+  <link rel="icon" href="../../assets/imagem/favicon.png" type="image/png" />
+
   <style>
     :root { --bar-extra: 60px; }
 
-    html, body { height: 100%; margin: 0; background: #000; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #000;
+    }
 
     .wrap {
       position: fixed;
@@ -22,7 +30,8 @@
       bottom: calc(-1 * var(--bar-extra));
       height: calc(100% + var(--bar-extra));
       width: 100%;
-      border: 0; display: block;
+      border: 0;
+      display: block;
     }
 
     .btn-voltar {
@@ -48,6 +57,35 @@
 
     .btn-voltar:hover {
       background: rgba(15,23,42,1);
+    }
+
+    /* Ajustes para telas menores */
+    @media (max-width: 768px) {
+      .wrap {
+        position: relative;
+        height: 100vh;
+        inset: 0;
+        overflow: hidden;
+      }
+
+      .wrap iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .btn-voltar {
+        top: 8px;
+        left: 8px;
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
+      }
     }
   </style>
 </head>
