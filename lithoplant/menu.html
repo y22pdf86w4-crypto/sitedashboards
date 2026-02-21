@@ -8,611 +8,12 @@
   <!-- Favicon -->
   <link rel="icon" href="../assets/imagem/favicon.png" type="image/png" />
 
+  <!-- CSS -->
   <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/menulithoplant.css" />
+
+  <!-- JS global -->
   <script src="../assets/js/global.js" defer></script>
-
-  <style>
-    :root {
-      --bg-main: #020617;
-      --accent: #22c55e;
-      --accent-soft: rgba(34, 197, 94, 0.2);
-      --text-main: #e5e7eb;
-      --text-muted: #9ca3af;
-      --sidebar-width: 320px;
-      --header-height: 88px; /* mesma altura usada no layout */
-    }
-
-    * { box-sizing: border-box; }
-
-    body.login-page {
-      margin: 0;
-      min-height: 100vh;
-      background: radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%);
-      color: var(--text-main);
-      overflow-x: hidden;
-      font-family: system-ui, -apple-system, sans-serif;
-    }
-
-    /* Fundo */
-    .bg-fx {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-    .bg-fx .particles-container { position: absolute; inset: 0; }
-    .bg-fx .wave-container,
-    .bg-fx .glow-orb,
-    .bg-fx .grid-bg { position: absolute; }
-
-    /* HEADER FIXO NO TOPO */
-    .app-header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 30;
-      width: 100%;
-      height: var(--header-height);
-      padding: 0.85rem clamp(1.25rem, 4vw, 2.5rem);
-      background: radial-gradient(circle at top left, #22c55e20 0, #020617 45%, #020617 100%);
-      border-bottom: 1px solid rgba(148, 163, 184, 0.28);
-      box-shadow:
-        0 18px 45px rgba(0, 0, 0, 0.85),
-        inset 0 -1px 0 rgba(15, 23, 42, 0.9);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      box-sizing: border-box;
-    }
-
-    .header-inner {
-      max-width: 1120px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1.25rem;
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      min-width: 0;
-      flex: 1;
-    }
-
-    .header-logo-pill {
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-      padding: 0.55rem 0.85rem;
-      border-radius: 999px;
-      background: radial-gradient(circle at 0 0, #22c55e26 0, rgba(15, 23, 42, 0.96) 45%, rgba(15, 23, 42, 0.98) 100%);
-      box-shadow:
-        0 0 0 1px rgba(15, 23, 42, 0.95),
-        0 14px 40px rgba(0, 0, 0, 0.9);
-    }
-
-    .header-logo {
-      flex-shrink: 0;
-      width: 40px;
-      height: 40px;
-      border-radius: 999px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at 30% 0, #22c55e 0, #22c55e33 35%, transparent 70%);
-      box-shadow:
-        0 0 0 1px rgba(15, 23, 42, 1),
-        0 0 26px rgba(34, 197, 94, 0.7);
-    }
-
-    .header-logo img {
-      width: 70%;
-      height: 70%;
-      object-fit: contain;
-    }
-
-    .header-text {
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-      min-width: 0;
-    }
-
-    .header-title {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: 600;
-      color: #e5e7eb;
-    }
-
-    .header-subtitle {
-      margin: 0;
-      font-size: 0.8rem;
-      color: #9ca3af;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .header-pill {
-      padding: 0.3rem 0.75rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      color: var(--accent);
-      background: rgba(22, 163, 74, 0.16);
-      border: 1px solid rgba(34, 197, 94, 0.5);
-      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.35);
-      white-space: nowrap;
-    }
-
-    .user-chip {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.75rem;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(148, 163, 184, 0.45);
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.9);
-      max-width: 200px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: var(--accent);
-      box-shadow: 0 0 0 4px var(--accent-soft);
-      flex-shrink: 0;
-    }
-
-    .btn-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      background: radial-gradient(circle at 30% -30%, #22c55e33, rgba(15, 23, 42, 0.95));
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-main);
-      cursor: pointer;
-      transition:
-        transform 0.18s ease,
-        box-shadow 0.18s ease,
-        border-color 0.18s ease,
-        background 0.18s ease;
-      flex-shrink: 0;
-    }
-    .btn-icon:hover {
-      transform: translateY(-1px) scale(1.02);
-      border-color: var(--accent);
-      box-shadow: 0 14px 32px rgba(34, 197, 94, 0.38);
-    }
-    .btn-icon:active {
-      transform: translateY(0) scale(0.97);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
-    }
-
-    .btn-exit {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      padding: 0.35rem 0.85rem;
-      border-radius: 999px;
-      border: 1px solid rgba(248, 113, 113, 0.8);
-      background: radial-gradient(circle at 30% -30%, #ef444455, rgba(15, 23, 42, 0.98));
-      color: #fecaca;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition:
-        transform 0.18s ease,
-        box-shadow 0.18s ease,
-        border-color 0.18s ease,
-        background 0.18s ease;
-      flex-shrink: 0;
-    }
-    .btn-exit-icon { font-size: 0.9rem; }
-    .btn-exit-text { letter-spacing: 0.02em; }
-    .btn-exit:hover {
-      transform: translateY(-1px) scale(1.02);
-      border-color: #f87171;
-      box-shadow: 0 14px 32px rgba(248, 113, 113, 0.55);
-      background: radial-gradient(circle at 30% -30%, #ef4444aa, rgba(15, 23, 42, 0.98));
-    }
-    .btn-exit:active {
-      transform: translateY(0) scale(0.97);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.9);
-    }
-
-    /* 1) LAYOUT GERAL: sidebar colada na esquerda + conteúdo */
-    .layout-root {
-      position: relative;
-      z-index: 5;
-      display: flex;
-      align-items: stretch;
-      margin-top: var(--header-height);      /* começa logo abaixo do header */
-      min-height: calc(100vh - var(--header-height));
-    }
-
-    /* 2) COLUNA DA SIDEBAR: ocupa toda a altura, encostada na parede esquerda */
-    .layout-sidebar {
-      width: var(--sidebar-width);
-      flex-shrink: 0;
-      display: flex;
-      align-items: stretch;
-      justify-content: stretch;
-      padding: 1.25rem 0 1.75rem; /* só espaçamento interno vertical */
-    }
-
-    /* Cartão da sidebar em si */
-    .sidebar-card {
-      margin-left: 1.5rem;  /* distância da borda esquerda da janela */
-      width: calc(100% - 1.5rem);
-      background: radial-gradient(circle at 0 0, #22c55e22 0, rgba(15, 23, 42, 0.98) 50%, rgba(15, 23, 42, 1) 100%);
-      border-radius: 1.35rem;
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      box-shadow:
-        0 20px 55px rgba(0, 0, 0, 0.95),
-        0 0 0 1px rgba(15, 23, 42, 0.9);
-      padding: 1rem 1.1rem 1.2rem;
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    /* 3) CONTEÚDO DA SIDEBAR (abas + busca + rodapé) */
-    .sidebar-header {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .sidebar-title {
-      margin: 0;
-      font-size: 0.95rem;
-      font-weight: 600;
-    }
-
-    .sidebar-hint {
-      margin: 0;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-
-    .sidebar-tabs {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      margin-top: 0.3rem;
-    }
-
-    .sidebar-tab {
-      border-radius: 0.9rem;
-      padding: 0.55rem 0.7rem;
-      background: radial-gradient(circle at 0 0, #020617 0, rgba(15, 23, 42, 1) 60%);
-      border: 1px solid rgba(148, 163, 184, 0.55);
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      cursor: pointer;
-      transition:
-        background 0.18s ease,
-        transform 0.15s ease,
-        box-shadow 0.18s ease,
-        border-color 0.18s ease,
-        color 0.18s ease;
-      color: var(--text-muted);
-    }
-
-    .sidebar-tab-icon {
-      width: 28px;
-      height: 28px;
-      border-radius: 0.8rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at 25% 0, #22c55e55, #020617);
-      box-shadow:
-        0 0 0 1px rgba(15, 23, 42, 1),
-        0 0 14px rgba(34, 197, 94, 0.4);
-      flex-shrink: 0;
-      font-size: 0.9rem;
-    }
-
-    .sidebar-tab-texts {
-      display: flex;
-      flex-direction: column;
-      gap: 0.1rem;
-    }
-
-    .sidebar-tab-label {
-      font-size: 0.82rem;
-    }
-
-    .sidebar-tab-desc {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-    }
-
-    .sidebar-tab:hover {
-      background: radial-gradient(circle at 0 0, #22c55e22 0, rgba(15, 23, 42, 0.98) 60%, #020617 100%);
-      transform: translateY(-1px);
-      border-color: rgba(34, 197, 94, 0.7);
-      box-shadow: 0 16px 40px rgba(34, 197, 94, 0.35);
-    }
-
-    .sidebar-tab.active {
-      background: radial-gradient(circle at 0 0, #22c55e33 0, rgba(15, 23, 42, 0.98) 55%, #020617 100%);
-      border-color: rgba(34, 197, 94, 0.9);
-      color: #e5e7eb;
-      box-shadow:
-        0 18px 45px rgba(34, 197, 94, 0.45),
-        0 0 0 1px rgba(15, 23, 42, 1);
-    }
-
-    .sidebar-tab.active .sidebar-tab-desc {
-      color: #cbd5f5;
-    }
-
-    .sidebar-divider {
-      height: 1px;
-      background: radial-gradient(circle at 0 0, rgba(148, 163, 184, 0.6), transparent 70%);
-      margin: 0.4rem 0;
-    }
-
-    .sidebar-search {
-      position: relative;
-      margin-top: 0.1rem;
-    }
-
-    .sidebar-search input {
-      width: 100%;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      background: rgba(15, 23, 42, 0.9);
-      color: var(--text-main);
-      font-size: 0.8rem;
-      padding: 0.45rem 2.1rem 0.45rem 0.85rem;
-      outline: none;
-    }
-
-    .sidebar-search input::placeholder {
-      color: var(--text-muted);
-    }
-
-    .sidebar-search-icon {
-      position: absolute;
-      right: 0.7rem;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    .sidebar-footer {
-      margin-top: auto;
-      font-size: 0.72rem;
-      color: var(--text-muted);
-    }
-
-    /* COLUNA DO CONTEÚDO PRINCIPAL – INDEPENDENTE DA SIDEBAR */
-    .layout-main {
-      flex: 1;
-      display: flex;
-      align-items: stretch;
-      justify-content: center;
-      padding: 1.25rem 1.5rem 2.5rem 1rem; /* margem esquerda menor para encostar na sidebar */
-      box-sizing: border-box;
-    }
-
-    .tab-content {
-      display: none;
-      width: 100%;
-      max-width: 1120px;
-    }
-    .tab-content.active {
-      display: block;
-    }
-
-    .hub-panel {
-      width: 100%;
-      min-height: 260px;
-      margin: 0 auto;
-      background: radial-gradient(circle at 0 0, #22c55e18 0, rgba(15, 23, 42, 0.96) 45%, rgba(15, 23, 42, 0.99) 100%);
-      border-radius: 1.7rem;
-      border: 1px solid rgba(148, 163, 184, 0.45);
-      box-shadow:
-        0 24px 70px rgba(0, 0, 0, 0.95),
-        0 0 0 1px rgba(15, 23, 42, 0.8);
-      padding: 1.4rem 1.6rem 1.4rem;
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      display: grid;
-      grid-template-rows: auto auto;
-      row-gap: 1.1rem;
-      box-sizing: border-box;
-    }
-
-    .hub-header {
-      display: flex;
-      flex-direction: column;
-      gap: 0.7rem;
-    }
-
-    .hub-title {
-      margin: 0 0 0.15rem;
-      font-size: 1.25rem;
-      font-weight: 600;
-    }
-    .hub-title .gradient-text {
-      background: linear-gradient(135deg, #22c55e, #a3e635);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    .hub-subtitle {
-      margin: 0;
-      font-size: 0.88rem;
-      color: var(--text-muted);
-    }
-
-    .hub-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-    }
-    .hub-badge {
-      border-radius: 999px;
-      padding: 0.22rem 0.7rem;
-      font-size: 0.7rem;
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      color: var(--text-muted);
-      background: rgba(15, 23, 42, 0.75);
-    }
-
-    .hub-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 0.85rem;
-    }
-
-    .glass-card {
-      position: relative;
-      width: 100%;
-      background: radial-gradient(circle at 0 0, #22c55e11 0, rgba(15, 23, 42, 0.94) 55%, rgba(15, 23, 42, 0.98) 100%);
-      border-radius: 1.05rem;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      box-shadow:
-        0 18px 45px rgba(0, 0, 0, 0.9),
-        0 0 0 1px rgba(15, 23, 42, 0.8);
-      padding: 0.9rem 0.95rem 0.85rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      cursor: pointer;
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      transform: translateY(0) scale(1);
-      transition:
-        transform 0.18s ease,
-        box-shadow 0.18s ease,
-        border-color 0.18s ease,
-        background 0.22s ease;
-      box-sizing: border-box;
-    }
-
-    .glass-card:hover {
-      transform: translateY(-3px) scale(1.01);
-      box-shadow:
-        0 20px 55px rgba(34, 197, 94, 0.45),
-        0 0 0 1px rgba(15, 23, 42, 1);
-      border-color: rgba(34, 197, 94, 0.75);
-      background: radial-gradient(circle at 0 0, #22c55e22 0, rgba(15, 23, 42, 0.98) 55%, #020617 100%);
-    }
-
-    .glass-card__header {
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-    }
-    .glass-card__icon-wrap {
-      width: 44px;
-      height: 44px;
-      border-radius: 0.9rem;
-      background: radial-gradient(circle at 25% 0, #22c55e44, #020617);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow:
-        0 0 0 1px rgba(15, 23, 42, 1),
-        0 0 18px rgba(34, 197, 94, 0.4);
-      flex-shrink: 0;
-    }
-    .glass-card__icon-wrap img {
-      width: 28px;
-      height: 28px;
-      object-fit: contain;
-    }
-    .glass-card__title {
-      font-size: 1rem;
-      font-weight: 600;
-      margin: 0 0 0.15rem;
-    }
-    .glass-card__meta {
-      margin: 0;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-    }
-    .glass-card__description {
-      margin: 0.35rem 0 0;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-    .glass-card__footer {
-      margin-top: 0.55rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.72rem;
-      color: var(--text-muted);
-    }
-    .glass-card__cta {
-      max-width: 160px;
-    }
-
-    .org-body {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-    }
-    .org-body strong { color: #e5e7eb; }
-
-    /* MOBILE: sidebar vira bloco abaixo */
-    @media (max-width: 768px) {
-      .app-header {
-        padding: 0.7rem 1rem;
-        height: 80px;
-      }
-      :root { --header-height: 80px; }
-
-      .layout-root {
-        flex-direction: column;
-      }
-
-      .layout-sidebar {
-        width: 100%;
-        padding: 1rem;
-      }
-
-      .sidebar-card {
-        margin-left: 0;
-        width: 100%;
-      }
-
-      .layout-main {
-        padding: 0 1rem 2rem;
-      }
-    }
-  </style>
 </head>
 <body class="login-page" onload="carregarMenuLithoplant()">
   <!-- Fundo -->
@@ -629,7 +30,7 @@
     <div class="grid-bg"></div>
   </div>
 
-  <!-- Header fixo -->
+  <!-- Header -->
   <header class="app-header">
     <div class="header-inner">
       <div class="header-left">
@@ -673,9 +74,9 @@
     </div>
   </header>
 
-  <!-- Layout: sidebar colada à esquerda + conteúdo independente -->
+  <!-- Layout principal -->
   <div class="layout-root">
-    <!-- COLUNA ESQUERDA: barra lateral vertical inteira -->
+    <!-- Sidebar -->
     <aside class="layout-sidebar">
       <div class="sidebar-card" aria-label="Menu lateral">
         <div class="sidebar-header">
@@ -696,6 +97,20 @@
             <div class="sidebar-tab-texts">
               <span class="sidebar-tab-label">Dashboards</span>
               <span class="sidebar-tab-desc">Visão de performance e indicadores.</span>
+            </div>
+          </button>
+
+          <!-- Calendário só aparece para usuários autorizados -->
+          <button
+            type="button"
+            class="sidebar-tab"
+            id="btnCalendario"
+            onclick="window.location.href='calendario/calendario.html'"
+          >
+            <div class="sidebar-tab-icon">📅</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Calendário</span>
+              <span class="sidebar-tab-desc">Pendências e vencimentos.</span>
             </div>
           </button>
 
@@ -731,9 +146,8 @@
       </div>
     </aside>
 
-    <!-- COLUNA DIREITA: dashboards / organograma totalmente separados da sidebar -->
+    <!-- Conteúdo principal -->
     <main class="layout-main">
-      <!-- Aba Dashboards -->
       <section id="tab-dashboards" class="tab-content active">
         <article class="hub-panel" aria-label="Seleção de dashboards">
           <div class="hub-header">
@@ -759,7 +173,6 @@
         </article>
       </section>
 
-      <!-- Aba Organograma -->
       <section id="tab-organograma" class="tab-content">
         <article class="hub-panel" aria-label="Organograma Lithoplant">
           <div class="hub-header">
@@ -776,11 +189,11 @@
           <div class="org-body">
             <p>
               Aqui você pode apontar para uma página estática com a imagem do organograma
-              (<code>organograma.html</code>) ou incorporar um dashboard de pessoas e funções via iframe.
+              (<code>organograma-lithoplant.html</code>) ou incorporar um dashboard de pessoas e funções via iframe.
             </p>
             <p>
               Se quiser que a aba já redirecione, basta trocar o clique da aba Organograma para
-              <code>window.location.href = 'dashboards/organograma.html'</code>.
+              <code>window.location.href = 'dashboards/organograma-lithoplant.html'</code>.
             </p>
           </div>
         </article>
@@ -800,7 +213,12 @@
         iconImg: "../assets/imagem/logolitho.png",
         url: "dashboards/dualforce.html",
         frequencia: "Atualização: a cada 30 minutos",
-        tiposPermitidos: ["ADMIN"]
+        // ADMIN + LITHO_ONLY + emails específicos
+        tiposPermitidos: ["ADMIN", "LITHO_ONLY"],
+        usuariosPermitidos: [
+          "g.comercial@lithoplant.com.br",
+          "joaogabriel.reis@linhagro.com.br"
+        ]
       },
       {
         empresa: "lithoplant",
@@ -860,6 +278,19 @@
 
       preencherHeaderUsuario(user, "saudacao", "userName");
       gerarParticulasSelector(".particles-container", 22);
+
+      const emailsComCalendario = [
+        "joaogabriel.reis@linhagro.com.br",
+        "g.comercial@lithoplant.com.br"
+      ];
+
+      const emailUser = (user.email || "").toLowerCase();
+      const podeCalendario = emailsComCalendario.includes(emailUser);
+
+      const btnCalendario = document.getElementById("btnCalendario");
+      if (btnCalendario) {
+        btnCalendario.style.display = podeCalendario ? "flex" : "none";
+      }
 
       atualizarGridDashboards(user);
     }
