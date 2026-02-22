@@ -36,12 +36,12 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
+# usa os arquivos do backend dentro do contexto raiz (.)
+COPY assets/backend/package*.json ./
 RUN npm install --production
 
-COPY . .
+COPY assets/backend/. .
 
-# chrome path para puppeteer/whatsapp-web.js se precisar
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 EXPOSE 3000
