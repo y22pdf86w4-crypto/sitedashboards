@@ -1104,7 +1104,7 @@ async function confirmarEnvioSelecionado() {
   const empresa = "lithoplant";
 
   try {
-    const resp = await fetch("http://localhost:3000/api/enviar-lembretes", {
+const resp = await fetch("http://172.18.4.12:3000/api/enviar-lembretes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
