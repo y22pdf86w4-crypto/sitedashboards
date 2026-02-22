@@ -121,10 +121,19 @@ function getUsuarioAtual() {
 
 // Logout
 function deslogar() {
-  if (window.sessionStorage) {
-    sessionStorage.clear();
+  try {
+    if (window.sessionStorage) {
+      sessionStorage.clear();
+    }
+    if (window.localStorage) {
+      localStorage.clear();
+    }
+  } catch (e) {
+    console.error(e);
   }
-  window.location.href = "../index.html";
+
+  // Sempre volta para o index da raiz da aplicação
+  window.location.href = "/index.html";
 }
 
 /* ========== FUNÇÕES GENÉRICAS PARA MENUS / RBAC ========== */
@@ -137,7 +146,7 @@ function deslogar() {
 function validarAcessoEmpresa(codEmpresa) {
   const user = getUsuarioAtual();
   if (!user || !Array.isArray(user.empresas) || !user.empresas.includes(codEmpresa)) {
-    window.location.href = "../index.html";
+    window.location.href = "/index.html";
     return null;
   }
   return user;
@@ -301,7 +310,7 @@ function validarAcessoDashboardVip(codEmpresa, emailsPermitidos) {
     !Array.isArray(user.empresas) ||
     !user.empresas.includes(codEmpresa)
   ) {
-    window.location.href = "../../index.html";
+    window.location.href = "/index.html";
     return false;
   }
 
@@ -311,7 +320,7 @@ function validarAcessoDashboardVip(codEmpresa, emailsPermitidos) {
   if (!isMasterAdmin) {
     const lista = (emailsPermitidos || []).map((e) => (e || "").toLowerCase());
     if (!lista.includes(emailUser)) {
-      window.location.href = "../../index.html";
+      window.location.href = "/index.html";
       return false;
     }
   }

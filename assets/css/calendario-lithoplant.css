@@ -158,23 +158,29 @@ body.login-page {
   box-shadow: 0 0 0 4px var(--accent-soft);
   flex-shrink: 0;
 }
+
+/* Ícones do header (trocar empresa e voltar) */
 .btn-icon {
-  width: 34px;
-  height: 34px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  background: radial-gradient(circle at 30% -30%, #22c55e33, rgba(15, 23, 42, 0.95));
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.9);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-main);
+  color: var(--text-muted);
+  font-size: 0.7rem;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, color 0.12s ease;
 }
 .btn-icon:hover {
+  background: rgba(15, 23, 42, 1);
+  color: var(--text-main);
   transform: translateY(-1px);
-  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.6), 0 8px 18px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
 }
+
 .btn-exit {
   display: inline-flex;
   align-items: center;
