@@ -32,11 +32,18 @@ function gerarSaudacao() {
   return "Boa noite";
 }
 
+// nome com primeira letra maiúscula
+function formatarNome(nome) {
+  if (!nome) return "";
+  const limpo = String(nome).trim().toLowerCase();
+  return limpo.charAt(0).toUpperCase() + limpo.slice(1);
+}
+
 // nome responsável principal
 function obterNomeResponsavelPrincipal(responsaveis) {
   if (!Array.isArray(responsaveis) || !responsaveis.length) return "o responsável";
   const resp = responsaveis.find(r => r.tipo === "responsavel") || responsaveis[0];
-  return resp.nome || "o responsável";
+  return formatarNome(resp.nome || "o responsável");
 }
 
 /**
@@ -48,7 +55,7 @@ function obterNomeResponsavelPrincipal(responsaveis) {
  */
 function montarMensagemWhatsApp(despesa, contato, nomeResponsavelPrincipal, empresa) {
   const saudacao = gerarSaudacao();
-  const nomeContato = contato.nome || "cliente";
+  const nomeContato = formatarNome(contato.nome || "cliente");
   const tipo = contato.tipo || "responsavel";
 
   const desc = despesa.descricao || "Despesa";
@@ -58,42 +65,37 @@ function montarMensagemWhatsApp(despesa, contato, nomeResponsavelPrincipal, empr
 
   const nomeEmpresa = empresa === "linhagro" ? "Linhagro" : "Lithoplant";
 
-  let textoTopo;
-  if (tipo === "responsavel") {
-    textoTopo = `${saudacao} ${nomeContato}, você tem um boleto para pagar.`;
-  } else {
-    textoTopo = `${saudacao} ${nomeContato}, passando pra avisar que ${nomeResponsavelPrincipal} tem um boleto pra pagar hoje.`;
-  }
-
-  const detalhes = [
-    `📌 Detalhes do pagamento:`,
-    `• Empresa: ${nomeEmpresa}`,
-    `• Descrição: ${desc}`,
-    `• Vencimento: ${dataPtBr}`,
-  ];
-
   const hojeISO = new Date().toISOString().slice(0, 10);
   let statusLinha = "";
   if (despesa.status === "pago") {
-    statusLinha = `✅ Status: já marcado como *PAGO* no calendário ${nomeEmpresa}.`;
+    statusLinha = `✅ Status: *pago* no calendário ${nomeEmpresa}.`;
   } else if (despesa.vencimento && despesa.vencimento < hojeISO) {
-    statusLinha = `🚨 Status: *VENCIDO* no calendário ${nomeEmpresa}.`;
+    statusLinha = `⚠️ Status: *vencido* no calendário ${nomeEmpresa}.`;
   } else {
-    statusLinha = `⚠️ Status: *PENDENTE* no calendário ${nomeEmpresa}.`;
+    statusLinha = `⏳ Status: *pendente* no calendário ${nomeEmpresa}.`;
   }
 
-  const rodape = [
-    ``,
-    `🗓 Calendário de Pagamentos – ${nomeEmpresa}`,
-    `Se já estiver pago, por favor desconsidere esta mensagem.`
+  const topo =
+    tipo === "responsavel"
+      ? `🌙 ${saudacao}, ${nomeContato}! Tudo bem?\nAqui é da ${nomeEmpresa} passando um lembrete rápido sobre um pagamento em aberto:\n`
+      : `🌙 ${saudacao}, ${nomeContato}! Tudo bem?\nAqui é da ${nomeEmpresa}. ${nomeResponsavelPrincipal} tem um pagamento em aberto e gostaríamos de avisar:\n`;
+
+  const detalhes = [
+    "📌 *Detalhes do pagamento*",
+    `🏢 Empresa: ${nomeEmpresa}`,
+    `🧾 Descrição: ${desc}`,
+    `📅 Vencimento: ${dataPtBr}`
   ];
 
-  return (
-    `${textoTopo}\n\n` +
-    detalhes.join("\n") + "\n\n" +
-    statusLinha + "\n" +
-    rodape.join("\n")
-  );
+  const rodape = [
+    "",
+    statusLinha,
+    "",
+    "Pedimos, por gentileza, que verifique o pagamento assim que possível. 🙏",
+    "Se o pagamento já foi realizado, por favor desconsidere esta mensagem."
+  ];
+
+  return topo + "\n" + detalhes.join("\n") + "\n\n" + rodape.join("\n");
 }
 
 app.post("/api/enviar-lembretes", async (req, res) => {
