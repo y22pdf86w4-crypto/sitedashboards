@@ -4,12 +4,15 @@ const LOG_KEY = "calendario_pagamentos_linha_logs";
 const CONTATOS_KEY = "calendario_pagamentos_linha_contatos";
 const ADMIN_PASSWORD = "admin123";
 
+
 let mesAtual = new Date();
 let _idParaExcluir = null;
 let _recorrenciaParaExcluir = null;
 
+
 // contatos temporários selecionados na inclusão/edição de despesa
 window._contatosSelecionadosTemp = [];
+
 
 // ================== INIT ==================
 function initPagina() {
@@ -21,13 +24,53 @@ function initPagina() {
   initCalendario();
 }
 
-function initCalendario() {
-  carregarDespesas();
-  normalizarModeloDespesas();
-  expandirRecorrencias();
+
+async function initCalendario() {
   carregarContatos();
+
+  const ano = mesAtual.getFullYear();
+  const mesNumero = mesAtual.getMonth() + 1;
+  const mesStr = `${ano}-${String(mesNumero).padStart(2, "0")}`;
+
+  try {
+    const urlPath = `/despesas?mes=${mesStr}&empresa=linhagro`;
+    console.log("DEBUG LINHAGRO chamando", urlPath);
+
+    const dados = await apiGet(urlPath);
+    console.log("DEBUG LINHAGRO resposta bruta =", dados);
+
+    window._despesas = (dados.despesas || []).map(d => {
+      const dtISO = (d.data_vencimento || "").slice(0, 10);
+      return {
+        id: d.id,
+        descricao: d.descricao,
+        vencimento: dtISO,
+        status: d.status || "pendente",
+        recorrente: d.recorrencia_tipo === "mensal" ? "mensal" : "nao",
+        responsaveis: Array.isArray(d.contatos) ? d.contatos : [],
+        tiposAviso: Array.isArray(d.tipos_aviso) ? d.tipos_aviso : ["3"],
+        dataPagamento: null,
+        excluido: false,
+        motivoExclusao: null,
+        excluidoPor: null,
+        dataExclusao: null
+      };
+    });
+
+    console.log("DEBUG _despesas depois do map =", window._despesas);
+
+    normalizarModeloDespesas();
+    expandirRecorrencias();
+  } catch (e) {
+    console.error("Erro ao carregar despesas do backend (linhagro), usando localStorage como fallback:", e);
+    carregarDespesas();
+    normalizarModeloDespesas();
+    expandirRecorrencias();
+  }
+
   renderizarCalendario();
 }
+
 
 // ================== PERSISTÊNCIA ==================
 function carregarDespesas() {
@@ -35,9 +78,11 @@ function carregarDespesas() {
   window._despesas = data ? JSON.parse(data) : [];
 }
 
+
 function salvarDespesas() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(window._despesas || []));
 }
+
 
 function carregarContatos() {
   const data = localStorage.getItem(CONTATOS_KEY);
@@ -45,9 +90,11 @@ function carregarContatos() {
   if (!Array.isArray(window._contatos)) window._contatos = [];
 }
 
+
 function salvarContatos() {
   localStorage.setItem(CONTATOS_KEY, JSON.stringify(window._contatos || []));
 }
+
 
 // normalizar para novo modelo (responsaveis[], tiposAviso[], tipo)
 function normalizarModeloDespesas() {
@@ -92,6 +139,7 @@ function normalizarModeloDespesas() {
   salvarDespesas();
 }
 
+
 // ================== LOG ==================
 function registrarLog(acao, despesa, detalhes) {
   const raw = localStorage.getItem(LOG_KEY);
@@ -113,10 +161,13 @@ function registrarLog(acao, despesa, detalhes) {
   localStorage.setItem(LOG_KEY, JSON.stringify(logs));
 }
 
+
 // ================== RECORRÊNCIA ==================
 function expandirRecorrencias() {
   const hoje = new Date();
-  const limite = new Date(hoje.getFullYear(), hoje.getMonth() + 12, 1);
+  const anoLimite = hoje.getFullYear();
+  // até 31/12 do ano corrente
+  const limite = new Date(anoLimite, 11, 31);
 
   const existentes = window._despesas || [];
   const novas = [];
@@ -124,10 +175,17 @@ function expandirRecorrencias() {
   existentes
     .filter(d => d.recorrente === "mensal" && !d.excluido)
     .forEach(d => {
+      if (!d.vencimento) return;
       const [ano, mes, dia] = d.vencimento.split("-").map(Number);
       let base = new Date(ano, mes - 1, dia);
 
-      while (base < limite) {
+      // se a data base já passou do limite, não gera nada
+      if (base > limite) return;
+
+      // começa a partir do próximo mês, se você não quiser duplicar a origem
+      base = new Date(base.getFullYear(), base.getMonth() + 1, base.getDate());
+
+      while (base <= limite) {
         const dataStr = base.toISOString().slice(0, 10);
 
         const jaExiste = existentes.some(
@@ -146,21 +204,26 @@ function expandirRecorrencias() {
             dataPagamento: null
           });
         }
+
+        // próximo mês
         base.setMonth(base.getMonth() + 1);
       }
     });
 
   if (novas.length > 0) {
+    console.log("DEBUG expandirRecorrencias novas geradas =", novas);
     window._despesas = existentes.concat(novas);
     salvarDespesas();
   }
 }
 
+
 // ================== UTILS ==================
 function mudarMes(delta) {
   mesAtual.setMonth(mesAtual.getMonth() + delta);
-  renderizarCalendario();
+  initCalendario(); // recarrega do backend para o novo mês
 }
+
 
 function formatarMesAno(date) {
   const meses = [
@@ -170,9 +233,11 @@ function formatarMesAno(date) {
   return meses[date.getMonth()] + " de " + date.getFullYear();
 }
 
+
 function dataISO(d) {
   return d.toISOString().slice(0, 10);
 }
+
 
 // ================== CONTATOS – GERENCIADOR ==================
 function abrirGerenciadorContatos() {
@@ -186,11 +251,13 @@ function abrirGerenciadorContatos() {
   modal.style.display = "flex";
 }
 
+
 function fecharModalContato() {
   const modal = document.getElementById("modalContato");
   if (!modal) return;
   modal.style.display = "none";
 }
+
 
 function renderizarListaContatos() {
   const lista = document.getElementById("listaContatos");
@@ -249,6 +316,7 @@ function renderizarListaContatos() {
   });
 }
 
+
 function editarContato(index) {
   const contatos = window._contatos || [];
   const c = contatos[index];
@@ -258,6 +326,7 @@ function editarContato(index) {
   document.getElementById("contatoTelefone").value = c.telefone || "";
 }
 
+
 function excluirContato(index) {
   if (!Array.isArray(window._contatos)) return;
   if (!confirm("Deseja realmente excluir este contato?")) return;
@@ -266,6 +335,7 @@ function excluirContato(index) {
   renderizarListaContatos();
   preencherSelectContatos();
 }
+
 
 function salvarContato(event) {
   event.preventDefault();
@@ -293,6 +363,7 @@ function salvarContato(event) {
   document.getElementById("contatoTelefone").value = "";
 }
 
+
 // ================== CONTATOS – SELECT DA DESPESA ==================
 function preencherSelectContatos() {
   const sel = document.getElementById("contatosSelect");
@@ -312,6 +383,7 @@ function preencherSelectContatos() {
     sel.appendChild(opt);
   });
 }
+
 
 function adicionarContatoSelecionado() {
   const sel = document.getElementById("contatosSelect");
@@ -338,6 +410,7 @@ function adicionarContatoSelecionado() {
 
   sel.value = "";
 }
+
 
 function renderizarChipsContatosSelecionados() {
   const container = document.getElementById("contatosSelecionados");
@@ -397,11 +470,13 @@ function renderizarChipsContatosSelecionados() {
   });
 }
 
+
 function removerContatoChip(index) {
   if (!Array.isArray(window._contatosSelecionadosTemp)) return;
   window._contatosSelecionadosTemp.splice(index, 1);
   renderizarChipsContatosSelecionados();
 }
+
 
 // ================== RENDERIZAÇÃO ==================
 function renderizarCalendario() {
@@ -463,12 +538,14 @@ function renderizarCalendario() {
   }
 }
 
+
 function classeStatus(despesa, hojeISO) {
   if (despesa.status === "pago") return "status-pago";
   if (despesa.vencimento < hojeISO) return "status-vencida";
   if (despesa.vencimento === hojeISO) return "status-hoje";
   return "status-pendente";
 }
+
 
 function tooltipDespesa(d) {
   const base = `${d.descricao} - vence em ${d.vencimento.split("-").reverse().join("/")}`;
@@ -496,6 +573,7 @@ function tooltipDespesa(d) {
   }
   return base + recur + respStr;
 }
+
 
 // ================== MODAL INCLUSÃO / EDIÇÃO ==================
 function abrirModalInclusao(dataPre) {
@@ -526,9 +604,11 @@ function abrirModalInclusao(dataPre) {
   document.getElementById("descricao").focus();
 }
 
+
 function fecharModalInclusao() {
   document.getElementById("modalInclusao").style.display = "none";
 }
+
 
 function editarDespesa(id) {
   fecharModalDia();
@@ -574,7 +654,9 @@ function editarDespesa(id) {
   document.getElementById("descricao").focus();
 }
 
-function salvarDespesa(event) {
+
+// ======== salvarDespesa (AJUSTADA PARA POST/PUT NA API) ========
+async function salvarDespesa(event) {
   event.preventDefault();
   const modal = document.getElementById("modalInclusao");
   const form = modal.querySelector("form");
@@ -614,51 +696,81 @@ function salvarDespesa(event) {
 
   if (!window._despesas) window._despesas = [];
 
-  if (editId) {
-    window._despesas = window._despesas.map(d => {
-      if (d.id === editId) {
-        if (d.status === "pago") return d;
-        const atualizado = {
-          ...d,
-          descricao,
-          vencimento,
-          responsaveis: marcados,
-          tiposAviso,
-          recorrente
-        };
-        registrarLog("EDITAR", atualizado, null);
-        return atualizado;
-      }
-      return d;
-    });
-  } else {
-    const nova = {
-      id: Date.now(),
-      descricao,
-      vencimento,
-      responsaveis: marcados,
-      tiposAviso,
-      recorrente,
-      status: "pendente",
-      dataPagamento: null,
-      excluido: false,
-      motivoExclusao: null,
-      excluidoPor: null,
-      dataExclusao: null
-    };
+  const payload = {
+    empresa: "linhagro",
+    descricao,
+    data_vencimento: vencimento,     // 'YYYY-MM-DD'
+    status: "pendente",
+    recorrencia_tipo: recorrente,    // 'nao' | 'mensal'
+    tipos_aviso: tiposAviso,         // array de strings
+    contatos: marcados               // array de {nome, telefone, tipo}
+  };
 
-    window._despesas.push(nova);
-    registrarLog("CRIAR", nova, null);
+  try {
+    if (editId) {
+      console.log("DEBUG PUT payload =", payload);
+      const atualizada = await apiPut(`/despesas/${editId}`, payload);
+      console.log("DEBUG PUT resposta =", atualizada);
+
+      const nova = {
+        id: atualizada.id,
+        descricao: atualizada.descricao,
+        vencimento: (atualizada.data_vencimento || vencimento).slice(0, 10),
+        responsaveis: Array.isArray(atualizada.contatos) ? atualizada.contatos : marcados,
+        tiposAviso: Array.isArray(atualizada.tipos_aviso) ? atualizada.tipos_aviso : tiposAviso,
+        recorrente: atualizada.recorrencia_tipo || recorrente,
+        status: atualizada.status || "pendente",
+        dataPagamento: null,
+        excluido: false,
+        motivoExclusao: null,
+        excluidoPor: null,
+        dataExclusao: null
+      };
+
+      window._despesas = (window._despesas || []).map(d =>
+        d.id === editId ? nova : d
+      );
+      registrarLog("EDITAR", nova, null);
+    } else {
+      console.log("DEBUG POST payload =", payload);
+      const criada = await apiPost("/despesas", payload);
+      console.log("DEBUG POST resposta =", criada);
+
+      const nova = {
+        id: criada.id,
+        descricao: criada.descricao,
+        vencimento: (criada.data_vencimento || vencimento).slice(0, 10),
+        responsaveis: Array.isArray(criada.contatos) ? criada.contatos : marcados,
+        tiposAviso: Array.isArray(criada.tipos_aviso) ? criada.tipos_aviso : tiposAviso,
+        recorrente: criada.recorrencia_tipo || recorrente,
+        status: criada.status || "pendente",
+        dataPagamento: null,
+        excluido: false,
+        motivoExclusao: null,
+        excluidoPor: null,
+        dataExclusao: null
+      };
+
+      window._despesas.push(nova);
+      registrarLog("CRIAR", nova, null);
+    }
+  } catch (e) {
+    console.error("Erro ao salvar despesa no backend:", e);
+    alert("Erro ao salvar no servidor. Tente novamente.");
+    return;
   }
 
-  salvarDespesas();
+  // gera recorrências para a nova despesa em memória
   expandirRecorrencias();
+
+  salvarDespesas();
   fecharModalInclusao();
 
   const dataV = new Date(vencimento);
   mesAtual = new Date(dataV.getFullYear(), dataV.getMonth(), 1);
   renderizarCalendario();
 }
+
 
 // ================== MODAL DIA ==================
 function abrirModalDia(dataISOdia) {
@@ -773,37 +885,64 @@ function abrirModalDia(dataISOdia) {
   modal.style.display = "flex";
 }
 
+
 function fecharModalDia() {
   document.getElementById("modalDia").style.display = "none";
 }
 
-// ================== STATUS ==================
-function alterarStatus(id, novoStatus) {
+
+// ================== STATUS (AJUSTADO PARA PUT NA API) ==================
+async function alterarStatus(id, novoStatus) {
   const hoje = dataISO(new Date());
-  let alvo = null;
 
-  window._despesas = (window._despesas || []).map(d => {
-    if (d.id === id) {
-      const atualizado = {
-        ...d,
-        status: novoStatus,
-        dataPagamento: novoStatus === "pago" ? hoje : null
-      };
-      alvo = atualizado;
-      return atualizado;
-    }
-    return d;
-  });
+  const atual = (window._despesas || []).find(d => d.id === id);
+  if (!atual) return;
 
-  if (alvo) {
+  const payload = {
+    empresa: "linhagro",
+    descricao: atual.descricao,
+    data_vencimento: atual.vencimento,
+    status: novoStatus,
+    recorrencia_tipo: atual.recorrente || "nao",
+    tipos_aviso: Array.isArray(atual.tiposAviso) ? atual.tiposAviso : ["3"],
+    contatos: Array.isArray(atual.responsaveis) ? atual.responsaveis : []
+  };
+
+  try {
+    console.log("DEBUG PUT status payload =", payload);
+    const atualizada = await apiPut(`/despesas/${id}`, payload);
+    console.log("DEBUG PUT status resposta =", atualizada);
+
+    const alvo = {
+      id: atualizada.id,
+      descricao: atualizada.descricao,
+      vencimento: (atualizada.data_vencimento || atual.vencimento).slice(0, 10),
+      responsaveis: Array.isArray(atualizada.contatos) ? atualizada.contatos : payload.contatos,
+      tiposAviso: Array.isArray(atualizada.tipos_aviso) ? atualizada.tipos_aviso : payload.tipos_aviso,
+      recorrente: atualizada.recorrencia_tipo || atual.recorrente || "nao",
+      status: atualizada.status || novoStatus,
+      dataPagamento: novoStatus === "pago" ? hoje : null,
+      excluido: false,
+      motivoExclusao: null,
+      excluidoPor: null,
+      dataExclusao: null
+    };
+
+    window._despesas = (window._despesas || []).map(d =>
+      d.id === id ? alvo : d
+    );
+
     registrarLog(novoStatus === "pago" ? "PAGAR" : "PENDENTE", alvo, null);
-  }
 
-  salvarDespesas();
-  renderizarCalendario();
-  const alguma = window._despesas.find(d => d.id === id);
-  if (alguma) abrirModalDia(alguma.vencimento);
+    salvarDespesas();
+    renderizarCalendario();
+    if (alvo) abrirModalDia(alvo.vencimento);
+  } catch (e) {
+    console.error("Erro ao alterar status no backend:", e);
+    alert("Erro ao alterar status no servidor. Tente novamente.");
+  }
 }
+
 
 // ================== EXCLUSÃO ==================
 function excluirDespesa(id) {
@@ -838,13 +977,15 @@ function excluirDespesa(id) {
   document.getElementById("modalConfirmarExclusao").style.display = "flex";
 }
 
+
 function fecharModalExclusao() {
   document.getElementById("modalConfirmarExclusao").style.display = "none";
   _idParaExcluir = null;
   _recorrenciaParaExcluir = null;
 }
 
-function confirmarExclusaoDespesa() {
+
+async function confirmarExclusaoDespesa() {
   if (!_idParaExcluir) {
     fecharModalExclusao();
     return;
@@ -912,21 +1053,30 @@ function confirmarExclusaoDespesa() {
     }
   }
 
-  aplicarExclusao(despBase, afetadasPreview, motivo, temPaga ? "EXCLUIR_PAGO" : "EXCLUIR");
+  await aplicarExclusao(despBase, afetadasPreview, motivo, temPaga ? "EXCLUIR_PAGO" : "EXCLUIR");
 
   fecharModalExclusao();
 }
 
-function aplicarExclusao(despBase, afetadasPreview, motivoFinal, tipoLog) {
+
+// ======== aplicarExclusao (AJUSTADA PARA DELETE NA API) ========
+async function aplicarExclusao(despBase, afetadasPreview, motivoFinal, tipoLog) {
   const user = (typeof getUsuarioAtual === "function") ? getUsuarioAtual() : null;
   const nome = user && (user.nome || user.email || "Desconhecido");
   const hoje = dataISO(new Date());
 
-  const idsAfetar = new Set(afetadasPreview.map(d => d.id));
-  const afetadasFinal = [];
+  const loader = document.getElementById("loaderGlobal");
+  if (loader) loader.style.display = "flex";
 
-  window._despesas = (window._despesas || []).map(d => {
-    if (idsAfetar.has(d.id)) {
+  const afetadasFinal = [];
+  const erros = [];
+
+  for (const d of afetadasPreview) {
+    try {
+      console.log("DEBUG DELETE id =", d.id);
+      await apiDelete(`/despesas/${d.id}`);
+      console.log("DEBUG DELETE OK id =", d.id);
+
       const atualizado = {
         ...d,
         excluido: true,
@@ -935,9 +1085,17 @@ function aplicarExclusao(despBase, afetadasPreview, motivoFinal, tipoLog) {
         dataExclusao: hoje
       };
       afetadasFinal.push(atualizado);
-      return atualizado;
+    } catch (e) {
+      console.error("Erro ao excluir despesa no backend (id=" + d.id + "):", e);
+      erros.push(d.id);
     }
-    return d;
+  }
+
+  if (loader) loader.style.display = "none";
+
+  window._despesas = (window._despesas || []).map(d => {
+    const afetada = afetadasFinal.find(a => a.id === d.id);
+    return afetada ? afetada : d;
   });
 
   salvarDespesas();
@@ -945,8 +1103,13 @@ function aplicarExclusao(despBase, afetadasPreview, motivoFinal, tipoLog) {
 
   afetadasFinal.forEach(a => registrarLog(tipoLog, a, motivoFinal));
 
+  if (erros.length) {
+    alert("Erro ao excluir algumas despesas no servidor (ids: " + erros.join(", ") + "). Verifique os logs.");
+  }
+
   if (despBase) abrirModalDia(despBase.vencimento);
 }
+
 
 // ================== MODAL RESULTADO ENVIO ==================
 function abrirModalResultadoEnvio(envios, erroGeral) {
@@ -1011,10 +1174,12 @@ function abrirModalResultadoEnvio(envios, erroGeral) {
   modal.style.display = "flex";
 }
 
+
 function fecharModalResultadoEnvio() {
   const modal = document.getElementById("modalResultadoEnvio");
   if (modal) modal.style.display = "none";
 }
+
 
 // ================== SELEÇÃO E ENVIO DE LEMBRETES ==================
 function abrirModalSelecionarEnvio() {
@@ -1084,9 +1249,11 @@ function abrirModalSelecionarEnvio() {
   document.getElementById("modalSelecionarEnvio").style.display = "flex";
 }
 
+
 function fecharModalSelecionarEnvio() {
   document.getElementById("modalSelecionarEnvio").style.display = "none";
 }
+
 
 async function confirmarEnvioSelecionado() {
   const checks = Array.from(document.querySelectorAll(".chk-envio"))
@@ -1104,7 +1271,7 @@ async function confirmarEnvioSelecionado() {
   const empresa = "linhagro";
 
   try {
-const resp = await fetch("http://172.18.4.12:3000/api/enviar-lembretes", {
+    const resp = await fetch("http://172.18.4.12:3000/api/enviar-lembretes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

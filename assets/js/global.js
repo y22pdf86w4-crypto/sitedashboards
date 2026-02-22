@@ -1,6 +1,4 @@
-﻿// assets/js/global.js
-
-// Tabela de usuários e permissões
+﻿// Tabela de usuários e permissões
 const USERS = [
   {
     email: "admin",
@@ -188,16 +186,6 @@ function gerarParticulasSelector(selector, totalParticles) {
 
 /**
  * Monta cards de dashboards em um grid, com RBAC por empresa, tipo e usuário.
- * options:
- *  - gridId: id do container
- *  - dashboards: array de objetos
- *  - user: usuário atual
- *  - empresaObrigatoria: string (ex: "linhagro" / "lithoplant") ou null
- *
- * Cada dashboard pode ter:
- *  - empresa: "linhagro" | "lithoplant" (opcional, mas recomendado)
- *  - tiposPermitidos: ["ADMIN", "LINHA_ONLY", ...]
- *  - usuariosPermitidos: ["email@empresa.com", ...]
  */
 function montarHubGenerico(options) {
   const { gridId, dashboards, user, empresaObrigatoria } = options || {};
@@ -291,7 +279,6 @@ function montarHubGenerico(options) {
 
 /**
  * Protege páginas de Power BI por empresa.
- * Chamar no onload do <body> das páginas de iframe.
  */
 function validarAcessoDashboardEmpresa(codEmpresa) {
   const user = validarAcessoEmpresa(codEmpresa);
@@ -300,8 +287,6 @@ function validarAcessoDashboardEmpresa(codEmpresa) {
 
 /**
  * Protege dashboards VIP por empresa + lista de e-mails.
- *  - codEmpresa: "linhagro" | "lithoplant"
- *  - emailsPermitidos: array de strings
  */
 function validarAcessoDashboardVip(codEmpresa, emailsPermitidos) {
   const user = getUsuarioAtual();
@@ -323,6 +308,70 @@ function validarAcessoDashboardVip(codEmpresa, emailsPermitidos) {
       window.location.href = "/index.html";
       return false;
     }
+  }
+
+  return true;
+}
+
+/* ========== CONFIG E HELPERS DE API (BACKEND) ========== */
+
+// URL base do backend (API na Azure)
+const API_BASE =
+  "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1";
+
+// Helper genérico de GET
+async function apiGet(path) {
+  const url = `${API_BASE}${path}`;
+  const resp = await fetch(url);
+
+  if (!resp.ok) {
+    throw new Error("Erro HTTP " + resp.status);
+  }
+
+  return resp.json();
+}
+
+// Helper genérico de POST
+async function apiPost(path, bodyObj) {
+  const url = `${API_BASE}${path}`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(bodyObj || {})
+  });
+
+  if (!resp.ok) {
+    throw new Error("Erro HTTP " + resp.status);
+  }
+
+  return resp.json();
+}
+
+// Helper genérico de PUT
+async function apiPut(path, bodyObj) {
+  const url = `${API_BASE}${path}`;
+  const resp = await fetch(url, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(bodyObj || {})
+  });
+
+  if (!resp.ok) {
+    throw new Error("Erro HTTP " + resp.status);
+  }
+
+  return resp.json();
+}
+
+// Helper genérico de DELETE
+async function apiDelete(path) {
+  const url = `${API_BASE}${path}`;
+  const resp = await fetch(url, {
+    method: "DELETE"
+  });
+
+  if (!resp.ok && resp.status !== 204) {
+    throw new Error("Erro HTTP " + resp.status);
   }
 
   return true;

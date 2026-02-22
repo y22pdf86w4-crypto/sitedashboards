@@ -1,6 +1,6 @@
 /************************************************************
- * CALENDARIO-LITHOPLANT.CSS
- * Calendário Lithoplant – layout alinhado ao da Linhagro
+ * CALENDARIO-LINHAGRO.CSS
+ * Calendário Linhagro – layout compacto e responsivo
  ************************************************************/
 
 :root {
@@ -52,7 +52,7 @@ body.login-page {
   z-index: 30;
   width: 100%;
   height: var(--header-height);
-  padding: 0.85rem clamp(1.0rem, 4vw, 2.2rem);
+  padding: 0.85rem clamp(1.25rem, 4vw, 2.5rem);
   background: radial-gradient(circle at top left, #22c55e20 0, #020617 45%, #020617 100%);
   border-bottom: 1px solid rgba(148, 163, 184, 0.28);
   box-shadow:
@@ -134,10 +134,10 @@ body.login-page {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
 .header-pill {
-  padding: 0.3rem 0.7rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 999px;
   font-size: 0.75rem;
   color: var(--accent);
@@ -149,15 +149,15 @@ body.login-page {
 .user-chip {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.32rem 0.7rem;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.8);
   border: 1px solid rgba(148, 163, 184, 0.45);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.9);
-  max-width: 190px;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -169,48 +169,6 @@ body.login-page {
   background: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
   flex-shrink: 0;
-}
-
-/* Ícones do header desktop */
-.btn-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: rgba(15, 23, 42, 0.9);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, color 0.12s ease;
-}
-.btn-icon:hover {
-  background: rgba(15, 23, 42, 1);
-  color: var(--text-main);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
-}
-
-.btn-exit {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: 999px;
-  border: 1px solid rgba(248, 113, 113, 0.8);
-  background: radial-gradient(circle at 30% -30%, #ef444455, rgba(15, 23, 42, 0.98));
-  color: #fecaca;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
-}
-.btn-exit:hover {
-  background: radial-gradient(circle at 30% -30%, #ef4444aa, rgba(15, 23, 42, 0.98));
-  transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.8);
 }
 
 /* HEADER MOBILE */
@@ -322,6 +280,67 @@ body.login-page {
   color: var(--accent);
 }
 
+/* Ícone padrão (trocar empresa, etc.) */
+.btn-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: radial-gradient(circle at 30% -30%, #22c55e33, rgba(15, 23, 42, 0.95));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+.btn-icon:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.6), 0 8px 18px rgba(0, 0, 0, 0.6);
+}
+
+/* Ícone compacto (se precisar em outros contextos) */
+.btn-icon-compact {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.9);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.btn-icon-compact:hover {
+  background: rgba(15, 23, 42, 1);
+  color: var(--text-main);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.7);
+}
+
+.btn-exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.8);
+  background: radial-gradient(circle at 30% -30%, #ef444455, rgba(15, 23, 42, 0.98));
+  color: #fecaca;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+}
+.btn-exit:hover {
+  background: radial-gradient(circle at 30% -30%, #ef4444aa, rgba(15, 23, 42, 0.98));
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.8);
+}
+
 /* Layout geral */
 .layout-root {
   position: relative;
@@ -334,19 +353,18 @@ body.login-page {
   width: 100%;
 }
 
-/* Sidebar */
+/* sidebar */
 .layout-sidebar {
   flex: 0 0 var(--sidebar-width);
   max-width: var(--sidebar-width);
   height: 100%;
   display: flex;
-  padding: 1.1rem 0 1.6rem;
+  padding: 1.25rem 0 1.75rem;
   box-sizing: border-box;
 }
-
 .sidebar-card {
-  margin-left: 1.3rem;
-  width: calc(100% - 1.3rem);
+  margin-left: 1.5rem;
+  width: calc(100% - 1.5rem);
   height: 100%;
   background: radial-gradient(circle at 0 0, #22c55e22 0, rgba(15, 23, 42, 0.98) 50%, rgba(15, 23, 42, 1) 100%);
   border-radius: 1.35rem;
@@ -354,10 +372,10 @@ body.login-page {
   box-shadow:
     0 20px 55px rgba(0, 0, 0, 0.95),
     0 0 0 1px rgba(15, 23, 42, 0.9);
-  padding: 0.9rem 1.0rem 1.1rem;
+  padding: 1rem 1.1rem 1.2rem;
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 1rem;
   box-sizing: border-box;
 }
 .sidebar-header {
@@ -383,12 +401,12 @@ body.login-page {
 }
 .sidebar-tab {
   border-radius: 0.9rem;
-  padding: 0.5rem 0.65rem;
+  padding: 0.55rem 0.7rem;
   background: radial-gradient(circle at 0 0, #020617 0, rgba(15, 23, 42, 1) 60%);
   border: 1px solid rgba(148, 163, 184, 0.55);
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
   color: var(--text-muted);
   cursor: pointer;
   transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
@@ -403,8 +421,8 @@ body.login-page {
   color: var(--text-main);
 }
 .sidebar-tab-icon {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 0.8rem;
   display: flex;
   align-items: center;
@@ -439,11 +457,10 @@ body.login-page {
   display: flex;
   align-items: stretch;
   justify-content: flex-start;
-  padding: 1.1rem 1.3rem 2.1rem 1rem;
+  padding: 1.25rem 1.5rem 2.5rem 1rem;
   box-sizing: border-box;
   overflow: auto;
 }
-
 .tab-content {
   width: 100%;
   height: 100%;
@@ -460,18 +477,17 @@ body.login-page {
   box-shadow:
     0 24px 70px rgba(0, 0, 0, 0.95),
     0 0 0 1px rgba(15, 23, 42, 0.8);
-  padding: 1.2rem 1.3rem;
+  padding: 1.4rem 1.6rem;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-
 .hub-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.8rem;
-  margin-bottom: 0.6rem;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
 }
 .hub-header-texts {
   display: flex;
@@ -494,7 +510,6 @@ body.login-page {
   font-size: 0.82rem;
   color: var(--text-muted);
 }
-
 .hub-actions {
   display: flex;
   align-items: center;
@@ -620,7 +635,8 @@ body.login-page {
   margin-top: 0.3rem;
   min-height: 0;
 }
-.weekdays, .days {
+.weekdays,
+.days {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px;
@@ -891,19 +907,15 @@ body.login-page {
 /* Responsivo */
 @media (max-width: 768px) {
   .app-header {
-    padding: 0.65rem 0.9rem;
-    height: 78px;
+    padding: 0.7rem 1rem;
+    height: 80px;
   }
-  :root { --header-height: 78px; }
+  :root { --header-height: 80px; }
 
-  .header-desktop-only,
-  .header-logo,
-  .header-logo-pill,
-  .header-pill,
-  .user-chip {
+  /* esconde blocos de desktop e mostra mobile */
+  .header-desktop-only {
     display: none !important;
   }
-
   .header-mobile-row {
     display: flex;
   }
@@ -913,63 +925,29 @@ body.login-page {
     height: auto;
     min-height: calc(100vh - var(--header-height));
   }
-
   .layout-sidebar {
     width: 100%;
     max-width: 100%;
     height: auto;
-    padding: 0.9rem 0.9rem 0.7rem;
+    padding: 1rem;
   }
-
   .sidebar-card {
     margin-left: 0;
     width: 100%;
     height: auto;
-    padding: 0.8rem 0.85rem 0.9rem;
   }
-
   .layout-main {
-    padding: 0.8rem 0.9rem 2rem;
+    padding: 0 1rem 2rem;
     height: auto;
     overflow: visible;
   }
-
   .hub-panel {
-    padding: 0.9rem 0.9rem 1rem;
-    border-radius: 1.2rem;
+    height: auto;
   }
-
-  .hub-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.6rem;
-  }
-
-  .hub-actions {
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
-  .calendar-card {
-    padding: 0.6rem;
-  }
-
-  .calendar-title {
-    font-size: 0.85rem;
-  }
-
-  .day-cell {
-    min-height: 34px;
-    max-height: 52px;
-  }
-
   .modal-backdrop {
     align-items: flex-start;
     padding: 4.2rem 0.7rem 1.2rem;
   }
-
   .modal {
     margin-top: 0;
     max-width: 100%;

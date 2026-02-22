@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Calendário – LithoPlant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+  <link rel="icon" href="../../assets/imagem/favicon.png" type="image/png" />
+
+
+  <link rel="stylesheet" href="../../assets/css/global.css" />
+  <link rel="stylesheet" href="../../assets/css/calendario-lithoplant.css" />
+
+
+  <script src="../../assets/js/global.js" defer></script>
+  <script src="../../assets/js/calendario-lithoplant.js" defer></script>
+</head>
+<body class="login-page layout-has-sidebar" onload="initPagina()">
+  <!-- Fundo -->
+  <div class="bg-fx" aria-hidden="true">
+    <div class="animated-bg"></div>
+    <div class="particles-container"></div>
+    <div class="wave-container">
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+    </div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="grid-bg"></div>
+  </div>
+
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <!-- DESKTOP -->
+      <div class="header-left header-desktop-only">
+        <div class="header-logo-pill">
+          <div class="header-logo">
+            <img src="../../assets/imagem/logolitho.png" alt="Lithoplant" />
+          </div>
+          <div class="header-text">
+            <p class="header-title">Lithoplant – Calendário</p>
+            <!-- removido "Carregando usuário..." -->
+            <p class="header-subtitle" id="saudacao"></p>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="header-right header-desktop-only">
+        <span class="header-pill">Ambiente produção</span>
+        <div class="user-chip" id="userChip">
+          <span class="status-dot"></span>
+          <span id="userName">Usuário</span>
+        </div>
+        <!-- Trocar empresa -->
+        <button
+          type="button"
+          class="btn-icon"
+          title="Trocar empresa"
+          onclick="window.location.href='../../select-company.html'"
+        >
+          ⇄
+        </button>
+        <!-- Voltar ao menu (sem deslogar) -->
+        <button
+          type="button"
+          class="btn-icon"
+          title="Voltar ao menu"
+          onclick="window.location.href='../../lithoplant/menu.html'"
+        >
+          ←
+        </button>
+        <!-- Sair (deslogar de verdade) -->
+        <button
+          type="button"
+          class="btn-exit"
+          title="Sair"
+          onclick="deslogar()"
+        >
+          <span class="btn-exit-icon">⟵</span>
+          <span class="btn-exit-text">Sair</span>
+        </button>
+      </div>
+
+
+      <!-- MOBILE: título simples + voltar + menu ⋮ -->
+      <div class="header-mobile-row">
+        <div class="header-mobile-left">
+          <div class="header-mobile-texts">
+            <p class="header-mobile-title">Calendário Lithoplant</p>
+            <!-- removido "Carregando usuário..." -->
+            <p class="header-mobile-sub" id="saudacaoMobile"></p>
+          </div>
+        </div>
+
+
+        <div class="header-mobile-right">
+          <button
+            type="button"
+            class="btn-mobile-back"
+            onclick="toggleFullNav(true)"
+          >
+            Centro de navegação
+          </button>
+
+
+          <div class="header-menu-wrapper">
+            <button
+              type="button"
+              class="header-menu-button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              onclick="toggleHeaderMenu()"
+            >
+              ⋮
+            </button>
+            <div class="header-menu-dropdown" id="headerMenuDropdown">
+              <button
+                type="button"
+                class="header-menu-item"
+                onclick="window.location.href='../../select-company.html'"
+              >
+                Trocar empresa
+              </button>
+              <button
+                type="button"
+                class="header-menu-item"
+                onclick="deslogar()"
+              >
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- FIM MOBILE -->
+    </div>
+  </header>
+
+
+  <!-- Layout: barra lateral + conteúdo -->
+  <div class="layout-root">
+    <!-- Sidebar Lithoplant -->
+    <aside class="layout-sidebar" id="layoutSidebar">
+      <div class="sidebar-card" aria-label="Menu lateral Lithoplant">
+        <div class="sidebar-header">
+          <h2 class="sidebar-title">Centro de navegação</h2>
+          <p class="sidebar-hint">
+            Duplo clique em um dia para lançar, clique simples para ver/editar despesas.
+          </p>
+        </div>
+
+
+        <div class="sidebar-tabs" id="sidebarTabsDesktop">
+          <button
+            type="button"
+            class="sidebar-tab"
+            data-tab="tab-dashboards"
+            onclick="window.location.href='../../lithoplant/menu.html'"
+          >
+            <div class="sidebar-tab-icon">📊</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Dashboards</span>
+              <span class="sidebar-tab-desc">Painéis de performance.</span>
+            </div>
+          </button>
+
+
+          <button
+            type="button"
+            class="sidebar-tab active"
+            data-tab="tab-calendario"
+            onclick="selecionarAbaCalendario(this,'tab-calendario')"
+          >
+            <div class="sidebar-tab-icon">📅</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Calendário</span>
+              <span class="sidebar-tab-desc">Vencimentos e pagamentos.</span>
+            </div>
+          </button>
+
+
+          <button
+            type="button"
+            class="sidebar-tab"
+            data-tab="tab-organograma"
+            onclick="window.location.href='../../lithoplant/menu.html#tab-organograma'"
+          >
+            <div class="sidebar-tab-icon">👥</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Organograma</span>
+              <span class="sidebar-tab-desc">Estrutura da equipe Lithoplant.</span>
+            </div>
+          </button>
+        </div>
+
+
+        <div class="sidebar-divider"></div>
+
+
+        <div class="sidebar-footer">
+          Recorrências mensais são geradas automaticamente até 12 meses à frente.
+        </div>
+      </div>
+    </aside>
+
+
+    <!-- Conteúdo principal -->
+    <main class="layout-main">
+      <section id="tab-calendario" class="tab-content active">
+        <article class="hub-panel" aria-label="Calendário de pagamentos Lithoplant">
+          <div class="hub-header">
+            <div class="hub-header-texts">
+              <h1 class="hub-title">
+                Calendário de <span class="gradient-text">pagamentos</span>
+              </h1>
+              <p class="hub-subtitle">
+                Vencido: vermelho piscando. Hoje: laranja piscando. Futuro pendente: laranja. Pago: verde.
+              </p>
+            </div>
+            <div class="hub-actions">
+              <!-- BOTÃO CONTATOS -->
+              <button
+                type="button"
+                class="btn-primary"
+                style="background:#0f172a;color:#e5e7eb;border:1px solid #4b5563;"
+                onclick="abrirGerenciadorContatos()"
+                title="Gerenciar lista de contatos"
+              >
+                Contatos
+              </button>
+
+
+              <!-- BOTÃO NOVA DESPESA -->
+              <button
+                class="btn-icon-circle"
+                title="Nova despesa"
+                onclick="abrirModalInclusao()"
+              >
+                +
+              </button>
+
+
+              <!-- BOTÃO NOTIFICAÇÕES ANTECIPADAS -->
+              <button class="btn-primary" onclick="abrirModalSelecionarEnvio()">
+                Notificações antecipadas
+              </button>
+            </div>
+          </div>
+
+
+          <div class="calendar-wrapper">
+            <div class="calendar-card">
+              <div class="calendar-header">
+                <div class="calendar-nav">
+                  <button onclick="mudarMes(-1)">&lt;</button>
+                </div>
+                <div>
+                  <div id="tituloMes" class="calendar-title"></div>
+                  <div class="calendar-legenda">
+                    <span class="legenda-pill">
+                      <span class="legenda-dot" style="background:#16a34a;"></span> Pago
+                    </span>
+                    <span class="legenda-pill">
+                      <span class="legenda-dot" style="background:#f97316;"></span> Pendente
+                    </span>
+                    <span class="legenda-pill">
+                      <span class="legenda-dot" style="background:#f97316;border:2px solid #f97316;"></span> Hoje
+                    </span>
+                    <span class="legenda-pill">
+                      <span class="legenda-dot" style="background:#b91c1c;"></span> Vencido
+                    </span>
+                  </div>
+                </div>
+                <div class="calendar-nav">
+                  <button onclick="mudarMes(1)">&gt;</button>
+                </div>
+              </div>
+
+
+              <div class="calendar-grid">
+                <div class="weekdays">
+                  <div>Dom</div>
+                  <div>Seg</div>
+                  <div>Ter</div>
+                  <div>Qua</div>
+                  <div>Qui</div>
+                  <div>Sex</div>
+                  <div>Sáb</div>
+                </div>
+                <div id="gridDias" class="days"></div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+
+  <!-- Modal inclusão -->
+  <div id="modalInclusao" class="modal-backdrop" style="display:none">
+    <div class="modal">
+      <h2 class="modal-title">Incluir despesa</h2>
+      <form class="modal-form" onsubmit="salvarDespesa(event)">
+        <div>
+          <label for="descricao">Descrição</label>
+          <input id="descricao" type="text" placeholder="DAE ICMS, Boleto água..." required />
+        </div>
+
+
+        <div>
+          <label for="dataVenc">Data de vencimento</label>
+          <input id="dataVenc" type="date" required />
+        </div>
+
+
+        <!-- Seleção de contatos -->
+        <fieldset>
+          <legend>Contatos para notificar</legend>
+
+
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <select
+              id="contatosSelect"
+              style="flex:1;min-width:0;"
+              onchange="adicionarContatoSelecionado()"
+            >
+              <option value="">Selecionar contato...</option>
+            </select>
+
+
+            <button
+              type="button"
+              class="btn-mini btn-mini-pendente"
+              onclick="abrirGerenciadorContatos()"
+            >
+              Gerenciar contatos
+            </button>
+          </div>
+
+
+          <div
+            id="contatosSelecionados"
+            style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"
+          ></div>
+
+
+          <small style="font-size:0.75rem;color:#9ca3af;display:block;margin-top:4px;">
+            Selecione um contato na lista para adicioná-lo. Use o X em cada contato para remover da despesa.
+          </small>
+        </fieldset>
+
+
+        <!-- Contato livre extra -->
+        <fieldset>
+          <legend>Contato específico desta despesa</legend>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input id="extraNome" type="text" placeholder="Nome (opcional)" style="flex:1;min-width:120px;">
+            <input id="extraTelefone" type="tel" placeholder="Telefone (5511999999999)" style="flex:1;min-width:150px;">
+          </div>
+        </fieldset>
+
+
+        <!-- Tipos de aviso -->
+        <div>
+          <label>Quando notificar?</label>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:0.9rem;">
+            <label><input type="checkbox" id="aviso7"> 7 dias antes</label>
+            <label><input type="checkbox" id="aviso5"> 5 dias antes</label>
+            <label><input type="checkbox" id="aviso3" checked> 3 dias antes</label>
+            <label><input type="checkbox" id="aviso1"> 1 dia antes</label>
+            <label><input type="checkbox" id="aviso0"> No dia</label>
+          </div>
+        </div>
+
+
+        <div>
+          <label for="recorrente">Recorrência</label>
+          <select id="recorrente">
+            <option value="nao" selected>Não recorrente</option>
+            <option value="mensal">Todo mês nesse dia</option>
+          </select>
+        </div>
+
+
+        <div class="modal-actions">
+          <button type="button" class="btn-mini btn-mini-pendente" onclick="fecharModalInclusao()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- Modal GERENCIADOR de contatos -->
+  <div id="modalContato" class="modal-backdrop" style="display:none">
+    <div class="modal">
+      <h2 class="modal-title">Contatos</h2>
+
+
+      <form class="modal-form" onsubmit="salvarContato(event)">
+        <input type="hidden" id="contatoIndexEdicao" value="">
+        <div>
+          <label for="contatoNome">Nome</label>
+          <input id="contatoNome" type="text" required>
+        </div>
+        <div>
+          <label for="contatoTelefone">Telefone</label>
+          <input id="contatoTelefone" type="tel" placeholder="5511999999999" required>
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-mini btn-mini-pendente"
+            onclick="fecharModalContato()"
+          >
+            Fechar
+          </button>
+          <button type="submit" class="btn-primary">
+            Salvar contato
+          </button>
+        </div>
+      </form>
+
+
+      <div class="lista-dia" id="listaContatos"></div>
+    </div>
+  </div>
+
+
+  <!-- Modal confirmação exclusão -->
+  <div id="modalConfirmarExclusao" class="modal-backdrop" style="display:none">
+    <div class="modal">
+      <h2 class="modal-title">Excluir despesa</hh2>
+
+
+      <div class="modal-form">
+        <div>
+          <label for="motivoExclusao">Motivo da exclusão</label>
+          <input
+            id="motivoExclusao"
+            type="text"
+            placeholder="Ex: lançamento em duplicidade, cancelado pelo fornecedor..."
+            required
+          />
+          <div id="erroMotivoExclusao" style="color:#f97316;font-size:0.75rem;margin-top:2px;"></div>
+        </div>
+
+
+        <div id="blocoRecorrencia" style="display:none;margin-top:8px;">
+          <label>Como deseja excluir?</label>
+          <div style="font-size:0.8rem;color:#e5e7eb;display:flex;flex-direction:column;gap:4px;">
+            <label>
+              <input type="radio" name="modoExclusao" value="unico" checked />
+              Só esta
+            </label>
+            <label>
+              <input type="radio" name="modoExclusao" value="futuras" />
+              Esta e as seguintes
+            </label>
+            <label>
+              <input type="radio" name="modoExclusao" value="todas" />
+              Todos os eventos desta série
+            </label>
+          </div>
+        </div>
+
+
+        <div id="blocoSenhaExclusao" style="display:none;margin-top:10px;">
+          <label for="senhaExclusao">Senha administrador (obrigatório se houver lançamentos pagos)</label>
+          <input
+            id="senhaExclusao"
+            type="password"
+            placeholder="Digite a senha de administrador"
+          />
+          <div id="erroSenhaExclusao" style="color:#f97316;font-size:0.75rem;margin-top:2px;"></div>
+        </div>
+      </div>
+
+
+      <div class="modal-actions" style="margin-top:12px;">
+        <button type="button" class="btn-mini btn-mini-pendente" onclick="fecharModalExclusao()">
+          Voltar
+        </button>
+        <button type="button" class="btn-primary" onclick="confirmarExclusaoDespesa()">
+          Confirmar exclusão
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modal lista do dia -->
+  <div id="modalDia" class="modal-backdrop modal-dia-lista" style="display:none">
+    <div class="modal">
+      <h2 class="modal-title" id="tituloModalDia">Despesas do dia</h2>
+      <div class="lista-dia" id="listaDiaContainer"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-mini btn-mini-pendente" onclick="fecharModalDia()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modal seleção de lembretes do mês -->
+  <div id="modalSelecionarEnvio" class="modal-backdrop" style="display:none">
+    <div class="modal">
+      <h2 class="modal-title">Selecionar lembretes para enviar</h2>
+      <div id="listaSelecionarEnvio" class="lista-dia"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-mini btn-mini-pendente" onclick="fecharModalSelecionarEnvio()">
+          Cancelar
+        </button>
+        <button type="button" class="btn-primary" onclick="confirmarEnvioSelecionado()">
+          Enviar selecionados
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modal resultado do envio -->
+  <div id="modalResultadoEnvio" class="modal-backdrop" style="display:none">
+    <div class="modal">
+      <h2 class="modal-title">Resultado do envio</h2>
+      <div id="resultadoEnvioLista" class="lista-dia"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-mini btn-mini-pendente" onclick="fecharModalResultadoEnvio()">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Navegação full-screen no mobile -->
+  <div class="fullnav-backdrop" id="fullNav" aria-hidden="true">
+    <div class="fullnav-panel">
+      <div class="fullnav-header">
+        <span>Centro de navegação</span>
+        <button type="button" class="fullnav-close" onclick="toggleFullNav(false)">✕</button>
+      </div>
+
+
+      <div class="fullnav-body">
+        <div class="sidebar-tabs" id="sidebarTabsMobile">
+          <button
+            type="button"
+            class="sidebar-tab"
+            data-tab="tab-dashboards"
+            onclick="window.location.href='../../lithoplant/menu.html'"
+          >
+            <div class="sidebar-tab-icon">📊</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Dashboards</span>
+              <span class="sidebar-tab-desc">Painéis de performance.</span>
+            </div>
+          </button>
+
+
+          <button
+            type="button"
+            class="sidebar-tab active"
+            data-tab="tab-calendario"
+            onclick="selecionarAbaCalendario(this,'tab-calendario')"
+          >
+            <div class="sidebar-tab-icon">📅</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Calendário</span>
+              <span class="sidebar-tab-desc">Vencimentos e pagamentos.</span>
+            </div>
+          </button>
+
+
+          <button
+            type="button"
+            class="sidebar-tab"
+            data-tab="tab-organograma"
+            onclick="window.location.href='../../lithoplant/menu.html#tab-organograma'"
+          >
+            <div class="sidebar-tab-icon">👥</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Organograma</span>
+              <span class="sidebar-tab-desc">Estrutura da equipe Lithoplant.</span>
+            </div>
+          </button>
+        </div>
+
+
+        <div class="sidebar-footer">
+          Use este painel para escolher a área e abrir os dashboards em tela cheia.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    function selecionarAbaCalendario(botao, tabId) {
+      document.querySelectorAll(".sidebar-tab").forEach(b => {
+        if (b.dataset.tab) {
+          b.classList.toggle("active", b === botao || b.dataset.tab === tabId);
+        }
+      });
+      document.querySelectorAll(".tab-content").forEach(sec => {
+        sec.classList.toggle("active", sec.id === tabId);
+      });
+      if (window.innerWidth <= 768) {
+        toggleFullNav(false);
+      }
+    }
+
+
+    function toggleHeaderMenu() {
+      const dropdown = document.getElementById("headerMenuDropdown");
+      if (!dropdown) return;
+      const isOpen = dropdown.classList.contains("open");
+      dropdown.classList.toggle("open", !isOpen);
+
+
+      const btn = document.querySelector(".header-menu-button");
+      if (btn) {
+        btn.setAttribute("aria-expanded", !isOpen ? "true" : "false");
+      }
+    }
+
+
+    document.addEventListener("click", (e) => {
+      const dropdown = document.getElementById("headerMenuDropdown");
+      const wrapper = document.querySelector(".header-menu-wrapper");
+      if (!dropdown || !wrapper) return;
+      if (!wrapper.contains(e.target)) {
+        dropdown.classList.remove("open");
+        const btn = document.querySelector(".header-menu-button");
+        if (btn) btn.setAttribute("aria-expanded", "false");
+      }
+    });
+  </script>
+</body>
+</html>

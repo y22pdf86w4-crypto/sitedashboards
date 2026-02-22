@@ -21,11 +21,48 @@ function initPagina() {
   initCalendario();
 }
 
-function initCalendario() {
-  carregarDespesas();
-  normalizarModeloDespesas();
-  expandirRecorrencias();
+async function initCalendario() {
   carregarContatos();
+
+  const ano = mesAtual.getFullYear();
+  const mesNumero = mesAtual.getMonth() + 1;
+  const mesStr = `${ano}-${String(mesNumero).padStart(2, "0")}`;
+
+  try {
+    const urlPath = `/despesas?mes=${mesStr}&empresa=lithoplant`;
+    console.log("DEBUG LITHOPLANT chamando", urlPath);
+
+    const dados = await apiGet(urlPath);
+    console.log("DEBUG LITHOPLANT resposta bruta =", dados);
+
+    window._despesas = (dados.despesas || []).map(d => {
+      const dtISO = (d.data_vencimento || "").slice(0, 10);
+
+      return {
+        id: d.id,
+        empresa: d.empresa,
+        descricao: d.descricao,
+        vencimento: dtISO,
+        status: d.status || "pendente",
+        recorrente: d.recorrencia_tipo === "mensal" ? "mensal" : "nao",
+        responsaveis: Array.isArray(d.contatos) ? d.contatos : [],
+        tiposAviso: Array.isArray(d.tipos_aviso) ? d.tipos_aviso : ["3"],
+        dataPagamento: null,
+        excluido: false,
+        motivoExclusao: null,
+        excluidoPor: null,
+        dataExclusao: null
+      };
+    });
+
+    console.log("DEBUG _despesas LITHO depois do map =", window._despesas);
+  } catch (e) {
+    console.error("Erro ao carregar despesas do backend (lithoplant), usando localStorage como fallback:", e);
+    carregarDespesas();
+    normalizarModeloDespesas();
+    expandirRecorrencias();
+  }
+
   renderizarCalendario();
 }
 
@@ -92,7 +129,7 @@ function normalizarModeloDespesas() {
   salvarDespesas();
 }
 
-// ================== LOG ==================
+// ================== LOG LOCAL ==================
 function registrarLog(acao, despesa, detalhes) {
   const raw = localStorage.getItem(LOG_KEY);
   const logs = raw ? JSON.parse(raw) : [];
@@ -159,7 +196,7 @@ function expandirRecorrencias() {
 // ================== UTILS ==================
 function mudarMes(delta) {
   mesAtual.setMonth(mesAtual.getMonth() + delta);
-  renderizarCalendario();
+  initCalendario(); // recarrega do backend para o novo mês
 }
 
 function formatarMesAno(date) {
@@ -574,7 +611,8 @@ function editarDespesa(id) {
   document.getElementById("descricao").focus();
 }
 
-function salvarDespesa(event) {
+// ======== salvarDespesa (POST/PUT na API) ========
+async function salvarDespesa(event) {
   event.preventDefault();
   const modal = document.getElementById("modalInclusao");
   const form = modal.querySelector("form");
@@ -614,41 +652,70 @@ function salvarDespesa(event) {
 
   if (!window._despesas) window._despesas = [];
 
-  if (editId) {
-    window._despesas = window._despesas.map(d => {
-      if (d.id === editId) {
-        if (d.status === "pago") return d;
-        const atualizado = {
-          ...d,
-          descricao,
-          vencimento,
-          responsaveis: marcados,
-          tiposAviso,
-          recorrente
-        };
-        registrarLog("EDITAR", atualizado, null);
-        return atualizado;
-      }
-      return d;
-    });
-  } else {
-    const nova = {
-      id: Date.now(),
-      descricao,
-      vencimento,
-      responsaveis: marcados,
-      tiposAviso,
-      recorrente,
-      status: "pendente",
-      dataPagamento: null,
-      excluido: false,
-      motivoExclusao: null,
-      excluidoPor: null,
-      dataExclusao: null
-    };
+  const payload = {
+    empresa: "lithoplant",
+    descricao,
+    data_vencimento: vencimento,     // 'YYYY-MM-DD'
+    status: "pendente",
+    recorrencia_tipo: recorrente,    // 'nao' | 'mensal'
+    tipos_aviso: tiposAviso,         // array de strings
+    contatos: marcados               // array de {nome, telefone, tipo}
+  };
 
-    window._despesas.push(nova);
-    registrarLog("CRIAR", nova, null);
+  try {
+    if (editId) {
+      console.log("DEBUG LITHO PUT payload =", payload);
+      const atualizada = await apiPut(`/despesas/${editId}`, payload);
+      console.log("DEBUG LITHO PUT resposta =", atualizada);
+
+      const nova = {
+        id: atualizada.id,
+        empresa: atualizada.empresa,
+        descricao: atualizada.descricao,
+        vencimento: (atualizada.data_vencimento || vencimento).slice(0, 10),
+        responsaveis: Array.isArray(atualizada.contatos) ? atualizada.contatos : marcados,
+        tiposAviso: Array.isArray(atualizada.tipos_aviso) ? atualizada.tipos_aviso : tiposAviso,
+        recorrente: atualizada.recorrencia_tipo || recorrente,
+        status: atualizada.status || "pendente",
+        dataPagamento: null,
+        excluido: false,
+        motivoExclusao: null,
+        excluidoPor: null,
+        dataExclusao: null
+      };
+
+      window._despesas = (window._despesas || []).map(d =>
+        d.id === editId ? nova : d
+      );
+      registrarLog("EDITAR", nova, null);
+    } else {
+      console.log("DEBUG LITHO POST payload =", payload);
+      const criada = await apiPost("/despesas", payload);
+      console.log("DEBUG LITHO POST resposta =", criada);
+
+      const nova = {
+        id: criada.id,
+        empresa: criada.empresa,
+        descricao: criada.descricao,
+        vencimento: (criada.data_vencimento || vencimento).slice(0, 10),
+        responsaveis: Array.isArray(criada.contatos) ? criada.contatos : marcados,
+        tiposAviso: Array.isArray(criada.tipos_aviso) ? criada.tipos_aviso : tiposAviso,
+        recorrente: criada.recorrencia_tipo || recorrente,
+        status: criada.status || "pendente",
+        dataPagamento: null,
+        excluido: false,
+        motivoExclusao: null,
+        excluidoPor: null,
+        dataExclusao: null
+      };
+
+      window._despesas.push(nova);
+      registrarLog("CRIAR", nova, null);
+    }
+  } catch (e) {
+    console.error("Erro ao salvar despesa no backend (lithoplant):", e);
+    alert("Erro ao salvar no servidor. Tente novamente.");
+    return;
   }
 
   salvarDespesas();
@@ -777,32 +844,57 @@ function fecharModalDia() {
   document.getElementById("modalDia").style.display = "none";
 }
 
-// ================== STATUS ==================
-function alterarStatus(id, novoStatus) {
+// ================== STATUS (PUT na API) ==================
+async function alterarStatus(id, novoStatus) {
   const hoje = dataISO(new Date());
-  let alvo = null;
 
-  window._despesas = (window._despesas || []).map(d => {
-    if (d.id === id) {
-      const atualizado = {
-        ...d,
-        status: novoStatus,
-        dataPagamento: novoStatus === "pago" ? hoje : null
-      };
-      alvo = atualizado;
-      return atualizado;
-    }
-    return d;
-  });
+  const atual = (window._despesas || []).find(d => d.id === id);
+  if (!atual) return;
 
-  if (alvo) {
+  const payload = {
+    empresa: "lithoplant",
+    descricao: atual.descricao,
+    data_vencimento: atual.vencimento,
+    status: novoStatus,
+    recorrencia_tipo: atual.recorrente || "nao",
+    tipos_aviso: Array.isArray(atual.tiposAviso) ? atual.tiposAviso : ["3"],
+    contatos: Array.isArray(atual.responsaveis) ? atual.responsaveis : []
+  };
+
+  try {
+    console.log("DEBUG LITHO PUT status payload =", payload);
+    const atualizada = await apiPut(`/despesas/${id}`, payload);
+    console.log("DEBUG LITHO PUT status resposta =", atualizada);
+
+    const alvo = {
+      id: atualizada.id,
+      empresa: atualizada.empresa,
+      descricao: atualizada.descricao,
+      vencimento: (atualizada.data_vencimento || atual.vencimento).slice(0, 10),
+      responsaveis: Array.isArray(atualizada.contatos) ? atualizada.contatos : payload.contatos,
+      tiposAviso: Array.isArray(atualizada.tipos_aviso) ? atualizada.tipos_aviso : payload.tipos_aviso,
+      recorrente: atualizada.recorrencia_tipo || atual.recorrente || "nao",
+      status: atualizada.status || novoStatus,
+      dataPagamento: novoStatus === "pago" ? hoje : null,
+      excluido: false,
+      motivoExclusao: null,
+      excluidoPor: null,
+      dataExclusao: null
+    };
+
+    window._despesas = (window._despesas || []).map(d =>
+      d.id === id ? alvo : d
+    );
+
     registrarLog(novoStatus === "pago" ? "PAGAR" : "PENDENTE", alvo, null);
-  }
 
-  salvarDespesas();
-  renderizarCalendario();
-  const alguma = window._despesas.find(d => d.id === id);
-  if (alguma) abrirModalDia(alguma.vencimento);
+    salvarDespesas();
+    renderizarCalendario();
+    if (alvo) abrirModalDia(alvo.vencimento);
+  } catch (e) {
+    console.error("Erro ao alterar status no backend (lithoplant):", e);
+    alert("Erro ao alterar status no servidor. Tente novamente.");
+  }
 }
 
 // ================== EXCLUSÃO ==================
@@ -844,7 +936,7 @@ function fecharModalExclusao() {
   _recorrenciaParaExcluir = null;
 }
 
-function confirmarExclusaoDespesa() {
+async function confirmarExclusaoDespesa() {
   if (!_idParaExcluir) {
     fecharModalExclusao();
     return;
@@ -912,21 +1004,25 @@ function confirmarExclusaoDespesa() {
     }
   }
 
-  aplicarExclusao(despBase, afetadasPreview, motivo, temPaga ? "EXCLUIR_PAGO" : "EXCLUIR");
+  await aplicarExclusao(despBase, afetadasPreview, motivo, temPaga ? "EXCLUIR_PAGO" : "EXCLUIR");
 
   fecharModalExclusao();
 }
 
-function aplicarExclusao(despBase, afetadasPreview, motivoFinal, tipoLog) {
+// ======== aplicarExclusao (DELETE na API) ========
+async function aplicarExclusao(despBase, afetadasPreview, motivoFinal, tipoLog) {
   const user = (typeof getUsuarioAtual === "function") ? getUsuarioAtual() : null;
   const nome = user && (user.nome || user.email || "Desconhecido");
   const hoje = dataISO(new Date());
 
-  const idsAfetar = new Set(afetadasPreview.map(d => d.id));
   const afetadasFinal = [];
 
-  window._despesas = (window._despesas || []).map(d => {
-    if (idsAfetar.has(d.id)) {
+  for (const d of afetadasPreview) {
+    try {
+      console.log("DEBUG LITHO DELETE id =", d.id);
+      await apiDelete(`/despesas/${d.id}`);
+      console.log("DEBUG LITHO DELETE OK id =", d.id);
+
       const atualizado = {
         ...d,
         excluido: true,
@@ -935,9 +1031,15 @@ function aplicarExclusao(despBase, afetadasPreview, motivoFinal, tipoLog) {
         dataExclusao: hoje
       };
       afetadasFinal.push(atualizado);
-      return atualizado;
+    } catch (e) {
+      console.error("Erro ao excluir despesa no backend (lithoplant, id=" + d.id + "):", e);
+      alert("Erro ao excluir despesa id " + d.id + " no servidor. Verifique os logs.");
     }
-    return d;
+  }
+
+  window._despesas = (window._despesas || []).map(d => {
+    const afetada = afetadasFinal.find(a => a.id === d.id);
+    return afetada ? afetada : d;
   });
 
   salvarDespesas();
@@ -1104,7 +1206,7 @@ async function confirmarEnvioSelecionado() {
   const empresa = "lithoplant";
 
   try {
-const resp = await fetch("http://172.18.4.12:3000/api/enviar-lembretes", {
+    const resp = await fetch("http://172.18.4.12:3000/api/enviar-lembretes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

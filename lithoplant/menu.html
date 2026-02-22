@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Calendário Lithoplant</title>
+  <title>Dashboards Lithoplant</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Favicon -->
@@ -10,13 +10,13 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="../assets/css/global.css" />
-  <link rel="stylesheet" href="../assets/css/calendario-lithoplant.css?v=20260222" />
+  <!-- Pode reaproveitar o mesmo CSS do Linhagro se o layout for idêntico -->
+  <link rel="stylesheet" href="../assets/css/menulinhagro.css?v=20260222" />
 
-  <!-- JS -->
+  <!-- JS global -->
   <script src="../assets/js/global.js" defer></script>
-  <script src="../assets/js/calendario-lithoplant.js" defer></script>
 </head>
-<body class="login-page layout-has-sidebar" onload="initCalendarioLithoplant()">
+<body class="login-page layout-has-sidebar" onload="carregarMenuLithoplant()">
   <!-- Fundo -->
   <div class="bg-fx" aria-hidden="true">
     <div class="animated-bg"></div>
@@ -34,16 +34,15 @@
   <!-- Header -->
   <header class="app-header">
     <div class="header-inner">
-      <!-- ESQUERDA: logo + título (desktop) -->
       <div class="header-left">
         <div class="header-logo-pill">
           <div class="header-logo">
             <img src="../assets/imagem/logolitho.png" alt="Lithoplant" />
           </div>
           <div class="header-text">
-            <p class="header-title">Lithoplant – Calendário</p>
-            <p class="header-subtitle">
-              Pendências e vencimentos da operação.
+            <p class="header-title">Lithoplant – Painel de controle</p>
+            <p class="header-subtitle" id="saudacao">
+              Carregando usuário...
             </p>
           </div>
         </div>
@@ -58,14 +57,6 @@
             <span class="status-dot"></span>
             <span id="userName">Usuário</span>
           </div>
-          <button
-            type="button"
-            class="btn-icon"
-            title="Voltar ao menu"
-            onclick="window.location.href='../lithoplant.html'"
-          >
-            ←
-          </button>
           <button
             type="button"
             class="btn-icon"
@@ -89,10 +80,10 @@
         <div class="header-actions-mobile">
           <button
             type="button"
-            class="btn-mobile-back"
-            onclick="window.location.href='../lithoplant.html'"
+            class="header-menu-open"
+            onclick="toggleFullNav(true)"
           >
-            ← Voltar
+            Centro de navegação
           </button>
 
           <div class="header-mobile-center">
@@ -100,7 +91,7 @@
               <img src="../assets/imagem/logolitho.png" alt="Lithoplant" />
             </div>
             <div class="header-mobile-texts">
-              <p class="header-mobile-title">Calendário Lithoplant</p>
+              <p class="header-mobile-title">Dashboards Lithoplant</p>
               <p class="header-mobile-sub" id="saudacaoMobile">Bem-vindo</p>
             </div>
           </div>
@@ -139,355 +130,270 @@
 
   <!-- Layout principal -->
   <div class="layout-root">
-    <!-- Sidebar -->
+    <!-- Sidebar (desktop) -->
     <aside class="layout-sidebar" id="layoutSidebar">
       <div class="sidebar-card" aria-label="Menu lateral">
         <div class="sidebar-header">
           <h2 class="sidebar-title">Centro de navegação</h2>
           <p class="sidebar-hint">
-            Duplo clique em um dia para lançar, clique simples para ver/editar despesas.
+            Selecione uma área abaixo. Em Dashboards, use a busca para filtrar os cards.
           </p>
         </div>
 
-        <div class="sidebar-tabs">
+        <div class="sidebar-tabs" id="sidebarTabsDesktop">
           <button
             type="button"
             class="sidebar-tab active"
-            data-tab="tab-calendario"
-            onclick="selecionarAbaCalendario(this,'tab-calendario')"
-          >
-            <div class="sidebar-tab-icon">📅</div>
-            <div class="sidebar-tab-texts">
-              <span class="sidebar-tab-label">Calendário</span>
-              <span class="sidebar-tab-desc">Pendências e vencimentos.</span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            class="sidebar-tab"
-            onclick="window.location.href='../lithoplant.html'"
+            data-tab="tab-dashboards"
+            onclick="selecionarAba(this,'tab-dashboards')"
           >
             <div class="sidebar-tab-icon">📊</div>
             <div class="sidebar-tab-texts">
               <span class="sidebar-tab-label">Dashboards</span>
-              <span class="sidebar-tab-desc">Painéis de performance.</span>
+              <span class="sidebar-tab-desc">Indicadores da operação Lithoplant.</span>
+            </div>
+          </button>
+
+          <!-- Calendário Lithoplant -->
+          <button
+            type="button"
+            class="sidebar-tab"
+            id="btnCalendarioLitho"
+            onclick="window.location.href='calendario/calendario-litho.html'"
+          >
+            <div class="sidebar-tab-icon">📅</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Calendário</span>
+              <span class="sidebar-tab-desc">Pendências e vencimentos Lithoplant.</span>
+            </div>
+          </button>
+
+          <!-- Opcional: outra aba (organograma Lithoplant, logs, etc.) -->
+          <button
+            type="button"
+            class="sidebar-tab"
+            data-tab="tab-organograma"
+            onclick="selecionarAba(this,'tab-organograma')"
+          >
+            <div class="sidebar-tab-icon">👥</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Organograma</span>
+              <span class="sidebar-tab-desc">Estrutura da equipe Lithoplant.</span>
             </div>
           </button>
         </div>
 
         <div class="sidebar-divider"></div>
 
+        <div id="sidebarSearchWrap" class="sidebar-search">
+          <input
+            type="text"
+            id="sidebarSearch"
+            placeholder="Buscar dashboards (ex: financeiro)..."
+            oninput="filtrarDashboardsPorTexto(this.value)"
+          />
+          <span class="sidebar-search-icon">🔍</span>
+        </div>
+
         <div class="sidebar-footer">
-          Recorrências mensais são geradas automaticamente até 12 meses à frente.
+          Use o menu lateral como um cabeçalho vertical: escolha a área, filtre e abra os painéis em tela cheia.
         </div>
       </div>
     </aside>
 
     <!-- Conteúdo principal -->
     <main class="layout-main">
-      <section id="tab-calendario" class="tab-content active">
-        <article class="hub-panel" aria-label="Calendário de pagamentos Lithoplant">
+      <section id="tab-dashboards" class="tab-content active">
+        <article class="hub-panel" aria-label="Seleção de dashboards Lithoplant">
           <div class="hub-header">
             <div>
               <h1 class="hub-title">
-                Calendário de <span class="gradient-text">pagamentos</span>
+                Dashboards de <span class="gradient-text">performance</span>
               </h1>
               <p class="hub-subtitle">
-                Vencido: vermelho piscando. Hoje: laranja piscando. Futuro pendente: laranja. Pago: verde.
+                Escolha abaixo qual painel deseja abrir. Cada card abre um dashboard em tela cheia.
               </p>
             </div>
-            <div class="hub-actions">
-              <button
-                type="button"
-                class="btn-primary"
-                style="background:#0f172a;color:#e5e7eb;border:1px solid #4b5563;"
-                onclick="abrirGerenciadorContatos()"
-                title="Gerenciar lista de contatos"
-              >
-                Contatos
-              </button>
-
-              <button
-                class="btn-icon-circle"
-                title="Nova despesa"
-                onclick="abrirModalInclusao()"
-              >
-                +
-              </button>
-
-              <button class="btn-primary" onclick="abrirModalSelecionarEnvio()">
-                Notificações antecipadas
-              </button>
+            <div class="hub-badges">
+              <span class="hub-badge">DualForce</span>
+              <span class="hub-badge">Carteira</span>
+              <span class="hub-badge">Vendedores</span>
             </div>
           </div>
 
-          <div class="calendar-wrapper">
-            <div class="calendar-card">
-              <div class="calendar-header">
-                <div class="calendar-nav">
-                  <button onclick="mudarMes(-1)">&lt;</button>
-                </div>
-                <div>
-                  <div id="tituloMes" class="calendar-title"></div>
-                  <div class="calendar-legenda">
-                    <span class="legenda-pill">
-                      <span class="legenda-dot" style="background:#16a34a;"></span> Pago
-                    </span>
-                    <span class="legenda-pill">
-                      <span class="legenda-dot" style="background:#f97316;"></span> Pendente
-                    </span>
-                    <span class="legenda-pill">
-                      <span class="legenda-dot" style="background:#f97316;border:2px solid #f97316;"></span> Hoje
-                    </span>
-                    <span class="legenda-pill">
-                      <span class="legenda-dot" style="background:#b91c1c;"></span> Vencido
-                    </span>
-                  </div>
-                </div>
-                <div class="calendar-nav">
-                  <button onclick="mudarMes(1)">&gt;</button>
-                </div>
-              </div>
+          <div id="hubGrid" class="hub-grid">
+            <!-- cards via JS -->
+          </div>
+        </article>
+      </section>
 
-              <div class="calendar-grid">
-                <div class="weekdays">
-                  <div>Dom</div>
-                  <div>Seg</div>
-                  <div>Ter</div>
-                  <div>Qua</div>
-                  <div>Qui</div>
-                  <div>Sex</div>
-                  <div>Sáb</div>
-                </div>
-                <div id="gridDias" class="days"></div>
-              </div>
+      <section id="tab-organograma" class="tab-content">
+        <article class="hub-panel" aria-label="Organograma Lithoplant">
+          <div class="hub-header">
+            <div>
+              <h1 class="hub-title">
+                Estrutura de <span class="gradient-text">organização</span>
+              </h1>
+              <p class="hub-subtitle">
+                Visualize o organograma, equipes e funções. Essa área pode abrir uma tela ou dashboard dedicado.
+              </p>
             </div>
+          </div>
+
+          <div class="org-body">
+            <p>
+              Aqui você pode apontar para uma página estática com a imagem do organograma
+              (<code>organograma-lithoplant.html</code>) ou incorporar um dashboard de pessoas e funções via iframe.
+            </p>
+            <p>
+              Se quiser que a aba já redirecione, basta trocar o clique da aba Organograma para
+              <code>window.location.href = 'dashboards/organograma-lithoplant.html'</code>.
+            </p>
           </div>
         </article>
       </section>
     </main>
   </div>
 
-  <!-- Modal inclusão -->
-  <div id="modalInclusao" class="modal-backdrop" style="display:none">
-    <div class="modal">
-      <h2 class="modal-title">Incluir despesa</h2>
-      <form class="modal-form" onsubmit="salvarDespesa(event)">
-        <div>
-          <label for="descricao">Descrição</label>
-          <input id="descricao" type="text" placeholder="DAE ICMS, Boleto água..." required />
-        </div>
+  <!-- Navegação full-screen no mobile -->
+  <div class="fullnav-backdrop" id="fullNav" aria-hidden="true">
+    <div class="fullnav-panel">
+      <div class="fullnav-header">
+        <span>Centro de navegação</span>
+        <button type="button" class="fullnav-close" onclick="toggleFullNav(false)">✕</button>
+      </div>
 
-        <div>
-          <label for="dataVenc">Data de vencimento</label>
-          <input id="dataVenc" type="date" required />
-        </div>
-
-        <fieldset>
-          <legend>Contatos para notificar</legend>
-
-          <div style="display:flex;gap:8px;align-items:flex-start;">
-            <select
-              id="contatosSelect"
-              style="flex:1;min-width:0;"
-              onchange="adicionarContatoSelecionado()"
-            >
-              <option value="">Selecionar contato...</option>
-            </select>
-
-            <button
-              type="button"
-              class="btn-mini btn-mini-pendente"
-              onclick="abrirGerenciadorContatos()"
-            >
-              Gerenciar contatos
-            </button>
-          </div>
-
-          <div
-            id="contatosSelecionados"
-            style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"
-          ></div>
-
-          <small style="font-size:0.75rem;color:#9ca3af;display:block;margin-top:4px;">
-            Selecione um contato na lista para adicioná-lo. Use o X em cada contato para remover da despesa.
-          </small>
-        </fieldset>
-
-        <fieldset>
-          <legend>Contato específico desta despesa</legend>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <input id="extraNome" type="text" placeholder="Nome (opcional)" style="flex:1;min-width:120px;">
-            <input id="extraTelefone" type="tel" placeholder="Telefone (5511999999999)" style="flex:1;min-width:150px;">
-          </div>
-        </fieldset>
-
-        <div>
-          <label>Quando notificar?</label>
-          <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:0.9rem;">
-            <label><input type="checkbox" id="aviso7"> 7 dias antes</label>
-            <label><input type="checkbox" id="aviso5"> 5 dias antes</label>
-            <label><input type="checkbox" id="aviso3" checked> 3 dias antes</label>
-            <label><input type="checkbox" id="aviso1"> 1 dia antes</label>
-            <label><input type="checkbox" id="aviso0"> No dia</label>
-          </div>
-        </div>
-
-        <div>
-          <label for="recorrente">Recorrência</label>
-          <select id="recorrente">
-            <option value="nao" selected>Não recorrente</option>
-            <option value="mensal">Todo mês nesse dia</option>
-          </select>
-        </div>
-
-        <div class="modal-actions">
-          <button type="button" class="btn-mini btn-mini-pendente" onclick="fecharModalInclusao()">
-            Cancelar
-          </button>
-          <button type="submit" class="btn-primary">Salvar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal GERENCIADOR de contatos -->
-  <div id="modalContato" class="modal-backdrop" style="display:none">
-    <div class="modal">
-      <h2 class="modal-title">Contatos</h2>
-
-      <form class="modal-form" onsubmit="salvarContato(event)">
-        <input type="hidden" id="contatoIndexEdicao" value="">
-        <div>
-          <label for="contatoNome">Nome</label>
-          <input id="contatoNome" type="text" required>
-        </div>
-        <div>
-          <label for="contatoTelefone">Telefone</label>
-          <input id="contatoTelefone" type="tel" placeholder="5511999999999" required>
-        </div>
-        <div class="modal-actions">
+      <div class="fullnav-body">
+        <div class="sidebar-tabs" id="sidebarTabsMobile">
           <button
             type="button"
-            class="btn-mini btn-mini-pendente"
-            onclick="fecharModalContato()"
+            class="sidebar-tab active"
+            data-tab="tab-dashboards"
+            onclick="selecionarAba(this,'tab-dashboards')"
           >
-            Fechar
+            <div class="sidebar-tab-icon">📊</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Dashboards</span>
+              <span class="sidebar-tab-desc">Indicadores da operação Lithoplant.</span>
+            </div>
           </button>
-          <button type="submit" class="btn-primary">
-            Salvar contato
+
+          <button
+            type="button"
+            class="sidebar-tab"
+            id="btnCalendarioLithoMobile"
+            onclick="window.location.href='calendario/calendario-litho.html'"
+          >
+            <div class="sidebar-tab-icon">📅</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Calendário</span>
+              <span class="sidebar-tab-desc">Pendências e vencimentos Lithoplant.</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            class="sidebar-tab"
+            data-tab="tab-organograma"
+            onclick="selecionarAba(this,'tab-organograma')"
+          >
+            <div class="sidebar-tab-icon">👥</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Organograma</span>
+              <span class="sidebar-tab-desc">Estrutura da equipe Lithoplant.</span>
+            </div>
           </button>
         </div>
-      </form>
 
-      <div class="lista-dia" id="listaContatos"></div>
-    </div>
-  </div>
-
-  <!-- Modal confirmação exclusão -->
-  <div id="modalConfirmarExclusao" class="modal-backdrop" style="display:none">
-    <div class="modal">
-      <h2 class="modal-title">Excluir despesa</h2>
-
-      <div class="modal-form">
-        <div>
-          <label for="motivoExclusao">Motivo da exclusão</label>
+        <div id="sidebarSearchWrapMobile" class="sidebar-search">
           <input
-            id="motivoExclusao"
             type="text"
-            placeholder="Ex: lançamento em duplicidade, cancelado pelo fornecedor..."
-            required
+            id="sidebarSearchMobile"
+            placeholder="Buscar dashboards (ex: financeiro)..."
+            oninput="filtrarDashboardsPorTexto(this.value)"
           />
-          <div id="erroMotivoExclusao" style="color:#f97316;font-size:0.75rem;margin-top:2px;"></div>
+          <span class="sidebar-search-icon">🔍</span>
         </div>
 
-        <div id="blocoRecorrencia" style="display:none;margin-top:8px;">
-          <label>Como deseja excluir?</label>
-          <div style="font-size:0.8rem;color:#e5e7eb;display:flex;flex-direction:column;gap:4px;">
-            <label>
-              <input type="radio" name="modoExclusao" value="unico" checked />
-              Só esta
-            </label>
-            <label>
-              <input type="radio" name="modoExclusao" value="futuras" />
-              Esta e as seguintes
-            </label>
-            <label>
-              <input type="radio" name="modoExclusao" value="todas" />
-              Todos os eventos desta série
-            </label>
-          </div>
+        <div class="sidebar-footer">
+          Use este painel para escolher a área e abrir os dashboards em tela cheia.
         </div>
-
-        <div id="blocoSenhaExclusao" style="display:none;margin-top:10px;">
-          <label for="senhaExclusao">Senha administrador (obrigatório se houver lançamentos pagos)</label>
-          <input
-            id="senhaExclusao"
-            type="password"
-            placeholder="Digite a senha de administrador"
-          />
-          <div id="erroSenhaExclusao" style="color:#f97316;font-size:0.75rem;margin-top:2px;"></div>
-        </div>
-      </div>
-
-      <div class="modal-actions" style="margin-top:12px;">
-        <button type="button" class="btn-mini btn-mini-pendente" onclick="fecharModalExclusao()">
-          Voltar
-        </button>
-        <button type="button" class="btn-primary" onclick="confirmarExclusaoDespesa()">
-          Confirmar exclusão
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal lista do dia -->
-  <div id="modalDia" class="modal-backdrop modal-dia-lista" style="display:none">
-    <div class="modal">
-      <h2 class="modal-title" id="tituloModalDia">Despesas do dia</h2>
-      <div class="lista-dia" id="listaDiaContainer"></div>
-      <div class="modal-actions">
-        <button type="button" class="btn-mini btn-mini-pendente" onclick="fecharModalDia()">Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal seleção de lembretes do mês -->
-  <div id="modalSelecionarEnvio" class="modal-backdrop" style="display:none">
-    <div class="modal">
-      <h2 class="modal-title">Selecionar lembretes para enviar</h2>
-      <div id="listaSelecionarEnvio" class="lista-dia"></div>
-      <div class="modal-actions">
-        <button type="button" class="btn-mini btn-mini-pendente" onclick="fecharModalSelecionarEnvio()">
-          Cancelar
-        </button>
-        <button type="button" class="btn-primary" onclick="confirmarEnvioSelecionado()">
-          Enviar selecionados
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal resultado do envio -->
-  <div id="modalResultadoEnvio" class="modal-backdrop" style="display:none">
-    <div class="modal">
-      <h2 class="modal-title">Resultado do envio</h2>
-      <div id="resultadoEnvioLista" class="lista-dia"></div>
-      <div class="modal-actions">
-        <button type="button" class="btn-mini btn-mini-pendente" onclick="fecharModalResultadoEnvio()">
-          Fechar
-        </button>
       </div>
     </div>
   </div>
 
   <script>
-    function initCalendarioLithoplant() {
+    // Dashboards Lithoplant – AGORA COM OS QUE VOCÊ PEDIU
+    const DASHBOARDS_LITHOPLANT = [
+      {
+        empresa: "lithoplant",
+        titulo: "DualForce Lithoplant",
+        descricaoCurta: "Projeto DualForce – visão consolidada.",
+        descricaoLonga:
+          "Dashboard principal com vendas, carteira, metas e indicadores operacionais por consultor, linha e região.",
+        iconEmoji: "📊",
+        iconImg: "../assets/imagem/logolitho.png",
+        url: "dashboards/dualforce.html",
+        frequencia: "Atualização: a cada 30 minutos",
+        tiposPermitidos: ["ADMIN"]
+      },
+      {
+        empresa: "lithoplant",
+        titulo: "Dashboard – Gracielli",
+        descricaoCurta: "Painel individual da vendedora Gracielli.",
+        descricaoLonga:
+          "KPIs pessoais de vendas, carteira e metas da região Centro-Sul.",
+        iconEmoji: "⭐",
+        iconImg: "../assets/imagem/logolitho.png",
+        url: "dashboards/vendedor-gracielli.html",
+        frequencia: "Atualização: diária",
+        usuariosPermitidos: ["ctvcentrosul@lithoplant.com.br"]
+      },
+      {
+        empresa: "lithoplant",
+        titulo: "Dashboard – João Paulo",
+        descricaoCurta: "Painel individual do vendedor João Paulo.",
+        descricaoLonga:
+          "KPIs pessoais de vendas, carteira e metas do João Paulo.",
+        iconEmoji: "⭐",
+        iconImg: "../assets/imagem/logolitho.png",
+        url: "dashboards/vendedor-joaopaulo.html",
+        frequencia: "Atualização: diária",
+        usuariosPermitidos: ["joaopaulo.damascena@lithoplant.com.br"]
+      },
+      {
+        empresa: "lithoplant",
+        titulo: "Dashboard – Paulo Modesto",
+        descricaoCurta: "Painel individual do vendedor Paulo Modesto.",
+        descricaoLonga:
+          "KPIs pessoais de vendas, carteira e metas da região Sul Bahia.",
+        iconEmoji: "⭐",
+        iconImg: "../assets/imagem/logolitho.png",
+        url: "dashboards/vendedor-paulomodesto.html",
+        frequencia: "Atualização: diária",
+        usuariosPermitidos: ["ctvsulbahia@lithoplant.com.br"]
+      },
+      {
+        empresa: "lithoplant",
+        titulo: "Dashboard – Raphael Brandão",
+        descricaoCurta: "Painel individual do vendedor Raphael Brandão.",
+        descricaoLonga:
+          "KPIs pessoais de vendas, carteira e metas do Raphael Brandão.",
+        iconEmoji: "⭐",
+        iconImg: "../assets/imagem/logolitho.png",
+        url: "dashboards/vendedor-raphaelbrandao.html",
+        frequencia: "Atualização: diária",
+        usuariosPermitidos: ["raphael.brandao@lithoplant.com.br"]
+      }
+    ];
+
+    let dashboardsFiltrados = [...DASHBOARDS_LITHOPLANT];
+
+    function carregarMenuLithoplant() {
       const user = validarAcessoEmpresa("lithoplant");
       if (!user) return;
 
-      preencherHeaderUsuario(user, null, "userName");
+      preencherHeaderUsuario(user, "saudacao", "userName");
 
       const saudMobile = document.getElementById("saudacaoMobile");
       if (saudMobile && user && user.nome) {
@@ -496,19 +402,83 @@
 
       gerarParticulasSelector(".particles-container", 22);
 
-      // aqui chama sua função de inicializar grid / dados do calendário
-      if (typeof initPagina === "function") {
-        initPagina();
-      }
+      atualizarGridDashboardsLithoplant(user);
     }
 
-    function selecionarAbaCalendario(botao, tabId) {
-      document.querySelectorAll(".sidebar-tab").forEach(b => {
-        b.classList.toggle("active", b === botao);
+    function atualizarGridDashboardsLithoplant(user) {
+      montarHubGenerico({
+        gridId: "hubGrid",
+        dashboards: dashboardsFiltrados,
+        user,
+        empresaObrigatoria: "lithoplant"
       });
+    }
+
+    function filtrarDashboardsPorTexto(termo) {
+      const valor = termo.trim().toLowerCase();
+
+      if (!valor) {
+        dashboardsFiltrados = [...DASHBOARDS_LITHOPLANT];
+      } else {
+        dashboardsFiltrados = DASHBOARDS_LITHOPLANT.filter(d => {
+          const texto =
+            (d.titulo || "") + " " +
+            (d.descricaoCurta || "") + " " +
+            (d.descricaoLonga || "");
+          return texto.toLowerCase().includes(valor);
+        });
+      }
+
+      const user = getUsuarioAtual();
+      if (!user) return;
+      atualizarGridDashboardsLithoplant(user);
+    }
+
+    function selecionarAba(botao, tabId) {
+      // desktop tabs
+      document.querySelectorAll("#sidebarTabsDesktop .sidebar-tab").forEach(b => {
+        if (b.dataset.tab) {
+          b.classList.toggle("active", b === botao || b.dataset.tab === tabId);
+        }
+      });
+
+      // mobile tabs
+      document.querySelectorAll("#sidebarTabsMobile .sidebar-tab").forEach(b => {
+        if (b.dataset.tab) {
+          b.classList.toggle("active", b === botao || b.dataset.tab === tabId);
+        }
+      });
+
       document.querySelectorAll(".tab-content").forEach(sec => {
         sec.classList.toggle("active", sec.id === tabId);
       });
+
+      const wrapBusca = document.getElementById("sidebarSearchWrap");
+      const wrapBuscaMobile = document.getElementById("sidebarSearchWrapMobile");
+      const mostrarBusca = tabId === "tab-dashboards";
+
+      if (wrapBusca) {
+        wrapBusca.style.display = mostrarBusca ? "block" : "none";
+      }
+      if (wrapBuscaMobile) {
+        wrapBuscaMobile.style.display = mostrarBusca ? "block" : "none";
+      }
+
+      if (window.innerWidth <= 768) {
+        toggleFullNav(false);
+      }
+    }
+
+    function toggleFullNav(show) {
+      const root = document.body;
+      const fullNav = document.getElementById("fullNav");
+      if (!fullNav) return;
+
+      const open =
+        typeof show === "boolean" ? show : !root.classList.contains("fullnav-open");
+
+      root.classList.toggle("fullnav-open", open);
+      fullNav.setAttribute("aria-hidden", open ? "false" : "true");
     }
 
     function toggleHeaderMenu() {

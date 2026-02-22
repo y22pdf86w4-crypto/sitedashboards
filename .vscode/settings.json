@@ -1,0 +1,5 @@
+{
+    "appService.showBuildDuringDeployPrompt": false,
+    "appService.defaultWebAppToDeploy": "/subscriptions/87a87920-a1d3-49b5-b39f-8db1b17aece9/resourceGroups/Linhagro/providers/Microsoft.Web/sites/org-dash-api",
+    "appService.deploySubpath": "org-api"
+}
