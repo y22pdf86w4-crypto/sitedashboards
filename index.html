@@ -3,17 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <title>Visya - Portal de Dashboards</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Responsivo -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Favicon -->
   <link rel="icon" href="assets/imagem/favicon.png" type="image/png" />
 
+  <!-- CSS global (tema base) -->
   <link rel="stylesheet" href="assets/css/global.css" />
-  <script src="assets/js/global.js"></script>
+  <!-- CSS de fundo animado compartilhado (login + select company) -->
+  <link rel="stylesheet" href="assets/css/background.css" />
+  <!-- CSS específico da tela de login -->
+  <link rel="stylesheet" href="assets/css/login.css" />
+
+  <!-- JS global -->
+  <script src="assets/js/global.js" defer></script>
 </head>
 <body class="login-page">
   <!-- Fundo animado -->
-  <div class="bg-container">
+  <div class="bg-container" aria-hidden="true">
     <div class="animated-bg"></div>
     <div class="particles-container"></div>
     <div class="wave-container">
@@ -26,13 +35,19 @@
     <div class="grid-bg"></div>
   </div>
 
+  <!-- Conteúdo principal -->
   <div class="container">
     <!-- Lado esquerdo (texto) -->
-    <section class="left-section">
+    <section class="left-section" aria-labelledby="portal-title">
       <div class="header-brand">
+        <!-- Se quiser recolocar logo, é só descomentar
+        <div class="logo-container">
+          <img src="assets/imagem/logo.png" alt="Linhagro & Lithoplant" class="logo-image" />
+        </div>
+        -->
         <div class="brand-text">
-          <h1>Portal de Dashboards</h1>
-          <p>Visualização integrada Linhagro & Lithoplant</p>
+          <h1 id="portal-title">Portal de Dashboards</h1>
+          <p>Visualização integrada Linhagro &amp; Lithoplant</p>
         </div>
       </div>
 
@@ -48,51 +63,65 @@
     </section>
 
     <!-- Lado direito (login) -->
-    <section class="right-section">
+    <section class="right-section" aria-label="Área de login">
       <div class="login-wrapper">
         <div class="login-card">
-          <div class="card-header">
+          <header class="card-header">
             <h2>Login</h2>
             <p>Use seu e-mail corporativo ou usuário admin para acessar.</p>
-          </div>
+          </header>
 
-          <div id="erro" class="error-msg" style="display:none;">
+          <div id="erro" class="error-msg" style="display:none;" role="alert">
             <span>Usuário ou senha inválidos.</span>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="usuario">Usuário</label>
-            <div class="input-wrapper">
-              <input
-                type="text"
-                id="usuario"
-                class="form-input"
-                placeholder="Usuário (e-mail ou admin)"
-                autocomplete="username"
-              />
-              <span class="input-icon">👤</span>
+          <!-- Formulário de login -->
+          <form onsubmit="event.preventDefault(); login();" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="usuario">Usuário</label>
+              <div class="input-wrapper">
+                <input
+                  type="text"
+                  id="usuario"
+                  name="usuario"
+                  class="form-input"
+                  placeholder="Usuário (e-mail ou admin)"
+                  autocomplete="username"
+                  required
+                />
+                <span class="input-icon" aria-hidden="true">👤</span>
+              </div>
             </div>
-          </div>
 
-          <div class="form-group">
-            <label class="form-label" for="senha">Senha</label>
-            <div class="input-wrapper">
-              <input
-                type="password"
-                id="senha"
-                class="form-input"
-                placeholder="Digite sua senha"
-                autocomplete="current-password"
-                onkeypress="if(event.key==='Enter'){login();}"
-              />
-              <span class="input-icon input-toggle-pwd" onclick="toggleSenha()">👁</span>
+            <div class="form-group">
+              <label class="form-label" for="senha">Senha</label>
+              <div class="input-wrapper">
+                <input
+                  type="password"
+                  id="senha"
+                  name="senha"
+                  class="form-input"
+                  placeholder="Digite sua senha"
+                  autocomplete="current-password"
+                  required
+                  onkeypress="if(event.key==='Enter'){login();}"
+                />
+                <button
+                  type="button"
+                  class="input-icon input-toggle-pwd"
+                  onclick="toggleSenha()"
+                  aria-label="Mostrar ou ocultar senha"
+                >
+                  👁
+                </button>
+              </div>
             </div>
-          </div>
 
-          <button id="btnLogin" class="login-btn" onclick="login()">
-            Entrar
-            <span class="btn-loading-spinner"></span>
-          </button>
+            <button id="btnLogin" class="login-btn" type="submit">
+              Entrar
+              <span class="btn-loading-spinner"></span>
+            </button>
+          </form>
 
           <div class="security-badge">
             <div class="security-icon">✓</div>
@@ -107,6 +136,7 @@
     // Mostrar / ocultar senha
     function toggleSenha() {
       const input = document.getElementById('senha');
+      if (!input) return;
       input.type = input.type === 'password' ? 'text' : 'password';
     }
 
@@ -116,12 +146,12 @@
       const btn = document.getElementById("btnLogin");
       const erro = document.getElementById("erro");
 
-      erro.style.display = "none";
+      if (erro) erro.style.display = "none";
 
-      const user = loginSistema(usuario, senha);
+      const user = loginSistema(usuario, senha); // função definida em global.js
 
       if (!user) {
-        erro.style.display = "flex";
+        if (erro) erro.style.display = "flex";
         return;
       }
 

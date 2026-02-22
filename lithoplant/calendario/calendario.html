@@ -5,7 +5,8 @@
   <title>Calendário – Lithoplant</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <link rel="icon" href="../../assets/imagem/favicon.png" type="image/png" />
+  <!-- favicon Lithoplant (ajuste o caminho se precisar) -->
+  <link rel="icon" href="../../assets/imagem/favicon-lithoplant.png" type="image/png" />
 
   <link rel="stylesheet" href="../../assets/css/global.css" />
   <link rel="stylesheet" href="../../assets/css/calendario-lithoplant.css" />
@@ -31,27 +32,27 @@
   <!-- Header -->
   <header class="app-header">
     <div class="header-inner">
-      <div class="header-left">
+      <!-- DESKTOP -->
+      <div class="header-left header-desktop-only">
         <div class="header-logo-pill">
           <div class="header-logo">
-            <img src="../../assets/imagem/logolitho.png" alt="Lithoplant" />
+            <!-- LOGO LITHOPLANT -->
+            <img src="../../assets/imagem/logolithoplant.png" alt="Lithoplant" />
           </div>
           <div class="header-text">
             <p class="header-title">Lithoplant – Calendário</p>
-            <p class="header-subtitle" id="saudacao">
-              Carregando usuário...
-            </p>
+            <!-- removido "Carregando usuário..." -->
+            <p class="header-subtitle" id="saudacao"></p>
           </div>
         </div>
       </div>
 
-      <div class="header-right">
+      <div class="header-right header-desktop-only" id="headerRightDesktop">
         <span class="header-pill">Ambiente produção</span>
         <div class="user-chip" id="userChip">
           <span class="status-dot"></span>
           <span id="userName">Usuário</span>
         </div>
-        <!-- Trocar empresa -->
         <button
           type="button"
           class="btn-icon"
@@ -60,7 +61,6 @@
         >
           ⇄
         </button>
-        <!-- Voltar ao menu (sem deslogar) -->
         <button
           type="button"
           class="btn-icon"
@@ -69,7 +69,6 @@
         >
           ←
         </button>
-        <!-- Sair (deslogar de verdade) -->
         <button
           type="button"
           class="btn-exit"
@@ -80,14 +79,64 @@
           <span class="btn-exit-text">Sair</span>
         </button>
       </div>
+
+      <!-- MOBILE: sem logo, sem ambiente, sem usuário -->
+      <div class="header-mobile-row">
+        <div class="header-mobile-left">
+          <div class="header-mobile-texts">
+            <p class="header-mobile-title">Calendário Lithoplant</p>
+            <!-- removido "Carregando usuário..." -->
+            <p class="header-mobile-sub" id="saudacaoMobile"></p>
+          </div>
+        </div>
+
+        <div class="header-mobile-right">
+          <button
+            type="button"
+            class="btn-mobile-back"
+            onclick="window.location.href='../../lithoplant/menu.html'"
+          >
+            ← Voltar
+          </button>
+
+          <div class="header-menu-wrapper">
+            <button
+              type="button"
+              class="header-menu-button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              onclick="toggleHeaderMenu()"
+            >
+              ⋮
+            </button>
+            <div class="header-menu-dropdown" id="headerMenuDropdown">
+              <button
+                type="button"
+                class="header-menu-item"
+                onclick="window.location.href='../../select-company.html'"
+              >
+                Trocar empresa
+              </button>
+              <button
+                type="button"
+                class="header-menu-item"
+                onclick="deslogar()"
+              >
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- FIM MOBILE -->
     </div>
   </header>
 
   <!-- Layout: barra lateral + conteúdo -->
   <div class="layout-root">
-    <!-- Sidebar Lithoplant -->
+    <!-- Sidebar -->
     <aside class="layout-sidebar">
-      <div class="sidebar-card" aria-label="Menu lateral Lithoplant">
+      <div class="sidebar-card" aria-label="Menu lateral">
         <div class="sidebar-header">
           <h2 class="sidebar-title">Centro de navegação</h2>
           <p class="sidebar-hint">
@@ -135,7 +184,7 @@
       <section id="tab-calendario" class="tab-content active">
         <article class="hub-panel" aria-label="Calendário de pagamentos Lithoplant">
           <div class="hub-header">
-            <div>
+            <div class="hub-header-texts">
               <h1 class="hub-title">
                 Calendário de <span class="gradient-text">pagamentos</span>
               </h1>
@@ -144,7 +193,6 @@
               </p>
             </div>
             <div class="hub-actions">
-              <!-- BOTÃO CONTATOS -->
               <button
                 type="button"
                 class="btn-primary"
@@ -155,7 +203,6 @@
                 Contatos
               </button>
 
-              <!-- BOTÃO NOVA DESPESA -->
               <button
                 class="btn-icon-circle"
                 title="Nova despesa"
@@ -164,7 +211,6 @@
                 +
               </button>
 
-              <!-- BOTÃO NOTIFICAÇÕES ANTECIPADAS -->
               <button class="btn-primary" onclick="abrirModalSelecionarEnvio()">
                 Notificações antecipadas
               </button>
@@ -218,6 +264,7 @@
     </main>
   </div>
 
+  <!-- Modais (iguais) -->
   <!-- Modal inclusão -->
   <div id="modalInclusao" class="modal-backdrop" style="display:none">
     <div class="modal">
@@ -233,7 +280,6 @@
           <input id="dataVenc" type="date" required />
         </div>
 
-        <!-- Seleção de contatos -->
         <fieldset>
           <legend>Contatos para notificar</legend>
 
@@ -265,7 +311,6 @@
           </small>
         </fieldset>
 
-        <!-- Contato livre extra -->
         <fieldset>
           <legend>Contato específico desta despesa</legend>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -274,7 +319,6 @@
           </div>
         </fieldset>
 
-        <!-- Tipos de aviso -->
         <div>
           <label>Quando notificar?</label>
           <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:0.9rem;">
@@ -443,6 +487,29 @@
         sec.classList.toggle("active", sec.id === tabId);
       });
     }
+
+    function toggleHeaderMenu() {
+      const dropdown = document.getElementById("headerMenuDropdown");
+      if (!dropdown) return;
+      const isOpen = dropdown.classList.contains("open");
+      dropdown.classList.toggle("open", !isOpen);
+
+      const btn = document.querySelector(".header-menu-button");
+      if (btn) {
+        btn.setAttribute("aria-expanded", !isOpen ? "true" : "false");
+      }
+    }
+
+    document.addEventListener("click", (e) => {
+      const dropdown = document.getElementById("headerMenuDropdown");
+      const wrapper = document.querySelector(".header-menu-wrapper");
+      if (!dropdown || !wrapper) return;
+      if (!wrapper.contains(e.target)) {
+        dropdown.classList.remove("open");
+        const btn = document.querySelector(".header-menu-button");
+        if (btn) btn.setAttribute("aria-expanded", "false");
+      }
+    });
   </script>
 </body>
 </html>

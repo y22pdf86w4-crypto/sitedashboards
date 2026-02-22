@@ -1,0 +1,155 @@
+/* ===== FUNDO ANIMADO COMPARTILHADO (LOGIN + SELECT COMPANY) ===== */
+
+.bg-container {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.animated-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+      circle at 20% 50%,
+      rgba(16, 185, 129, 0.1) 0%,
+      transparent 1100%
+    ),
+    radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 40% 20%, rgba(110, 231, 183, 0.08) 0%, transparent 50%);
+  animation: gradientShift 15s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(30px, 30px) scale(1.05);
+  }
+}
+
+/* Partículas */
+.particles-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(16, 185, 129, 0.6);
+  border-radius: 50%;
+  filter: blur(0.5px);
+  animation: float 20s infinite ease-in-out;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(100vh) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Ondas */
+.wave-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 150px;
+  overflow: hidden;
+  opacity: 0.15;
+}
+
+.wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 80px;
+  background: url('data:image/svg+xml,<svg viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg"><path d="M0,50 Q300,0 600,50 T1200,50 L1200,120 L0,120 Z" fill="%2310b981"/></svg>'),
+  background-repeat-x;
+  background-size: 600px 80px;
+  animation: wave 15s linear infinite;
+}
+
+.wave:nth-child(2) {
+  bottom: 10px;
+  animation: wave 10s linear infinite reverse;
+  opacity: 0.5;
+}
+
+.wave:nth-child(3) {
+  animation: wave 20s linear infinite;
+  opacity: 0.3;
+}
+
+@keyframes wave {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(600px); }
+}
+
+/* Orbs */
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+}
+
+.orb-1 {
+  width: 300px;
+  height: 300px;
+  background: rgba(16, 185, 129, 0.4);
+  top: 10%;
+  left: 10%;
+  animation: float-orb 20s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 250px;
+  height: 250px;
+  background: rgba(110, 231, 183, 0.3);
+  top: 60%;
+  right: 10%;
+  animation: float-orb 25s ease-in-out infinite reverse;
+}
+
+@keyframes float-orb {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(50px, 50px); }
+}
+
+/* Grid de fundo */
+.grid-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image: linear-gradient(
+      rgba(16, 185, 129, 0.05) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: grid-move 20s linear infinite;
+}
+
+@keyframes grid-move {
+  0% { background-position: 0 0; }
+  100% { background-position: 50px 50px; }
+}

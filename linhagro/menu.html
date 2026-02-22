@@ -8,11 +8,14 @@
   <!-- Favicon -->
   <link rel="icon" href="../assets/imagem/favicon.png" type="image/png" />
 
+  <!-- CSS -->
   <link rel="stylesheet" href="../assets/css/global.css" />
-  <link rel="stylesheet" href="../assets/css/menulinhagro.css" />
+  <link rel="stylesheet" href="../assets/css/menulinhagro.css?v=20260222" />
+
+  <!-- JS global -->
   <script src="../assets/js/global.js" defer></script>
 </head>
-<body class="login-page" onload="carregarMenuLinhagro()">
+<body class="login-page layout-has-sidebar" onload="carregarMenuLinhagro()">
   <!-- Fundo -->
   <div class="bg-fx" aria-hidden="true">
     <div class="animated-bg"></div>
@@ -36,7 +39,7 @@
             <img src="../assets/imagem/logolinhagro.png" alt="Linhagro" />
           </div>
           <div class="header-text">
-            <p class="header-title">Linhagro – Dashboards</p>
+            <p class="header-title">Linhagro – Painel de controle</p>
             <p class="header-subtitle" id="saudacao">
               Carregando usuário...
             </p>
@@ -44,47 +47,99 @@
         </div>
       </div>
 
-      <div class="header-right">
-        <span class="header-pill">Ambiente produção</span>
-        <div class="user-chip" id="userChip">
-          <span class="status-dot"></span>
-          <span id="userName">Usuário</span>
+      <!-- BLOCO DE AÇÕES / MENU -->
+      <div class="header-actions">
+        <!-- Desktop -->
+        <div class="header-actions-desktop">
+          <span class="header-pill">Ambiente produção</span>
+          <div class="user-chip" id="userChip">
+            <span class="status-dot"></span>
+            <span id="userName">Usuário</span>
+          </div>
+          <button
+            type="button"
+            class="btn-icon"
+            title="Trocar empresa"
+            onclick="window.location.href='../select-company.html'"
+          >
+            ⇄
+          </button>
+          <button
+            type="button"
+            class="btn-exit"
+            title="Sair"
+            onclick="deslogar()"
+          >
+            <span class="btn-exit-icon">⟵</span>
+            <span class="btn-exit-text">Sair</span>
+          </button>
         </div>
-        <button
-          type="button"
-          class="btn-icon"
-          title="Trocar empresa"
-          onclick="window.location.href='../select-company.html'"
-        >
-          ⇄
-        </button>
-        <button
-          type="button"
-          class="btn-exit"
-          title="Sair"
-          onclick="deslogar()"
-        >
-          <span class="btn-exit-icon">⟵</span>
-          <span class="btn-exit-text">Sair</span>
-        </button>
+
+        <!-- Mobile -->
+        <div class="header-actions-mobile">
+          <button
+            type="button"
+            class="header-menu-open"
+            onclick="toggleFullNav(true)"
+          >
+            Centro de navegação
+          </button>
+
+          <div class="header-mobile-center">
+            <div class="header-logo header-logo-mobile">
+              <img src="../assets/imagem/logolinhagro.png" alt="Linhagro" />
+            </div>
+            <div class="header-mobile-texts">
+              <p class="header-mobile-title">Dashboards Linhagro</p>
+              <p class="header-mobile-sub" id="saudacaoMobile">Bem-vindo</p>
+            </div>
+          </div>
+
+          <div class="header-menu-wrapper">
+            <button
+              type="button"
+              class="header-menu-button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              onclick="toggleHeaderMenu()"
+            >
+              ⋮
+            </button>
+            <div class="header-menu-dropdown" id="headerMenuDropdown">
+              <button
+                type="button"
+                class="header-menu-item"
+                onclick="window.location.href='../select-company.html'"
+              >
+                Trocar empresa
+              </button>
+              <button
+                type="button"
+                class="header-menu-item"
+                onclick="deslogar()"
+              >
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </header>
 
-  <!-- Layout: barra lateral + conteúdo -->
+  <!-- Layout principal -->
   <div class="layout-root">
-    <!-- Barra lateral -->
-    <aside class="layout-sidebar">
-      <div class="sidebar-card" aria-label="Menu lateral Linhagro">
+    <!-- Sidebar (desktop) -->
+    <aside class="layout-sidebar" id="layoutSidebar">
+      <div class="sidebar-card" aria-label="Menu lateral">
         <div class="sidebar-header">
           <h2 class="sidebar-title">Centro de navegação</h2>
           <p class="sidebar-hint">
-            Selecione uma área. Em Dashboards, use a busca para filtrar os cards.
+            Selecione uma área abaixo. Em Dashboards, use a busca para filtrar os cards.
           </p>
         </div>
 
-        <div class="sidebar-tabs">
-          <!-- Dashboards -->
+        <div class="sidebar-tabs" id="sidebarTabsDesktop">
           <button
             type="button"
             class="sidebar-tab active"
@@ -98,7 +153,7 @@
             </div>
           </button>
 
-          <!-- Calendário Linhagro (João + g.comercial@linhagro) -->
+          <!-- Calendário só aparece para usuários autorizados -->
           <button
             type="button"
             class="sidebar-tab"
@@ -112,11 +167,11 @@
             </div>
           </button>
 
-          <!-- Organograma Linhagro -->
           <button
             type="button"
             class="sidebar-tab"
-            onclick="window.location.href='dashboards/organograma-linhagro.html'"
+            data-tab="tab-organograma"
+            onclick="selecionarAba(this,'tab-organograma')"
           >
             <div class="sidebar-tab-icon">👥</div>
             <div class="sidebar-tab-texts">
@@ -147,7 +202,7 @@
     <!-- Conteúdo principal -->
     <main class="layout-main">
       <section id="tab-dashboards" class="tab-content active">
-        <article class="hub-panel" aria-label="Seleção de dashboards Linhagro">
+        <article class="hub-panel" aria-label="Seleção de dashboards">
           <div class="hub-header">
             <div>
               <h1 class="hub-title">
@@ -170,7 +225,101 @@
           </div>
         </article>
       </section>
+
+      <section id="tab-organograma" class="tab-content">
+        <article class="hub-panel" aria-label="Organograma Linhagro">
+          <div class="hub-header">
+            <div>
+              <h1 class="hub-title">
+                Estrutura de <span class="gradient-text">organização</span>
+              </h1>
+              <p class="hub-subtitle">
+                Visualize o organograma, equipes e funções. Essa área pode abrir uma tela ou dashboard dedicado.
+              </p>
+            </div>
+          </div>
+
+          <div class="org-body">
+            <p>
+              Aqui você pode apontar para uma página estática com a imagem do organograma
+              (<code>organograma-linhagro.html</code>) ou incorporar um dashboard de pessoas e funções via iframe.
+            </p>
+            <p>
+              Se quiser que a aba já redirecione, basta trocar o clique da aba Organograma para
+              <code>window.location.href = 'dashboards/organograma-linhagro.html'</code>.
+            </p>
+          </div>
+        </article>
+      </section>
     </main>
+  </div>
+
+  <!-- Navegação full-screen no mobile -->
+  <div class="fullnav-backdrop" id="fullNav" aria-hidden="true">
+    <div class="fullnav-panel">
+      <div class="fullnav-header">
+        <span>Centro de navegação</span>
+        <button type="button" class="fullnav-close" onclick="toggleFullNav(false)">✕</button>
+      </div>
+
+      <div class="fullnav-body">
+        <div class="sidebar-tabs" id="sidebarTabsMobile">
+          <button
+            type="button"
+            class="sidebar-tab active"
+            data-tab="tab-dashboards"
+            onclick="selecionarAba(this,'tab-dashboards')"
+          >
+            <div class="sidebar-tab-icon">📊</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Dashboards</span>
+              <span class="sidebar-tab-desc">Indicadores operacionais e comerciais.</span>
+            </div>
+          </button>
+
+          <!-- Calendário só aparece para usuários autorizados (mesma lógica do desktop) -->
+          <button
+            type="button"
+            class="sidebar-tab"
+            id="btnCalendarioLinhaMobile"
+            onclick="window.location.href='calendario/calendario-linhagro.html'"
+          >
+            <div class="sidebar-tab-icon">📅</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Calendário</span>
+              <span class="sidebar-tab-desc">Pendências e vencimentos Linhagro.</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            class="sidebar-tab"
+            data-tab="tab-organograma"
+            onclick="selecionarAba(this,'tab-organograma')"
+          >
+            <div class="sidebar-tab-icon">👥</div>
+            <div class="sidebar-tab-texts">
+              <span class="sidebar-tab-label">Organograma</span>
+              <span class="sidebar-tab-desc">Estrutura da equipe Linhagro.</span>
+            </div>
+          </button>
+        </div>
+
+        <div id="sidebarSearchWrapMobile" class="sidebar-search">
+          <input
+            type="text"
+            id="sidebarSearchMobile"
+            placeholder="Buscar dashboards (ex: atividades)..."
+            oninput="filtrarDashboardsPorTexto(this.value)"
+          />
+          <span class="sidebar-search-icon">🔍</span>
+        </div>
+
+        <div class="sidebar-footer">
+          Use este painel para escolher a área e abrir os dashboards em tela cheia.
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -185,9 +334,7 @@
         iconImg: "../assets/imagem/logolinhagro.png",
         url: "dashboards/atividades.html",
         frequencia: "Atualização: a cada 30 minutos",
-        // Admins gerais (ADMIN) + gestor comercial Linhagro (LINHA_ONLY)
         tiposPermitidos: ["ADMIN", "LINHA_ONLY"]
-        // sem usuariosPermitidos → qualquer usuário com tipo listado vê
       }
       // adicione outros dashboards Linhagro aqui, seguindo o mesmo padrão
     ];
@@ -199,6 +346,12 @@
       if (!user) return;
 
       preencherHeaderUsuario(user, "saudacao", "userName");
+
+      const saudMobile = document.getElementById("saudacaoMobile");
+      if (saudMobile && user && user.nome) {
+        saudMobile.textContent = "Olá, " + user.nome;
+      }
+
       gerarParticulasSelector(".particles-container", 22);
 
       // Calendário Linhagro: João + g.comercial@linhagro
@@ -212,6 +365,11 @@
       const btnCalendarioLinha = document.getElementById("btnCalendarioLinha");
       if (btnCalendarioLinha) {
         btnCalendarioLinha.style.display = podeCalendarioLinha ? "flex" : "none";
+      }
+
+      const btnCalendarioLinhaMobile = document.getElementById("btnCalendarioLinhaMobile");
+      if (btnCalendarioLinhaMobile) {
+        btnCalendarioLinhaMobile.style.display = podeCalendarioLinha ? "flex" : "none";
       }
 
       atualizarGridDashboardsLinhagro(user);
@@ -247,8 +405,18 @@
     }
 
     function selecionarAba(botao, tabId) {
-      document.querySelectorAll(".sidebar-tab").forEach(b => {
-        b.classList.toggle("active", b === botao && tabId === "tab-dashboards");
+      // desktop tabs
+      document.querySelectorAll("#sidebarTabsDesktop .sidebar-tab").forEach(b => {
+        if (b.dataset.tab) {
+          b.classList.toggle("active", b === botao || b.dataset.tab === tabId);
+        }
+      });
+
+      // mobile tabs
+      document.querySelectorAll("#sidebarTabsMobile .sidebar-tab").forEach(b => {
+        if (b.dataset.tab) {
+          b.classList.toggle("active", b === botao || b.dataset.tab === tabId);
+        }
       });
 
       document.querySelectorAll(".tab-content").forEach(sec => {
@@ -256,10 +424,55 @@
       });
 
       const wrapBusca = document.getElementById("sidebarSearchWrap");
+      const wrapBuscaMobile = document.getElementById("sidebarSearchWrapMobile");
+      const mostrarBusca = tabId === "tab-dashboards";
+
       if (wrapBusca) {
-        wrapBusca.style.display = tabId === "tab-dashboards" ? "block" : "none";
+        wrapBusca.style.display = mostrarBusca ? "block" : "none";
+      }
+      if (wrapBuscaMobile) {
+        wrapBuscaMobile.style.display = mostrarBusca ? "block" : "none";
+      }
+
+      if (window.innerWidth <= 768) {
+        toggleFullNav(false);
       }
     }
+
+    function toggleFullNav(show) {
+      const root = document.body;
+      const fullNav = document.getElementById("fullNav");
+      if (!fullNav) return;
+
+      const open =
+        typeof show === "boolean" ? show : !root.classList.contains("fullnav-open");
+
+      root.classList.toggle("fullnav-open", open);
+      fullNav.setAttribute("aria-hidden", open ? "false" : "true");
+    }
+
+    function toggleHeaderMenu() {
+      const dropdown = document.getElementById("headerMenuDropdown");
+      if (!dropdown) return;
+      const isOpen = dropdown.classList.contains("open");
+      dropdown.classList.toggle("open", !isOpen);
+
+      const btn = document.querySelector(".header-menu-button");
+      if (btn) {
+        btn.setAttribute("aria-expanded", !isOpen ? "true" : "false");
+      }
+    }
+
+    document.addEventListener("click", (e) => {
+      const dropdown = document.getElementById("headerMenuDropdown");
+      const wrapper = document.querySelector(".header-menu-wrapper");
+      if (!dropdown || !wrapper) return;
+      if (!wrapper.contains(e.target)) {
+        dropdown.classList.remove("open");
+        const btn = document.querySelector(".header-menu-button");
+        if (btn) btn.setAttribute("aria-expanded", "false");
+      }
+    });
   </script>
 </body>
 </html>

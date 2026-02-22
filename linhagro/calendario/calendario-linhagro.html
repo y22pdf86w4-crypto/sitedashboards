@@ -31,21 +31,21 @@
   <!-- Header -->
   <header class="app-header">
     <div class="header-inner">
-      <div class="header-left">
+      <!-- DESKTOP -->
+      <div class="header-left header-desktop-only">
         <div class="header-logo-pill">
           <div class="header-logo">
             <img src="../../assets/imagem/logolinhagro.png" alt="Linhagro" />
           </div>
           <div class="header-text">
             <p class="header-title">Linhagro – Calendário</p>
-            <p class="header-subtitle" id="saudacao">
-              Carregando usuário...
-            </p>
+            <!-- removido "Carregando usuário..." -->
+            <p class="header-subtitle" id="saudacao"></p>
           </div>
         </div>
       </div>
 
-      <div class="header-right">
+      <div class="header-right header-desktop-only">
         <span class="header-pill">Ambiente produção</span>
         <div class="user-chip" id="userChip">
           <span class="status-dot"></span>
@@ -80,6 +80,56 @@
           <span class="btn-exit-text">Sair</span>
         </button>
       </div>
+
+      <!-- MOBILE: título simples + voltar + menu ⋮ -->
+      <div class="header-mobile-row">
+        <div class="header-mobile-left">
+          <div class="header-mobile-texts">
+            <p class="header-mobile-title">Calendário Linhagro</p>
+            <!-- removido "Carregando usuário..." -->
+            <p class="header-mobile-sub" id="saudacaoMobile"></p>
+          </div>
+        </div>
+
+        <div class="header-mobile-right">
+          <button
+            type="button"
+            class="btn-mobile-back"
+            onclick="window.location.href='../../linhagro/menu.html'"
+          >
+            ← Voltar
+          </button>
+
+          <div class="header-menu-wrapper">
+            <button
+              type="button"
+              class="header-menu-button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              onclick="toggleHeaderMenu()"
+            >
+              ⋮
+            </button>
+            <div class="header-menu-dropdown" id="headerMenuDropdown">
+              <button
+                type="button"
+                class="header-menu-item"
+                onclick="window.location.href='../../select-company.html'"
+              >
+                Trocar empresa
+              </button>
+              <button
+                type="button"
+                class="header-menu-item"
+                onclick="deslogar()"
+              >
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- FIM MOBILE -->
     </div>
   </header>
 
@@ -135,7 +185,7 @@
       <section id="tab-calendario" class="tab-content active">
         <article class="hub-panel" aria-label="Calendário de pagamentos Linhagro">
           <div class="hub-header">
-            <div>
+            <div class="hub-header-texts">
               <h1 class="hub-title">
                 Calendário de <span class="gradient-text">pagamentos</span>
               </h1>
@@ -443,6 +493,29 @@
         sec.classList.toggle("active", sec.id === tabId);
       });
     }
+
+    function toggleHeaderMenu() {
+      const dropdown = document.getElementById("headerMenuDropdown");
+      if (!dropdown) return;
+      const isOpen = dropdown.classList.contains("open");
+      dropdown.classList.toggle("open", !isOpen);
+
+      const btn = document.querySelector(".header-menu-button");
+      if (btn) {
+        btn.setAttribute("aria-expanded", !isOpen ? "true" : "false");
+      }
+    }
+
+    document.addEventListener("click", (e) => {
+      const dropdown = document.getElementById("headerMenuDropdown");
+      const wrapper = document.querySelector(".header-menu-wrapper");
+      if (!dropdown || !wrapper) return;
+      if (!wrapper.contains(e.target)) {
+        dropdown.classList.remove("open");
+        const btn = document.querySelector(".header-menu-button");
+        if (btn) btn.setAttribute("aria-expanded", "false");
+      }
+    });
   </script>
 </body>
 </html>
