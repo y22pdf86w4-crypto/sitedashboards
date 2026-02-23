@@ -1,27 +1,34 @@
 // server.js
 require("dotenv").config();
+
 const express = require("express");
-const fetch = require("node-fetch");
 const cron = require("node-cron");
-const cors = require("cors");
-const { sendWhatsApp } = require("./whatsapp");
+const { sendWhatsApp, onWhatsAppReady } = require("./whatsapp"); // ajuste: expor onWhatsAppReady no whatsapp.js
+const sql = require("mssql");
+const msRestAzure = require("ms-rest-azure");
 
 const app = express();
-
-app.use(cors());
 app.use(express.json());
 
-// ================== CORS BÁSICO ==================
+// flag global de prontidão do WhatsApp
+let whatsappReady = false;
+
+// registra callback do whatsapp.js quando o cliente estiver pronto
+if (typeof onWhatsAppReady === "function") {
+  onWhatsAppReady(() => {
+    console.log("WhatsApp pronto!");
+    whatsappReady = true;
+  });
+}
+
+// ========== CORS ==========
 app.use((req, res, next) => {
   const origin = req.headers.origin || "*";
   res.header("Access-Control-Allow-Origin", origin);
   res.header("Vary", "Origin");
   res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
+  if (req.method === "OPTIONS") return res.sendStatus(200);
   next();
 });
 
@@ -29,8 +36,55 @@ app.get("/ping", (req, res) => {
   res.send("ok");
 });
 
-// ================== HELPERS DE MENSAGEM ==================
+// ========== DB AZURE SQL (embed) ==========
+let poolPromise = null;
 
+async function getAccessToken() {
+  const creds = await msRestAzure.loginWithServicePrincipalSecret(
+    process.env.AZURE_CLIENT_ID,
+    process.env.AZURE_CLIENT_SECRET,
+    process.env.AZURE_TENANT_ID,
+    { tokenAudience: "https://database.windows.net/" }
+  );
+
+  const token = await new Promise((resolve, reject) => {
+    creds.getToken((err, res) => {
+      if (err) return reject(err);
+      resolve(res.accessToken);
+    });
+  });
+
+  return token;
+}
+
+async function getPool() {
+  if (!poolPromise) {
+    const accessToken = await getAccessToken();
+
+    const config = {
+      server: process.env.DB_SERVER,
+      authentication: {
+        type: "azure-active-directory-access-token",
+        options: { token: accessToken }
+      },
+      options: {
+        database: "dwLinhagro",
+        encrypt: true
+      }
+    };
+
+    console.log("Conectando em SQL (WhatsApp):", {
+      server: config.server,
+      database: config.options.database
+    });
+
+    poolPromise = sql.connect(config);
+  }
+
+  return poolPromise;
+}
+
+// ========== HELPERS MENSAGEM ==========
 function gerarSaudacao() {
   const hora = new Date().getHours();
   if (hora < 12) return "Bom dia";
@@ -45,19 +99,19 @@ function formatarNome(nome) {
 }
 
 function obterNomeResponsavelPrincipal(responsaveis) {
-  if (!Array.isArray(responsaveis) || !responsaveis.length) return "o responsável";
-  const resp = responsaveis.find(r => r.tipo === "responsavel") || responsaveis[0];
+  if (!Array.isArray(responsaveis) || !responsaveis.length)
+    return "o responsável";
+  const resp =
+    responsaveis.find(r => r.tipo === "responsavel") || responsaveis[0];
   return formatarNome(resp.nome || "o responsável");
 }
 
-/**
- * Monta mensagem personalizada por empresa
- * @param {object} despesa
- * @param {object} contato  { nome, telefone, tipo }
- * @param {string} nomeResponsavelPrincipal
- * @param {string} empresa  "linhagro" | "lithoplant"
- */
-function montarMensagemWhatsApp(despesa, contato, nomeResponsavelPrincipal, empresa) {
+function montarMensagemWhatsApp(
+  despesa,
+  contato,
+  nomeResponsavelPrincipal,
+  empresa
+) {
   const saudacao = gerarSaudacao();
   const nomeContato = formatarNome(contato.nome || "cliente");
   const tipo = contato.tipo || "responsavel";
@@ -102,13 +156,14 @@ function montarMensagemWhatsApp(despesa, contato, nomeResponsavelPrincipal, empr
   return topo + "\n" + detalhes.join("\n") + "\n\n" + rodape.join("\n");
 }
 
-// ================== ENVIO MANUAL (FRONT) ==================
-
+// ========== ENVIO MANUAL (FRONT) ==========
 app.post("/api/enviar-lembretes", async (req, res) => {
   const { empresa, usuarioEmail, lembretes } = req.body;
 
   if (!empresa || !["linhagro", "lithoplant"].includes(empresa)) {
-    return res.status(400).json({ error: "Empresa inválida ou não informada." });
+    return res
+      .status(400)
+      .json({ error: "Empresa inválida ou não informada." });
   }
 
   if (!Array.isArray(lembretes) || !lembretes.length) {
@@ -120,7 +175,9 @@ app.post("/api/enviar-lembretes", async (req, res) => {
   const falhas = [];
 
   console.log(
-    `Recebido para envio: ${lembretes.length} despesa(s), empresa=${empresa}, usuario=${usuarioEmail || "-"}`
+    `Recebido para envio: ${lembretes.length} despesa(s), empresa=${empresa}, usuario=${
+      usuarioEmail || "-"
+    }`
   );
 
   for (const d of lembretes) {
@@ -144,7 +201,12 @@ app.post("/api/enviar-lembretes", async (req, res) => {
         continue;
       }
 
-      const texto = montarMensagemWhatsApp(d, contato, nomeRespPrincipal, empresa);
+      const texto = montarMensagemWhatsApp(
+        d,
+        contato,
+        nomeRespPrincipal,
+        empresa
+      );
 
       try {
         const resultado = await sendWhatsApp(contato.telefone, texto);
@@ -160,7 +222,8 @@ app.post("/api/enviar-lembretes", async (req, res) => {
             telefone: contato.telefone,
             nome: contato.nome || "",
             descricao: d.descricao || "",
-            motivo: "Envio retornou falso (provável número inválido ou sem 55)"
+            motivo:
+              "Envio retornou falso (provável número inválido ou sem 55)"
           });
           continue;
         }
@@ -198,8 +261,14 @@ app.post("/api/enviar-lembretes", async (req, res) => {
     }
   }
 
-  const resumoSucesso = envios.map(e => `${e.nome || "Contato"} (${e.telefone})`).join(", ");
-  const resumoFalhas = falhas.map(f => `${f.nome || "Contato"} (${f.telefone}) - ${f.motivo}`).join(" | ");
+  const resumoSucesso = envios
+    .map(e => `${e.nome || "Contato"} (${e.telefone})`)
+    .join(", ");
+  const resumoFalhas = falhas
+    .map(
+      f => `${f.nome || "Contato"} (${f.telefone}) - ${f.motivo}`
+    )
+    .join(" | ");
 
   console.log("Total de mensagens enviadas:", enviados);
   console.log("Resumo envios:", resumoSucesso || "nenhum");
@@ -216,193 +285,224 @@ app.post("/api/enviar-lembretes", async (req, res) => {
   });
 });
 
-// ================== ENVIO AUTOMÁTICO DIÁRIO (08h) ==================
+// ========== ENVIO AUTOMÁTICO (CRON) ==========
+const EMPRESAS = ["linhagro", "lithoplant"];
 
-// Exemplo de .env:
-// DESPESAS_API_URL=http://172.18.4.12:3000/api/v1
-const DESPESAS_API_URL = process.env.DESPESAS_API_URL;
-
-// converte Date -> YYYY-MM-DD
-function toISODate(date) {
-  return date.toISOString().slice(0, 10);
+function dataISO(d) {
+  return d.toISOString().slice(0, 10);
 }
 
-// dias de diferença entre duas datas ISO (vencimento - hoje)
-function diffDaysISO(dataVencISO, hojeISO) {
-  const [a1, m1, d1] = dataVencISO.split("-").map(Number);
-  const [a2, m2, d2] = hojeISO.split("-").map(Number);
-  const dt1 = new Date(a1, m1 - 1, d1);
-  const dt2 = new Date(a2, m2 - 1, d2);
-  const diffMs = dt1 - dt2;
-  return Math.round(diffMs / (1000 * 60 * 60 * 24));
+function diffDias(dataVencISO, hojeISO) {
+  const d1 = new Date(hojeISO + "T00:00:00");
+  const d2 = new Date(dataVencISO + "T00:00:00");
+  const diffMs = d2.getTime() - d1.getTime();
+  return Math.round(diffMs / (24 * 60 * 60 * 1000));
 }
 
-/**
- * Usa tua API:
- * GET /api/v1/despesas?mes=YYYY-MM&empresa=linhagro
- * e filtra pelas regras de tipos_aviso (7,5,3,1,0).
- */
-async function buscarDespesasParaAviso(empresa) {
-  if (!DESPESAS_API_URL) {
-    console.error("DESPESAS_API_URL não configurada. Defina no .env.");
-    return [];
-  }
-
+async function processarEnviosAutomaticos() {
   const hoje = new Date();
-  const hojeISO = toISODate(hoje);
-  const ano = hoje.getFullYear();
-  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
-  const mesParam = `${ano}-${mes}`;
+  const hojeISO = dataISO(hoje);
 
-  const url = `${DESPESAS_API_URL}/despesas?mes=${mesParam}&empresa=${empresa}`;
-  console.log("Buscando despesas para aviso:", url);
+  console.log("=== Scheduler(WhatsApp): início execução em", hojeISO, "===");
 
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    console.error("Erro ao buscar despesas da API:", resp.status, await resp.text());
-    return [];
-  }
+  const pool = await getPool();
 
-  const dados = await resp.json();
-  const despesas = dados.despesas || [];
+  for (const empresa of EMPRESAS) {
+    try {
+      console.log(
+        `Scheduler(WhatsApp): carregando despesas para empresa=${empresa}`
+      );
 
-  const candidatas = [];
-  for (const d of despesas) {
-    const venc = d.data_vencimento;
-    if (!venc) continue;
+      const dataInicio = hojeISO;
+      const dataFimDate = new Date(
+        hoje.getTime() + 7 * 24 * 60 * 60 * 1000
+      );
+      const dataFim = dataISO(dataFimDate);
 
-    const vencISO = venc.slice(0, 10);
-    const diasDiff = diffDaysISO(vencISO, hojeISO);
+      const result = await pool
+        .request()
+        .input("dataInicio", dataInicio)
+        .input("dataFim", dataFim)
+        .input("empresa", empresa)
+        .query(`
+          SELECT
+            IdDespesa       AS id,
+            Empresa         AS empresa,
+            Descricao       AS descricao,
+            DataVencimento  AS data_vencimento,
+            Status          AS status,
+            RecorrenciaTipo AS recorrencia_tipo,
+            TiposAviso      AS tipos_aviso,
+            ContatosJson    AS contatos_json
+          FROM dbo.dimDespesasVisya
+          WHERE DataVencimento BETWEEN @dataInicio AND @dataFim
+            AND (@empresa IS NULL OR Empresa = @empresa)
+        `);
 
-    const tiposAviso = Array.isArray(d.tipos_aviso)
-      ? d.tipos_aviso
-      : Array.isArray(d.tiposAviso)
-      ? d.tiposAviso
-      : ["3"];
-
-    const chave = String(diasDiff);
-
-    if (["0", "1", "3", "5", "7"].includes(chave) && tiposAviso.includes(chave)) {
-      candidatas.push({
-        ...d,
-        vencimento: vencISO,
-        tiposAviso,
-        responsaveis: Array.isArray(d.contatos) ? d.contatos : []
+      const despesas = result.recordset.map(d => {
+        const tiposAvisoArr = d.tipos_aviso
+          ? String(d.tipos_aviso)
+              .split(",")
+              .map(x => x.trim())
+              .filter(Boolean)
+          : ["3"];
+        const contatos = d.contatos_json ? JSON.parse(d.contatos_json) : [];
+        return {
+          id: d.id,
+          empresa: d.empresa,
+          descricao: d.descricao,
+          vencimento: dataISO(new Date(d.data_vencimento)),
+          status: d.status,
+          recorrente: d.recorrencia_tipo,
+          tiposAviso: tiposAvisoArr,
+          responsaveis: contatos
+        };
       });
-    }
-  }
 
-  console.log(
-    `Encontradas ${candidatas.length} despesas elegíveis para aviso hoje (${empresa}).`
-  );
-  return candidatas;
-}
+      console.log(
+        `Scheduler(WhatsApp): despesas carregadas para ${empresa}:`,
+        despesas.length
+      );
 
-/**
- * Envia automaticamente para uma empresa específica.
- */
-async function enviarAvisosAutomaticosEmpresa(empresa) {
-  try {
-    const lembretes = await buscarDespesasParaAviso(empresa);
-    if (!lembretes.length) {
-      console.log(`Nenhum lembrete para enviar automaticamente hoje (${empresa}).`);
-      return;
-    }
+      if (!despesas.length) continue;
 
-    let enviados = 0;
-    const falhas = [];
+      const lembretesDeHoje = [];
 
-    console.log(`Iniciando envio automático (${empresa}) para ${lembretes.length} despesa(s).`);
+      for (const d of despesas) {
+        if (!d.vencimento) continue;
+        if (!Array.isArray(d.responsaveis) || !d.responsaveis.length)
+          continue;
 
-    for (const d of lembretes) {
-      const responsaveis = Array.isArray(d.responsaveis) ? d.responsaveis : [];
-      if (!responsaveis.length) {
-        console.log("Despesa sem responsaveis, ignorando:", d.descricao);
+        const diff = diffDias(d.vencimento, hojeISO);
+        if (diff < 0 || diff > 7) continue;
+
+        const chave = String(diff); // "7","5","3","1","0"
+
+        if (d.tiposAviso.includes(chave)) {
+          console.log(
+            `Scheduler(WhatsApp): despesa id=${d.id} empresa=${empresa} elegível (diff=${diff}, tiposAviso=${d.tiposAviso.join(
+              ","
+            )})`
+          );
+          lembretesDeHoje.push(d);
+        }
+      }
+
+      if (!lembretesDeHoje.length) {
+        console.log(
+          `Scheduler(WhatsApp): nenhuma despesa elegível para envio em ${empresa} hoje.`
+        );
         continue;
       }
 
-      const nomeRespPrincipal = obterNomeResponsavelPrincipal(responsaveis);
+      console.log(
+        `Scheduler(WhatsApp): enviando automaticamente ${lembretesDeHoje.length} despesa(s) para empresa ${empresa}`
+      );
 
-      for (const contato of responsaveis) {
-        if (!contato || !contato.telefone) {
-          console.log("Contato inválido em despesa:", d.descricao, contato);
-          falhas.push({
-            telefone: contato && contato.telefone,
-            nome: contato && contato.nome,
-            descricao: d.descricao || "",
-            motivo: "Telefone vazio ou contato inválido"
-          });
-          continue;
-        }
-
-        const texto = montarMensagemWhatsApp(d, contato, nomeRespPrincipal, empresa);
-
-        try {
-          const resultado = await sendWhatsApp(contato.telefone, texto);
-
-          if (resultado === false || resultado === null) {
-            console.error(
-              "Falha ao enviar WhatsApp (retorno falso) para",
-              contato.telefone,
-              "descrição:",
-              d.descricao
-            );
-            falhas.push({
-              telefone: contato.telefone,
-              nome: contato.nome || "",
-              descricao: d.descricao || "",
-              motivo: "Envio retornou falso (provável número inválido ou sem 55)"
-            });
-            continue;
-          }
-
-          enviados++;
-          console.log(
-            "[AUTO] WhatsApp enviado para",
-            contato.nome || contato.telefone,
-            "descrição:",
-            d.descricao,
-            "empresa:",
-            empresa
-          );
-        } catch (err) {
-          console.error(
-            "[AUTO] Erro ao enviar WhatsApp para",
-            contato.telefone,
-            err.message
-          );
-          falhas.push({
-            telefone: contato.telefone,
-            nome: contato.nome || "",
-            descricao: d.descricao || "",
-            motivo: err.message || "Erro inesperado ao enviar WhatsApp"
-          });
-        }
-      }
+      await envioInternoSemHttp({
+        empresa,
+        usuarioEmail: "scheduler@system",
+        lembretes: lembretesDeHoje
+      });
+    } catch (e) {
+      console.error(
+        `Scheduler(WhatsApp): erro geral processando empresa=${empresa}:`,
+        e
+      );
     }
-
-    console.log(`[AUTO] Total enviados (${empresa}):`, enviados);
-    if (falhas.length) {
-      const resumoFalhas = falhas
-        .map(f => `${f.nome || "Contato"} (${f.telefone}) - ${f.motivo}`)
-        .join(" | ");
-      console.log("[AUTO] Falhas:", resumoFalhas);
-    }
-  } catch (e) {
-    console.error(`[AUTO] Erro geral ao enviar avisos automáticos (${empresa}):`, e);
   }
+
+  console.log("=== Scheduler(WhatsApp): fim execução em", hojeISO, "===");
 }
 
-// Cron: todo dia às 08:00 (horário do servidor/container)
-cron.schedule("0 8 * * *", async () => {
-  console.log("=== Job automático 08h iniciado ===");
-  await enviarAvisosAutomaticosEmpresa("linhagro");
-  // se quiser também Lithoplant:
-  // await enviarAvisosAutomaticosEmpresa("lithoplant");
-  console.log("=== Job automático 08h concluído ===");
+async function envioInternoSemHttp({ empresa, usuarioEmail, lembretes }) {
+  if (!empresa || !["linhagro", "lithoplant"].includes(empresa)) return;
+  if (!Array.isArray(lembretes) || !lembretes.length) return;
+
+  let enviados = 0;
+
+  console.log(
+    `[AUTO] Recebido para envio: ${lembretes.length} despesa(s), empresa=${empresa}, usuario=${usuarioEmail}`
+  );
+
+  for (const d of lembretes) {
+    const responsaveis = Array.isArray(d.responsaveis) ? d.responsaveis : [];
+    if (!responsaveis.length) {
+      console.log("[AUTO] Despesa sem responsaveis, ignorando:", d.descricao);
+      continue;
+    }
+
+    const nomeRespPrincipal = obterNomeResponsavelPrincipal(responsaveis);
+
+    for (const contato of responsaveis) {
+      if (!contato || !contato.telefone) {
+        console.log(
+          "[AUTO] Contato inválido em despesa:",
+          d.descricao,
+          contato
+        );
+        continue;
+      }
+
+      const texto = montarMensagemWhatsApp(
+        d,
+        contato,
+        nomeRespPrincipal,
+        empresa
+      );
+
+      try {
+        const resultado = await sendWhatsApp(contato.telefone, texto);
+        if (!resultado) {
+          console.error(
+            "[AUTO] Falha ao enviar WhatsApp para",
+            contato.telefone,
+            "descrição:",
+            d.descricao
+          );
+          continue;
+        }
+        enviados++;
+        console.log(
+          "[AUTO] WhatsApp enviado para",
+          contato.nome || contato.telefone,
+          "descrição:",
+          d.descricao,
+          "empresa:",
+          empresa
+        );
+      } catch (err) {
+        console.error(
+          "[AUTO] Erro ao enviar WhatsApp para",
+          contato.telefone,
+          err.message
+        );
+      }
+    }
+  }
+
+  console.log("[AUTO] Total de mensagens enviadas:", enviados);
+}
+
+// CRON: teste a cada 2 minutos (depois volte para "0 8 * * *")
+cron.schedule("0 8 * * *", () => {
+  if (!whatsappReady) {
+    console.log(
+      "Scheduler(WhatsApp): WhatsApp ainda não está pronto, pulando execução."
+    );
+    return;
+  }
+  processarEnviosAutomaticos().catch(err =>
+    console.error("Scheduler(WhatsApp): erro não tratado:", err)
+  );
 });
 
-// ================== START SERVER ==================
+
+console.log(
+  "Scheduler(WhatsApp): agendador iniciado. Execução diária às 08:00."
+);
+
+// Porta dinâmica para Azure / container
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Servidor rodando na porta " + PORT);

@@ -148,37 +148,34 @@
 
       if (erro) erro.style.display = "none";
 
-      const user = loginSistema(usuario, senha); // função definida em global.js
+      const user = loginSistema(usuario, senha); // definida em global.js
 
       if (!user) {
         if (erro) erro.style.display = "flex";
         return;
       }
 
-      // loading visual
       btn.classList.add("loading");
 
-      // Se o usuário só tiver UMA empresa, redireciona direto
+      // Se o usuário só tiver UMA empresa, já salva e vai direto pro menu
       if (user.empresas && user.empresas.length === 1) {
         const emp = user.empresas[0];
-
-        if (emp === "linhagro") {
-          window.location.href = "linhagro/menu.html";
-        } else if (emp === "lithoplant") {
-          window.location.href = "lithoplant/menu.html";
-        } else {
-          window.location.href = "select-company.html";
+        if (window.sessionStorage) {
+          sessionStorage.setItem("empresaSelecionada", emp);
         }
+        setTimeout(() => {
+          window.location.href = "html/menu.html";
+        }, 300);
         return;
       }
 
       // Se tiver mais de uma empresa, vai para select-company escolher
       setTimeout(() => {
-        window.location.href = "select-company.html";
+        window.location.href = "html/select-company.html";
       }, 300);
     }
 
-    // partículas
+    // partículas de fundo
     (function gerarParticulas() {
       const container = document.querySelector('.particles-container');
       if (!container) return;

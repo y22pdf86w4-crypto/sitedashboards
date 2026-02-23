@@ -1,4 +1,6 @@
-﻿// Tabela de usuários e permissões
+﻿// ===================== USUÁRIOS / LOGIN =====================
+
+// Tabela de usuários e permissões
 const USERS = [
   {
     email: "admin",
@@ -134,7 +136,7 @@ function deslogar() {
   window.location.href = "/index.html";
 }
 
-/* ========== FUNÇÕES GENÉRICAS PARA MENUS / RBAC ========== */
+// ================= MENUS / RBAC / HEADER ====================
 
 /**
  * Valida se usuário está logado e se possui acesso à empresa.
@@ -313,16 +315,33 @@ function validarAcessoDashboardVip(codEmpresa, emailsPermitidos) {
   return true;
 }
 
-/* ========== CONFIG E HELPERS DE API (BACKEND) ========== */
+// ================== CONFIG E HELPERS DE API ==================
 
-// URL base do backend (API na Azure)
 const API_BASE =
   "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1";
+
+/**
+ * Monta headers padrão com x-usuario-email para auditoria.
+ */
+function buildDefaultHeaders(extra) {
+  const user = getUsuarioAtual();
+  const email = user && user.email ? user.email : "";
+  return Object.assign(
+    {
+      "Content-Type": "application/json",
+      "x-usuario-email": email
+    },
+    extra || {}
+  );
+}
 
 // Helper genérico de GET
 async function apiGet(path) {
   const url = `${API_BASE}${path}`;
-  const resp = await fetch(url);
+  const resp = await fetch(url, {
+    method: "GET",
+    headers: buildDefaultHeaders({ "Content-Type": undefined })
+  });
 
   if (!resp.ok) {
     throw new Error("Erro HTTP " + resp.status);
@@ -336,7 +355,7 @@ async function apiPost(path, bodyObj) {
   const url = `${API_BASE}${path}`;
   const resp = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildDefaultHeaders(),
     body: JSON.stringify(bodyObj || {})
   });
 
@@ -352,7 +371,7 @@ async function apiPut(path, bodyObj) {
   const url = `${API_BASE}${path}`;
   const resp = await fetch(url, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: buildDefaultHeaders(),
     body: JSON.stringify(bodyObj || {})
   });
 
@@ -367,7 +386,8 @@ async function apiPut(path, bodyObj) {
 async function apiDelete(path) {
   const url = `${API_BASE}${path}`;
   const resp = await fetch(url, {
-    method: "DELETE"
+    method: "DELETE",
+    headers: buildDefaultHeaders({ "Content-Type": undefined })
   });
 
   if (!resp.ok && resp.status !== 204) {

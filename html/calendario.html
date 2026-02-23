@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Calendário de Pagamentos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Favicon -->
+  <link rel="icon" href="../assets/imagem/favicon.png" type="image/png" />
+
+  <!-- CSS globais -->
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/background.css" />
+  <link rel="stylesheet" href="../assets/css/menu.css" />
+  <!-- CSS específico do calendário -->
+  <link rel="stylesheet" href="../assets/css/calendario.css" />
+</head>
+<body class="login-page calendario-page" onload="initPagina()">
+  <!-- Fundo animado -->
+  <div class="bg-container" aria-hidden="true">
+    <div class="animated-bg"></div>
+    <div class="particles-container"></div>
+    <div class="wave-container">
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+    </div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="header-logo-pill">
+          <div class="header-logo">
+            <img id="logoEmpresa" src="../assets/imagem/logolinhagro.png" alt="Empresa" />
+          </div>
+          <div class="header-text">
+            <p class="header-title" id="headerTitle">Calendário de pagamentos</p>
+            <p class="header-subtitle" id="headerSub">
+              Carregando empresa...
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="header-actions-desktop">
+          <span class="header-pill">Ambiente produção</span>
+          <div class="user-chip" id="userChip">
+            <span class="status-dot"></span>
+            <span id="userName">Usuário</span>
+          </div>
+          <button
+            type="button"
+            class="btn-icon"
+            title="Voltar ao menu"
+            onclick="window.location.href='./menu.html'"
+          >
+            🏠
+          </button>
+          <button
+            type="button"
+            class="btn-exit"
+            title="Sair"
+            onclick="deslogar()"
+          >
+            <span class="btn-exit-icon">⟵</span>
+            <span class="btn-exit-text">Sair</span>
+          </button>
+        </div>
+
+        <!-- Mobile -->
+        <div class="header-actions-mobile">
+          <button
+            type="button"
+            class="header-menu-open"
+            onclick="window.location.href='./menu.html'"
+          >
+            ← Menu
+          </button>
+          <div class="header-menu-wrapper">
+            <button
+              type="button"
+              class="header-menu-button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              onclick="deslogar()"
+            >
+              Sair
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Conteúdo principal do calendário -->
+  <main class="calendario-root">
+    <section class="calendario-header">
+      <div class="calendario-titulo">
+        <h1>Calendário de pagamentos</h1>
+        <p id="subTituloEmpresa">
+          Vencimentos e lembretes vinculados à empresa selecionada.
+        </p>
+      </div>
+
+      <div class="calendario-controles">
+        <div class="calendario-mes-nav">
+          <button type="button" onclick="mudarMes(-1)">◀</button>
+          <span id="tituloMes">Mês de Ano</span>
+          <button type="button" onclick="mudarMes(1)">▶</button>
+        </div>
+
+        <button
+          type="button"
+          class="btn-chip"
+          onclick="abrirModalSelecionarEnvio()"
+        >
+          <span class="icon">📲</span>
+          <span>Enviar lembretes</span>
+        </button>
+
+        <button
+          type="button"
+          class="btn-chip"
+          onclick="abrirGerenciadorContatos()"
+        >
+          <span class="icon">👥</span>
+          <span>Contatos</span>
+        </button>
+
+        <button
+          type="button"
+          class="btn-chip"
+          onclick="abrirModalInclusao()"
+        >
+          <span class="icon">➕</span>
+          <span>Nova despesa</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="calendario-grid">
+      <div class="week-header">
+        <div>Dom</div>
+        <div>Seg</div>
+        <div>Ter</div>
+        <div>Qua</div>
+        <div>Qui</div>
+        <div>Sex</div>
+        <div>Sáb</div>
+      </div>
+      <div id="gridDias"></div>
+    </section>
+  </main>
+
+  <!-- MODAL INCLUSÃO / EDIÇÃO -->
+  <div id="modalInclusao" class="modal-overlay" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Nova despesa</h2>
+        <button type="button" class="modal-close" onclick="fecharModalInclusao()">×</button>
+      </div>
+      <form onsubmit="salvarDespesa(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="descricao">Descrição</label>
+            <input type="text" id="descricao" autocomplete="off" />
+          </div>
+
+          <!-- Seleção de empresa da despesa -->
+          <div class="form-group">
+            <label for="empresaDespesa">Empresa da despesa</label>
+            <select id="empresaDespesa">
+              <option value="linhagro">Linhagro</option>
+              <option value="lithoplant">Lithoplant</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="dataVenc">Data de vencimento</label>
+            <input type="date" id="dataVenc" />
+          </div>
+
+          <div class="form-group">
+            <label for="recorrente">Recorrência</label>
+            <select id="recorrente">
+              <option value="nao">Não recorrente</option>
+              <option value="mensal">Mensal</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Quando enviar aviso</label>
+            <div class="checkbox-group">
+              <label><input type="checkbox" id="aviso7" /> 7 dias antes</label>
+              <label><input type="checkbox" id="aviso5" /> 5 dias antes</label>
+              <label><input type="checkbox" id="aviso3" /> 3 dias antes</label>
+              <label><input type="checkbox" id="aviso1" /> 1 dia antes</label>
+              <label><input type="checkbox" id="aviso0" /> No dia</label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Contatos cadastrados</label>
+            <div class="contatos-inline">
+              <select id="contatosSelect"></select>
+              <button type="button" class="btn-mini" onclick="adicionarContatoSelecionado()">
+                Adicionar contato
+              </button>
+            </div>
+            <div id="contatosSelecionados" class="chips-container"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Contato rápido (não cadastra)</label>
+            <div class="contatos-inline">
+              <input type="text" id="extraNome" placeholder="Nome (opcional)" />
+              <input type="text" id="extraTelefone" placeholder="Telefone com DDD" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="fecharModalInclusao()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary">
+            Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DIA -->
+  <div id="modalDia" class="modal-overlay" style="display:none;">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h2 id="tituloModalDia">Despesas do dia</h2>
+        <button type="button" class="modal-close" onclick="fecharModalDia()">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="listaDiaContainer"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="fecharModalDia()">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONTATOS (GERENCIADOR) -->
+  <div id="modalContato" class="modal-overlay" style="display:none;">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h2>Contatos</h2>
+        <button type="button" class="modal-close" onclick="fecharModalContato()">×</button>
+      </div>
+      <div class="modal-body modal-body-split">
+        <div class="modal-column">
+          <h3>Cadastro / edição</h3>
+          <form onsubmit="salvarContato(event)">
+            <input type="hidden" id="contatoIndexEdicao" />
+            <div class="form-group">
+              <label for="contatoNome">Nome</label>
+              <input type="text" id="contatoNome" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="contatoTelefone">Telefone (com DDD)</label>
+              <input type="text" id="contatoTelefone" autocomplete="off" />
+            </div>
+            <div class="modal-footer" style="justify-content:flex-start;padding:0;margin-top:8px;">
+              <button type="submit" class="btn-primary">Salvar contato</button>
+            </div>
+          </form>
+        </div>
+        <div class="modal-column">
+          <h3>Lista de contatos</h3>
+          <div id="listaContatos"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="fecharModalContato()">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIRMAR EXCLUSÃO -->
+  <div id="modalConfirmarExclusao" class="modal-overlay" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Confirmar exclusão</h2>
+        <button type="button" class="modal-close" onclick="fecharModalExclusao()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="motivoExclusao">Motivo da exclusão</label>
+          <textarea id="motivoExclusao" rows="3"></textarea>
+          <div id="erroMotivoExclusao" class="erro-campo"></div>
+        </div>
+
+        <div id="blocoRecorrencia" class="form-group" style="display:none;">
+          <label>Esta despesa é recorrente. O que deseja excluir?</label>
+          <div class="radio-group">
+            <label><input type="radio" name="modoExclusao" value="unico" checked /> Apenas esta</label>
+            <label><input type="radio" name="modoExclusao" value="futuras" /> Esta e as futuras</label>
+            <label><input type="radio" name="modoExclusao" value="todas" /> Todas da série</label>
+          </div>
+        </div>
+
+        <div id="blocoSenhaExclusao" class="form-group" style="display:none;">
+          <label for="senhaExclusao">Senha de administrador (para excluir pagas)</label>
+          <input type="password" id="senhaExclusao" autocomplete="off" />
+          <div id="erroSenhaExclusao" class="erro-campo"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="fecharModalExclusao()">
+          Cancelar
+        </button>
+        <button type="button" class="btn-danger" onclick="confirmarExclusaoDespesa()">
+          Excluir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SELECIONAR ENVIO -->
+  <div id="modalSelecionarEnvio" class="modal-overlay" style="display:none;">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h2>Selecionar despesas para envio</h2>
+        <button type="button" class="modal-close" onclick="fecharModalSelecionarEnvio()">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.9rem;color:#9ca3af;margin-bottom:8px;">
+          Marque as despesas deste mês que devem gerar mensagens de WhatsApp.
+        </p>
+        <div id="listaSelecionarEnvio"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="fecharModalSelecionarEnvio()">
+          Cancelar
+        </button>
+        <button type="button" class="btn-primary" onclick="confirmarEnvioSelecionado()">
+          Enviar selecionadas
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL RESULTADO ENVIO -->
+  <div id="modalResultadoEnvio" class="modal-overlay" style="display:none;">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h2>Resultado do envio</h2>
+        <button type="button" class="modal-close" onclick="fecharModalResultadoEnvio()">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="resultadoEnvioLista"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" onclick="fecharModalResultadoEnvio()">
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADER GLOBAL -->
+  <div id="loaderGlobal" class="loader-overlay" style="display:none;">
+    <div class="loader-box">
+      <div class="spinner"></div>
+      <p>Processando...</p>
+    </div>
+  </div>
+
+  <!-- JS -->
+  <script src="../assets/js/global.js"></script>
+  <script src="../assets/js/calendario.js"></script>
+</body>
+</html>

@@ -1,9 +1,9 @@
-// whatsapp.js
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
 const path = require("path");
 
 let isReady = false;
+let readyCallbacks = [];
 
 // Pasta de sessão (monte como volume persistente no Azure)
 const SESSION_FOLDER = path.join(__dirname, ".wwebjsauth");
@@ -28,19 +28,49 @@ client.on("qr", qr => {
 client.on("ready", () => {
   isReady = true;
   console.log("WhatsApp pronto!");
+
+  // dispara callbacks registrados pelo server.js
+  readyCallbacks.forEach(fn => {
+    try {
+      fn();
+    } catch (e) {
+      console.error("Erro em callback onWhatsAppReady:", e);
+    }
+  });
+  readyCallbacks = [];
 });
 
 // Logs básicos de erro
 client.on("auth_failure", msg => {
+  isReady = false;
   console.error("Falha de autenticação WhatsApp:", msg);
 });
 
-client.on("disconnected", (reason) => {
+client.on("disconnected", reason => {
   isReady = false;
   console.error("WhatsApp desconectado:", reason);
 });
 
 client.initialize();
+
+/**
+ * Registrar callback para quando o WhatsApp estiver pronto.
+ * Usado pelo server.js para controlar o scheduler.
+ */
+function onWhatsAppReady(cb) {
+  if (typeof cb === "function") {
+    // se já estiver pronto, dispara imediatamente
+    if (isReady) {
+      try {
+        cb();
+      } catch (e) {
+        console.error("Erro em callback onWhatsAppReady imediato:", e);
+      }
+    } else {
+      readyCallbacks.push(cb);
+    }
+  }
+}
 
 /**
  * Normaliza número e envia mensagem.
@@ -79,4 +109,4 @@ async function sendWhatsApp(to, message) {
   return client.sendMessage(numberId._serialized, message);
 }
 
-module.exports = { sendWhatsApp };
+module.exports = { sendWhatsApp, onWhatsAppReady };

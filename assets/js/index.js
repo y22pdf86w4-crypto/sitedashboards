@@ -14,9 +14,6 @@ function getUsuarioFromReq(req) {
   return (req.headers['x-usuario-email'] || '').toString();
 }
 
-/**
- * Log específico de despesas (já existente)
- */
 async function logDespesa(pool, {
   operacao,
   usuarioEmail,
@@ -47,37 +44,6 @@ async function logDespesa(pool, {
   }
 }
 
-/**
- * Log genérico em dimAudit_log (contatos, envios, etc.)
- */
-async function logAuditGenerico(pool, {
-  entidade,      // "contato", "despesa", "envio_whatsapp"
-  entidadeId,    // id da linha afetada
-  acao,          // "CREATE", "UPDATE", "DELETE", ...
-  usuarioEmail,
-  empresa,
-  detalhes       // objeto JS -> será JSON.stringify
-}) {
-  try {
-    const reqSql = pool.request()
-      .input('entidade', entidade)
-      .input('entidade_id', entidadeId || null)
-      .input('acao', acao)
-      .input('usuario', usuarioEmail || 'desconhecido')
-      .input('empresa', empresa || null)
-      .input('detalhes', detalhes ? JSON.stringify(detalhes) : null);
-
-    await reqSql.query(`
-      INSERT INTO dbo.dimAudit_log
-        (entidade, entidade_id, acao, usuario, empresa, detalhes)
-      VALUES
-        (@entidade, @entidade_id, @acao, @usuario, @empresa, @detalhes);
-    `);
-  } catch (e) {
-    console.error('Falha ao gravar dimAudit_log:', e.message);
-  }
-}
-
 // ================== TESTES SIMPLES ==================
 
 // teste simples
@@ -89,214 +55,11 @@ app.get('/api/v1/ping', (req, res) => {
 app.get('/api/v1/test-db', async (req, res) => {
   try {
     const pool = await getPool();
-    const result = await pool.request().query(`
-      SELECT 
-        DB_NAME() AS CurrentDB,
-        SCHEMA_NAME() AS CurrentSchema
-    `);
+    const result = await pool.request().query('SELECT TOP 1 1 AS ok');
     res.json(result.recordset[0]);
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'DB error', detail: e.message });
-  }
-});
-
-// ================== CONTATOS ==================
-
-// GET /api/v1/contatos?empresa=linhagro
-app.get('/api/v1/contatos', async (req, res) => {
-  try {
-    const empresa = req.query.empresa;
-    if (!empresa) {
-      return res.status(400).json({ error: 'Parâmetro "empresa" é obrigatório.' });
-    }
-
-    const pool = await getPool();
-    const result = await pool.request()
-      .input('empresa', empresa)
-      .query(`
-        SELECT
-          id,
-          empresa,
-          nome,
-          telefone,
-          criado_por,
-          criado_em,
-          atualizado_por,
-          atualizado_em
-        FROM dbo.dimContatos
-        WHERE empresa = @empresa
-        ORDER BY nome;
-      `);
-
-    res.json({ contatos: result.recordset });
-  } catch (e) {
-    console.error('Erro GET /api/v1/contatos:', e);
-    res.status(500).json({ error: 'Erro ao buscar contatos', detail: e.message });
-  }
-});
-
-// POST /api/v1/contatos
-// body: { empresa, nome, telefone, usuarioEmail }
-app.post('/api/v1/contatos', async (req, res) => {
-  try {
-    const { empresa, nome, telefone, usuarioEmail } = req.body || {};
-
-    if (!empresa || !nome || !telefone) {
-      return res.status(400).json({
-        error: 'Campos obrigatórios: empresa, nome, telefone'
-      });
-    }
-
-    const pool = await getPool();
-    const result = await pool.request()
-      .input('empresa', empresa)
-      .input('nome', nome)
-      .input('telefone', telefone)
-      .input('criado_por', usuarioEmail || getUsuarioFromReq(req))
-      .query(`
-        INSERT INTO dbo.dimContatos (empresa, nome, telefone, criado_por, criado_em)
-        OUTPUT INSERTED.*
-        VALUES (@empresa, @nome, @telefone, @criado_por, SYSDATETIME());
-      `);
-
-    const contato = result.recordset[0];
-
-    await logAuditGenerico(pool, {
-      entidade: 'contato',
-      entidadeId: contato.id,
-      acao: 'CREATE',
-      usuarioEmail: usuarioEmail || getUsuarioFromReq(req),
-      empresa: contato.empresa,
-      detalhes: { novo: contato }
-    });
-
-    res.status(201).json({ contato });
-  } catch (e) {
-    console.error('Erro POST /api/v1/contatos:', e);
-    res.status(500).json({ error: 'Erro ao criar contato', detail: e.message });
-  }
-});
-
-// PUT /api/v1/contatos/:id
-// body: { nome, telefone, usuarioEmail }
-app.put('/api/v1/contatos/:id', async (req, res) => {
-  try {
-    const id = parseInt(req.params.id, 10);
-    if (!id || id <= 0) {
-      return res.status(400).json({ error: 'Id inválido.' });
-    }
-
-    const { nome, telefone, usuarioEmail } = req.body || {};
-    if (!nome || !telefone) {
-      return res.status(400).json({
-        error: 'Campos obrigatórios: nome, telefone'
-      });
-    }
-
-    const pool = await getPool();
-
-    // estado anterior
-    const rsAntes = await pool.request()
-      .input('id', id)
-      .query(`
-        SELECT *
-        FROM dbo.dimContatos
-        WHERE id = @id;
-      `);
-
-    const anterior = rsAntes.recordset[0];
-    if (!anterior) {
-      return res.status(404).json({ error: 'Contato não encontrado.' });
-    }
-
-    const result = await pool.request()
-      .input('id', id)
-      .input('nome', nome)
-      .input('telefone', telefone)
-      .input('atualizado_por', usuarioEmail || getUsuarioFromReq(req))
-      .query(`
-        UPDATE dbo.dimContatos
-        SET
-          nome = @nome,
-          telefone = @telefone,
-          atualizado_por = @atualizado_por,
-          atualizado_em = SYSDATETIME()
-        OUTPUT INSERTED.*
-        WHERE id = @id;
-      `);
-
-    const contato = result.recordset[0];
-
-    await logAuditGenerico(pool, {
-      entidade: 'contato',
-      entidadeId: id,
-      acao: 'UPDATE',
-      usuarioEmail: usuarioEmail || getUsuarioFromReq(req),
-      empresa: contato.empresa,
-      detalhes: { antes: anterior, depois: contato }
-    });
-
-    res.json({ contato });
-  } catch (e) {
-    console.error('Erro PUT /api/v1/contatos/:id:', e);
-    res.status(500).json({ error: 'Erro ao atualizar contato', detail: e.message });
-  }
-});
-
-// DELETE /api/v1/contatos/:id
-// body: { usuarioEmail } (opcional)
-app.delete('/api/v1/contatos/:id', async (req, res) => {
-  try {
-    const id = parseInt(req.params.id, 10);
-    if (!id || id <= 0) {
-      return res.status(400).json({ error: 'Id inválido.' });
-    }
-
-    const usuarioEmailBody = (req.body && req.body.usuarioEmail) || null;
-    const usuario = usuarioEmailBody || getUsuarioFromReq(req);
-
-    const pool = await getPool();
-
-    // estado anterior
-    const rsAntes = await pool.request()
-      .input('id', id)
-      .query(`
-        SELECT *
-        FROM dbo.dimContatos
-        WHERE id = @id;
-      `);
-
-    const anterior = rsAntes.recordset[0];
-    if (!anterior) {
-      return res.status(404).json({ error: 'Contato não encontrado.' });
-    }
-
-    const result = await pool.request()
-      .input('id', id)
-      .query(`
-        DELETE FROM dbo.dimContatos
-        WHERE id = @id;
-      `);
-
-    const rows = result.rowsAffected && result.rowsAffected[0] ? result.rowsAffected[0] : 0;
-    if (rows === 0) {
-      return res.status(404).json({ error: 'Contato não encontrado.' });
-    }
-
-    await logAuditGenerico(pool, {
-      entidade: 'contato',
-      entidadeId: id,
-      acao: 'DELETE',
-      usuarioEmail: usuario,
-      empresa: anterior.empresa,
-      detalhes: { antes: anterior }
-    });
-
-    res.status(204).send();
-  } catch (e) {
-    console.error('Erro DELETE /api/v1/contatos/:id:', e);
-    res.status(500).json({ error: 'Erro ao excluir contato', detail: e.message });
   }
 });
 
@@ -426,6 +189,7 @@ app.post('/api/v1/despesas', async (req, res) => {
 
     const novaId = insertResult.recordset[0].id;
 
+    // log auditoria - CREATE
     await logDespesa(pool, {
       operacao: 'CREATE',
       usuarioEmail: getUsuarioFromReq(req),
@@ -580,6 +344,7 @@ app.put('/api/v1/despesas/:id', async (req, res) => {
 
     const d = result.recordset[0];
 
+    // log auditoria - UPDATE
     await logDespesa(pool, {
       operacao: 'UPDATE',
       usuarioEmail: getUsuarioFromReq(req),
@@ -630,7 +395,7 @@ app.put('/api/v1/despesas/:id', async (req, res) => {
       contatos: d.contatos_json ? JSON.parse(d.contatos_json) : []
     });
   } catch (e) {
-    console.error('Erro ao atualizar despesa', e);
+    console.error(e);
     res.status(500).json({ error: 'Erro ao atualizar despesa', detail: e.message });
   }
 });
@@ -678,6 +443,7 @@ app.delete('/api/v1/despesas/:id', async (req, res) => {
       return res.status(404).json({ error: 'Despesa não encontrada.' });
     }
 
+    // log auditoria - DELETE
     await logDespesa(pool, {
       operacao: 'DELETE',
       usuarioEmail: getUsuarioFromReq(req),
@@ -705,7 +471,7 @@ app.delete('/api/v1/despesas/:id', async (req, res) => {
 
     res.status(204).send();
   } catch (e) {
-    console.error('Erro ao excluir despesa', e);
+    console.error(e);
     res.status(500).json({ error: 'Erro ao excluir despesa', detail: e.message });
   }
 });
