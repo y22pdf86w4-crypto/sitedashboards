@@ -92,15 +92,28 @@
         </div>
       </div>
 
-      <button
-        type="button"
-        class="btn-exit"
-        title="Voltar para login"
-        onclick="voltarLogin()"
-      >
-        <span class="btn-exit-icon">⟵</span>
-        <span class="btn-exit-text">Sair</span>
-      </button>
+      <div class="header-right">
+        <!-- Botão Logística no cabeçalho -->
+        <button
+          type="button"
+          class="btn-access"
+          onclick="window.location.href='./logistica.html'"
+        >
+          <span>Logística</span>
+          <span class="btn-access-glow"></span>
+        </button>
+
+        <!-- Botão Sair -->
+        <button
+          type="button"
+          class="btn-exit"
+          title="Voltar para login"
+          onclick="voltarLogin()"
+        >
+          <span class="btn-exit-icon">⟵</span>
+          <span class="btn-exit-text">Sair</span>
+        </button>
+      </div>
     </div>
   </header>
 

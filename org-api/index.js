@@ -1,3 +1,4 @@
+// index.js
 require('dotenv').config();
 
 const express = require('express');
@@ -8,15 +9,23 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ========= HELPERS DE AUDITORIA =========
+// Middleware opcional para validar pool/token antes das rotas
+app.use(async (req, res, next) => {
+  try {
+    await getPool(); // força a lógica de recriar pool/token se necessário
+    return next();
+  } catch (e) {
+    console.error('[MIDDLEWARE DB] Erro ao preparar pool:', e.message);
+    return next(); // deixa a rota tratar o erro, se ocorrer
+  }
+});
+
+/* ========= HELPERS DE AUDITORIA ========= */
 
 function getUsuarioFromReq(req) {
   return (req.headers['x-usuario-email'] || '').toString();
 }
 
-/**
- * Log específico de despesas (já existente)
- */
 async function logDespesa(pool, {
   operacao,
   usuarioEmail,
@@ -47,16 +56,13 @@ async function logDespesa(pool, {
   }
 }
 
-/**
- * Log genérico em dimAudit_log (contatos, envios, etc.)
- */
 async function logAuditGenerico(pool, {
-  entidade,      // "contato", "despesa", "envio_whatsapp"
-  entidadeId,    // id da linha afetada
-  acao,          // "CREATE", "UPDATE", "DELETE", ...
+  entidade,
+  entidadeId,
+  acao,
   usuarioEmail,
   empresa,
-  detalhes       // objeto JS -> será JSON.stringify
+  detalhes
 }) {
   try {
     const reqSql = pool.request()
@@ -78,14 +84,12 @@ async function logAuditGenerico(pool, {
   }
 }
 
-// ================== TESTES SIMPLES ==================
+/* ================== TESTES SIMPLES ================== */
 
-// teste simples
 app.get('/api/v1/ping', (req, res) => {
   res.json({ ok: true });
 });
 
-// teste de conexão com o banco
 app.get('/api/v1/test-db', async (req, res) => {
   try {
     const pool = await getPool();
@@ -101,9 +105,139 @@ app.get('/api/v1/test-db', async (req, res) => {
   }
 });
 
-// ================== CONTATOS ==================
+/* ================== ROTA DE GEOCODING (GOOGLE) ================== */
 
-// GET /api/v1/contatos?empresa=linhagro
+const GOOGLE_KEY = process.env.GEOCODING;
+
+app.get('/api/v1/geocode', async (req, res) => {
+  const endereco = req.query.q;
+  if (!endereco) {
+    return res.status(400).json({ error: 'Parâmetro q é obrigatório' });
+  }
+
+  if (!GOOGLE_KEY) {
+    return res.status(500).json({ error: 'GEOCODING key não configurada no .env' });
+  }
+
+  const original = String(endereco).trim();
+  console.log('[GEOCODE] Endereço:', original);
+
+  try {
+    const base = 'https://maps.googleapis.com/maps/api/geocode/json';
+    const params = new URLSearchParams({
+      address: original + ', Brasil',
+      key: GOOGLE_KEY
+    });
+
+    const url = `${base}?${params.toString()}`;
+    console.log('[GEOCODE] Google URL:', url);
+
+    const resp = await fetch(url);
+    console.log('[GEOCODE] HTTP status Google:', resp.status);
+
+    if (!resp.ok) {
+      return res.status(502).json({ error: 'Erro HTTP no Google Geocoding', status: resp.status });
+    }
+
+    const data = await resp.json();
+    console.log('[GEOCODE] Google status:', data.status);
+
+    if (data.status !== 'OK' || !data.results || !data.results.length) {
+      return res.status(404).json({ error: 'Nenhum resultado para o endereço', google_status: data.status });
+    }
+
+    const loc = data.results[0].geometry.location;
+    const lat = loc.lat;
+    const lng = loc.lng;
+
+    console.log('[GEOCODE] Sucesso:', { lat, lng });
+
+    return res.json({
+      provider: 'google',
+      lat,
+      lng
+    });
+  } catch (e) {
+    console.error('[GEOCODE] Erro geral:', e);
+    return res.status(500).json({ error: 'Erro interno no geocode', detail: e.message });
+  }
+});
+
+/* ================== CLIENTES LOGÍSTICA ================== */
+
+app.get('/api/v1/logistica/clientes', async (req, res) => {
+  try {
+    const nomeFiltro = (req.query.nome || '').trim();
+    const pool = await getPool();
+    const request = pool.request();
+
+    let sqlQuery = `
+      SELECT
+        ParceiroCodigo       AS codigo,
+        ParceiroNome         AS nome,
+        ParceiroLogradouro   AS logradouro,
+        ISNULL(ParceiroNumero, ParceiroEnderecoNumero) AS numero,
+        ParceiroBairro       AS bairro,
+        ParceiroCidade       AS cidade,
+        ParceiroUFSigla      AS uf,
+        ParceiroCEP          AS cep,
+        ParceiroLatitude     AS lat,
+        ParceiroLongitude    AS lng
+      FROM dbo.dimParceiroSkw
+      WHERE ParceiroCodigo <> 0
+    `;
+
+    if (nomeFiltro) {
+      sqlQuery += ' AND ParceiroNome LIKE @nome ';
+      request.input('nome', `%${nomeFiltro}%`);
+    }
+
+    sqlQuery += ' ORDER BY ParceiroNome;';
+
+    const result = await request.query(sqlQuery);
+
+    const clientes = result.recordset.map(r => {
+      const nomeLimpo = (r.nome || '')
+        .replace(/\s+/g, ' ')
+        .replace(/^\d+\s*-\s*[\d\.\,]+\s*/i, '')
+        .trim();
+
+      const enderecoPartes = [
+        r.logradouro && String(r.logradouro).trim(),
+        r.numero && String(r.numero).trim(),
+        r.bairro && `Bairro ${String(r.bairro).trim()}`,
+        r.cidade && String(r.cidade).trim(),
+        r.uf && String(r.uf).trim(),
+        r.cep && String(r.cep).trim()
+      ].filter(Boolean);
+
+      const latNum =
+        r.lat !== null && !isNaN(parseFloat(r.lat)) ? parseFloat(r.lat) : null;
+      const lngNum =
+        r.lng !== null && !isNaN(parseFloat(r.lng)) ? parseFloat(r.lng) : null;
+
+      return {
+        id: r.codigo,
+        codigo: r.codigo,
+        nome: nomeLimpo || '<SEM NOME>',
+        endereco:
+          enderecoPartes.length > 0
+            ? enderecoPartes.join(', ')
+            : '<SEM ENDERECO>',
+        lat: latNum,
+        lng: lngNum
+      };
+    });
+
+    res.json({ clientes });
+  } catch (e) {
+    console.error('Erro GET /api/v1/logistica/clientes:', e);
+    res.status(500).json({ error: 'Erro ao buscar clientes', detail: e.message });
+  }
+});
+
+/* ================== CONTATOS ================== */
+
 app.get('/api/v1/contatos', async (req, res) => {
   try {
     const empresa = req.query.empresa;
@@ -136,8 +270,6 @@ app.get('/api/v1/contatos', async (req, res) => {
   }
 });
 
-// POST /api/v1/contatos
-// body: { empresa, nome, telefone, usuarioEmail }
 app.post('/api/v1/contatos', async (req, res) => {
   try {
     const { empresa, nome, telefone, usuarioEmail } = req.body || {};
@@ -178,8 +310,6 @@ app.post('/api/v1/contatos', async (req, res) => {
   }
 });
 
-// PUT /api/v1/contatos/:id
-// body: { nome, telefone, usuarioEmail }
 app.put('/api/v1/contatos/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -196,7 +326,6 @@ app.put('/api/v1/contatos/:id', async (req, res) => {
 
     const pool = await getPool();
 
-    // estado anterior
     const rsAntes = await pool.request()
       .input('id', id)
       .query(`
@@ -244,8 +373,6 @@ app.put('/api/v1/contatos/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/v1/contatos/:id
-// body: { usuarioEmail } (opcional)
 app.delete('/api/v1/contatos/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -258,7 +385,6 @@ app.delete('/api/v1/contatos/:id', async (req, res) => {
 
     const pool = await getPool();
 
-    // estado anterior
     const rsAntes = await pool.request()
       .input('id', id)
       .query(`
@@ -300,12 +426,11 @@ app.delete('/api/v1/contatos/:id', async (req, res) => {
   }
 });
 
-// ================== DESPESAS ==================
+/* ================== DESPESAS ================== */
 
-// GET /api/v1/despesas?mes=YYYY-MM&empresa=linhagro
 app.get('/api/v1/despesas', async (req, res) => {
-  const mes = req.query.mes;                 // formato esperado: YYYY-MM
-  const empresa = req.query.empresa || null; // opcional
+  const mes = req.query.mes;
+  const empresa = req.query.empresa || null;
 
   if (!mes || !/^\d{4}-\d{2}$/.test(mes)) {
     return res
@@ -328,7 +453,7 @@ app.get('/api/v1/despesas', async (req, res) => {
       `${anoProx}-${String(proximoMes).padStart(2, '0')}-01T00:00:00Z`
     );
     const dataFimDate = new Date(dataProxMes.getTime() - 24 * 60 * 60 * 1000);
-    const dataFim = dataFimDate.toISOString().substring(0, 10); // YYYY-MM-DD
+    const dataFim = dataFimDate.toISOString().substring(0, 10);
 
     const pool = await getPool();
 
@@ -378,17 +503,16 @@ app.get('/api/v1/despesas', async (req, res) => {
   }
 });
 
-// POST /api/v1/despesas  (criar nova despesa)
 app.post('/api/v1/despesas', async (req, res) => {
   try {
     const {
       empresa,
       descricao,
-      data_vencimento,   // ISO string ou 'YYYY-MM-DD'
+      data_vencimento,
       status,
       recorrencia_tipo,
-      tipos_aviso,       // array de strings, ex: ["7","3","0"]
-      contatos           // array de { nome, telefone, tipo }
+      tipos_aviso,
+      contatos
     } = req.body || {};
 
     if (!empresa || !descricao || !data_vencimento) {
@@ -465,7 +589,6 @@ app.post('/api/v1/despesas', async (req, res) => {
   }
 });
 
-// PUT /api/v1/despesas/:id  (editar despesa existente)
 app.put('/api/v1/despesas/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -527,7 +650,6 @@ app.put('/api/v1/despesas/:id', async (req, res) => {
 
     const pool = await getPool();
 
-    // captura estado anterior
     const rsAntes = await pool.request()
       .input('id', id)
       .query(`
@@ -635,7 +757,6 @@ app.put('/api/v1/despesas/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/v1/despesas/:id  (remover despesa)
 app.delete('/api/v1/despesas/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -645,7 +766,6 @@ app.delete('/api/v1/despesas/:id', async (req, res) => {
 
     const pool = await getPool();
 
-    // captura estado anterior
     const rsAntes = await pool.request()
       .input('id', id)
       .query(`

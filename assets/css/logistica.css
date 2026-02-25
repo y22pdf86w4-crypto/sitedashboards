@@ -1,0 +1,1241 @@
+/* ==========================================================
+   LOGÍSTICA – ROOT / LAYOUT GERAL
+   ========================================================== */
+
+:root {
+  --log-border: rgba(148, 163, 184, 0.35);
+  --log-bg: #020617;
+  --log-card: rgba(15, 23, 42, 0.96);
+  --log-card-soft: rgba(15, 23, 42, 0.9);
+  --log-shadow-strong: 0 18px 50px rgba(15, 23, 42, 0.95);
+  --log-shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.8);
+  --accent-green: #22c55e;
+  --accent-blue: #3b82f6;
+}
+
+/* body já estilizado por global/background; aqui só garante flex */
+html,
+body {
+  height: 100%;
+}
+
+body.logistica-page {
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* header fixo no topo */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+/* ROOT: ocupa o espaço abaixo do header */
+.logistica-root {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 8px 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Card principal da logística */
+.logistica-shell {
+  flex: 1;
+  min-height: 0;
+  border-radius: 18px;
+  border: 1px solid var(--log-border);
+  background: radial-gradient(
+    circle at 0 0,
+    rgba(16, 185, 129, 0.18) 0,
+    rgba(15, 23, 42, 0.98) 55%,
+    #020617 100%
+  );
+  padding: 10px 10px 12px;
+  box-shadow:
+    var(--log-shadow-strong),
+    0 0 0 1px rgba(15, 23, 42, 0.75);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* GRID PRINCIPAL – sidebar + resizer + mapa */
+.logistica-grid {
+  flex: 1;
+  min-height: 0;
+  margin-top: 8px;
+  border-radius: 18px;
+  border: 1px solid var(--log-border);
+  background: radial-gradient(
+    circle at 0 0,
+    rgba(37, 99, 235, 0.1) 0,
+    rgba(15, 23, 42, 0.98) 55%,
+    #020617 100%
+  );
+  padding: 10px 10px 12px;
+  box-shadow:
+    var(--log-shadow-strong),
+    0 0 0 1px rgba(15, 23, 42, 0.75);
+  display: grid;
+  grid-template-columns: 340px 6px minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+/* ==========================================================
+   SIDEBAR
+   ========================================================== */
+
+#sidebar-wrapper {
+  min-height: 0;
+  max-height: 100%;
+  display: flex;
+}
+
+#sidebar {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 10px 8px;
+  background: radial-gradient(
+      circle at 0 0,
+      rgba(16, 185, 129, 0.16),
+      transparent 60%
+    ),
+    rgba(15, 23, 42, 0.96);
+  border-radius: 18px;
+  border: 1px solid rgba(30, 64, 175, 0.3);
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  min-height: 0;
+  max-height: 100%;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(55, 65, 81, 0.8) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(55, 65, 81, 0.8);
+  border-radius: 999px;
+}
+
+/* Barra de resize */
+#sidebar-resizer {
+  width: 6px;
+  cursor: col-resize;
+  border-radius: 999px;
+  background: linear-gradient(
+    to bottom,
+    rgba(15, 23, 42, 0.9),
+    rgba(30, 64, 175, 0.9)
+  );
+}
+
+/* Blocos da sidebar */
+.sidebar-section {
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: radial-gradient(
+      circle at 0 0,
+      rgba(15, 118, 110, 0.35),
+      transparent 60%
+    );
+  border: 1px solid rgba(15, 118, 110, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.85);
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.sidebar-section:last-child {
+  margin-bottom: 0;
+}
+
+.sidebar-section h2 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: #e5e7eb;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Campos / inputs */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.field-group label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(209, 213, 219, 0.88);
+}
+
+.field-group input[type="text"] {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  background: rgba(15, 23, 42, 0.85);
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #e5e7eb;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.18s ease-out;
+}
+
+.field-group input[type="text"]::placeholder {
+  color: rgba(148, 163, 184, 0.65);
+}
+
+.field-group input[type="text"]:hover {
+  border-color: rgba(16, 185, 129, 0.6);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+.field-group input[type="text"]:focus {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.45);
+}
+
+/* Botões antigos (mantidos para compatibilidade) */
+.toolbar-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.btn {
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+  background: transparent;
+  color: #e5e7eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.18s ease-out;
+  white-space: nowrap;
+}
+
+.btn.small {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.btn.full {
+  width: 100%;
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, var(--accent-green), #16a34a);
+  border-color: rgba(16, 185, 129, 0.9);
+  color: #ffffff;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.25);
+}
+
+.btn.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.35);
+}
+
+.btn.secondary {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(55, 65, 81, 0.9);
+  color: rgba(229, 231, 235, 0.96);
+}
+
+.btn.secondary:hover:not(:disabled) {
+  border-color: rgba(16, 185, 129, 0.85);
+  color: #e5e7eb;
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: rgba(55, 65, 81, 0.7);
+  color: rgba(209, 213, 219, 0.8);
+}
+
+.btn.ghost:hover:not(:disabled) {
+  border-color: rgba(148, 163, 184, 0.95);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Botões novos – estilo Uiverse */
+
+.uni-btn {
+  position: relative;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(249, 250, 251, 0.15);
+  background: rgba(15, 23, 42, 0.9);
+  color: #f9fafb;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  backdrop-filter: blur(8px);
+  transition: color 0.2s ease-out, border-color 0.2s ease-out;
+}
+
+.uni-btn-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.uni-btn-full {
+  width: 100%;
+}
+
+.uni-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  aspect-ratio: 1 / 1;
+  width: 0%;
+  border-radius: 999px;
+  background: #22c55e;
+  z-index: -1;
+  transition: all 0.7s ease;
+  left: -100%;
+}
+
+.uni-btn:hover::before {
+  width: 140%;
+  left: 0;
+}
+
+.uni-btn-primary {
+  border-color: rgba(34, 197, 94, 0.8);
+}
+
+.uni-btn-secondary {
+  border-color: rgba(148, 163, 184, 0.8);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+.uni-btn-ghost {
+  border-color: rgba(55, 65, 81, 0.9);
+  background: transparent;
+}
+
+.uni-btn:hover {
+  color: #020617;
+}
+
+.uni-btn-icon {
+  width: 20px;
+  height: 20px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  background: rgba(15, 23, 42, 0.9);
+  transform: rotate(45deg);
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.uni-btn-icon path {
+  fill: #e5e7eb;
+}
+
+.uni-btn:hover .uni-btn-icon {
+  background: #f9fafb;
+  border-color: transparent;
+  transform: rotate(90deg);
+}
+
+.uni-btn:hover .uni-btn-icon path {
+  fill: #111827;
+}
+
+.uni-btn:disabled,
+.uni-btn[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.uni-btn:disabled::before,
+.uni-btn[disabled]::before {
+  display: none;
+}
+
+/* Contadores / pílulas */
+.counters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  border: 1px solid rgba(55, 65, 81, 0.8);
+  color: rgba(209, 213, 219, 0.88);
+  background: linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.7),
+    rgba(15, 23, 42, 0.95)
+  );
+}
+
+/* Resumo selecionados */
+.resumo-selecionados {
+  font-size: 12px;
+  color: rgba(209, 213, 219, 0.9);
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px dashed rgba(55, 65, 81, 0.9);
+  margin-bottom: 6px;
+}
+
+/* Lista de clientes */
+.clientes-lista {
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(55, 65, 81, 0.8) transparent;
+}
+
+.clientes-lista::-webkit-scrollbar {
+  width: 6px;
+}
+
+.clientes-lista::-webkit-scrollbar-thumb {
+  background: rgba(55, 65, 81, 0.8);
+  border-radius: 999px;
+}
+
+.clientes-lista.loading::before {
+  content: "Carregando clientes do servidor...";
+  display: block;
+  padding: 10px;
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.cliente-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 6px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(31, 41, 55, 0.95);
+  cursor: grab;
+  transition: all 0.14s ease-out;
+  font-size: 12px;
+}
+
+.cliente-item:active {
+  cursor: grabbing;
+}
+
+.cliente-item.selecionado {
+  border-color: rgba(16, 185, 129, 0.85);
+  box-shadow:
+    0 0 0 1px rgba(16, 185, 129, 0.3),
+    0 0 18px rgba(16, 185, 129, 0.25);
+  background: radial-gradient(
+      circle at 0 0,
+      rgba(16, 185, 129, 0.3),
+      transparent 60%
+    ),
+    rgba(15, 23, 42, 0.98);
+}
+
+.cliente-item.dragging {
+  opacity: 0.9;
+  background: rgba(37, 99, 235, 0.4);
+  border-color: rgba(59, 130, 246, 0.9);
+}
+
+/* wrapper do checkbox do cliente (usa neon também) */
+.cliente-checkbox {
+  /* input fica invisível, estilo vem do .checkbox-wrapper */
+}
+
+/* textos do cliente */
+.cliente-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cliente-textos .nome {
+  font-size: 12px;
+  font-weight: 500;
+  color: #e5e7eb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cliente-textos .badge {
+  font-size: 11px;
+  color: rgba(156, 163, 175, 0.95);
+  border-radius: 999px;
+  padding: 1px 6px;
+  background: rgba(17, 24, 39, 0.9);
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cliente-textos .badge.alerta {
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.85);
+  background: rgba(127, 29, 29, 0.85);
+}
+
+/* Link Maps */
+.link-output {
+  font-size: 11px;
+  color: rgba(191, 219, 254, 0.95);
+  padding: 6px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(30, 64, 175, 0.8);
+  word-break: break-all;
+  max-height: 80px;
+  overflow: auto;
+}
+
+/* ==========================================================
+   MAPA E ROTAS
+   ========================================================== */
+
+#map-container {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden; /* importante para o painel não vazar */
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(30, 64, 175, 0.4);
+  box-shadow:
+    0 18px 40px rgba(15, 23, 42, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  height: 100%;
+  min-height: 380px;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+}
+
+/* Painel flutuante da rota */
+.rota-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 320px;
+  max-height: calc(100% - 24px); /* respeita altura do container */
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: #0b1120;
+  border: 1px solid rgba(51, 65, 85, 0.95);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(15, 23, 42, 0.8);
+  z-index: 400;
+  overflow: hidden;
+}
+
+/* Cabeçalho arrastável */
+.rota-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.95);
+  cursor: move;
+  user-select: none;
+  background: linear-gradient(135deg, #0f172a, #020617);
+}
+
+.rota-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rota-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.rota-subtitle {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.rota-header-btn {
+  border-radius: 999px;
+  border: 1px solid rgba(55, 65, 81, 0.95);
+  background: rgba(15, 23, 42, 0.95);
+  color: #e5e7eb;
+  font-size: 12px;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rota-header-btn:hover {
+  border-color: rgba(16, 185, 129, 0.85);
+}
+
+/* Corpo do painel – scroll interno quando ficar grande */
+.rota-body {
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Seções do painel */
+.rota-section {
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: radial-gradient(
+      circle at 0 0,
+      rgba(30, 64, 175, 0.26),
+      transparent 60%
+    );
+  border: 1px solid rgba(31, 41, 55, 0.9);
+}
+
+.rota-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+/* Origem */
+.rota-origem-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(55, 65, 81, 0.95);
+  font-size: 12px;
+  color: #e5e7eb;
+}
+
+.rota-origem-icon {
+  font-size: 13px;
+}
+
+.rota-origem-text {
+  white-space: nowrap;
+}
+
+/* Lista de pontos */
+.rota-lista-wrapper {
+  padding-right: 4px;
+  margin-bottom: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(55, 65, 81, 0.85) transparent;
+}
+
+.rota-lista-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rota-lista-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(55, 65, 81, 0.85);
+  border-radius: 999px;
+}
+
+.rota-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Item de ponto */
+.rota-item {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  font-size: 12px;
+  color: #e5e7eb;
+  cursor: grab;
+  transition: background 0.16s ease-out, border-color 0.16s ease-out,
+    box-shadow 0.16s ease-out, transform 0.08s ease-out;
+}
+
+.rota-item[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.rota-item.dragging {
+  background: rgba(37, 99, 235, 0.35);
+  border-color: rgba(59, 130, 246, 0.95);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.7);
+  opacity: 0.95;
+}
+
+.rota-item-dropzone-before::before,
+.rota-item-dropzone-after::after {
+  content: "";
+  display: block;
+  height: 0;
+  border-radius: 999px;
+  border-top: 2px solid rgba(96, 165, 250, 0.95);
+}
+
+.rota-item-dropzone-before::before {
+  margin-bottom: 2px;
+}
+
+.rota-item-dropzone-after::after {
+  margin-top: 2px;
+}
+
+/* Handle (⋮⋮) */
+.rota-item-handle {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #9ca3af;
+  cursor: grab;
+}
+
+/* Bolinha numerada */
+.rota-item-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: radial-gradient(
+      circle at 30% 0,
+      rgba(250, 250, 250, 0.7),
+      transparent 60%
+    ),
+    linear-gradient(135deg, #facc15, #f97316);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #111827;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.7);
+}
+
+/* Label do ponto */
+.rota-item-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rota-item-label-main {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rota-item-label-sub {
+  font-size: 11px;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Botão remover */
+.rota-item-remove {
+  font-size: 13px;
+  cursor: pointer;
+  color: rgba(248, 113, 113, 0.96);
+  padding: 0 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.rota-item-remove:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fecaca;
+}
+
+/* Linha de adicionar ponto */
+.rota-add {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.rota-add input[type="text"],
+#novoPontoInput {
+  flex: 1;
+  border-radius: 999px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  background: rgba(15, 23, 42, 0.95);
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #e5e7eb;
+}
+
+/* Flags neon (preferências) */
+.rota-section-flags {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Wrapper geral do checkbox neon */
+.checkbox-wrapper {
+  --checkbox-size: 20px;
+  --checkbox-color: #22c55e;
+  --checkbox-shadow: rgba(34, 197, 94, 0.3);
+  --checkbox-border: rgba(34, 197, 94, 0.7);
+  display: flex;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  padding: 4px 4px;
+  border-radius: 8px;
+}
+
+/* Esconde input nativo */
+.checkbox-wrapper input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Caixa */
+.checkbox-wrapper .checkmark {
+  position: relative;
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  border: 2px solid var(--checkbox-border);
+  border-radius: 6px;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 0 10px var(--checkbox-shadow);
+  overflow: hidden;
+}
+
+/* Glow interno */
+.checkbox-wrapper .checkmark::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, var(--checkbox-color), #00ffcc);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transform: scale(0) rotate(-45deg);
+}
+
+/* Ativo */
+.checkbox-wrapper input:checked ~ .checkmark::before {
+  opacity: 1;
+  transform: scale(1) rotate(0);
+}
+
+/* Ícone */
+.checkbox-wrapper .checkmark svg {
+  width: 0;
+  height: 0;
+  color: #020617;
+  z-index: 1;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+}
+
+.checkbox-wrapper input:checked ~ .checkmark svg {
+  width: 14px;
+  height: 14px;
+  transform: rotate(360deg);
+}
+
+/* Hover */
+.checkbox-wrapper:hover .checkmark {
+  border-color: var(--checkbox-color);
+  transform: scale(1.05);
+  box-shadow:
+    0 0 16px var(--checkbox-shadow),
+    inset 0 0 6px var(--checkbox-shadow);
+}
+
+/* Pulso ao marcar */
+.checkbox-wrapper input:checked ~ .checkmark {
+  animation: checkbox-pulse 0.7s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes checkbox-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 16px var(--checkbox-shadow);
+  }
+  50% {
+    transform: scale(0.93);
+    box-shadow:
+      0 0 24px var(--checkbox-shadow),
+      0 0 40px var(--checkbox-shadow);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 16px var(--checkbox-shadow);
+  }
+}
+
+/* Label ao lado – padrão (flags, verde) */
+.checkbox-wrapper .label {
+  margin-left: 10px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--checkbox-color);
+  font-size: 12px;
+  text-shadow: 0 0 6px var(--checkbox-shadow);
+  opacity: 0.9;
+  transition: all 0.2s;
+}
+
+.checkbox-wrapper:hover .label {
+  opacity: 1;
+  transform: translateX(3px);
+}
+
+/* Pontinhos de glow */
+.checkbox-wrapper::after,
+.checkbox-wrapper::before {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--checkbox-color);
+  opacity: 0;
+  transition: all 0.3s;
+}
+
+.checkbox-wrapper::before {
+  left: -6px;
+  top: 50%;
+}
+
+.checkbox-wrapper::after {
+  right: -6px;
+  top: 50%;
+}
+
+.checkbox-wrapper:hover::before {
+  opacity: 1;
+  transform: translateX(-6px);
+  box-shadow: 0 0 8px var(--checkbox-color);
+}
+
+.checkbox-wrapper:hover::after {
+  opacity: 1;
+  transform: translateX(6px);
+  box-shadow: 0 0 8px var(--checkbox-color);
+}
+
+/* Versão compacta p/ clientes */
+.checkbox-wrapper.checkbox-sm {
+  --checkbox-size: 16px;
+  padding: 2px 2px;
+}
+
+.checkbox-wrapper.checkbox-sm .label {
+  display: none; /* sem texto na lista */
+}
+
+/* Clientes: texto/ícone brancos, glow neutro */
+.checkbox-wrapper.checkbox-cliente .checkmark svg {
+  color: #e5e7eb;
+}
+
+.checkbox-wrapper.checkbox-cliente::before,
+.checkbox-wrapper.checkbox-cliente::after {
+  background: rgba(148, 163, 184, 0.9);
+}
+
+/* Destino */
+.rota-destino-input {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  background: rgba(15, 23, 42, 0.95);
+  padding: 5px 8px;
+  font-size: 12px;
+  color: #e5e7eb;
+}
+
+/* Ações – usar botões novos */
+.rota-section-acoes .uni-btn {
+  margin-top: 4px;
+}
+
+/* Resumo / alertas */
+.rota-resumo {
+  font-size: 12px;
+  color: rgba(209, 213, 219, 0.9);
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 8px;
+  padding: 6px 8px;
+  border: 1px dashed rgba(55, 65, 81, 0.9);
+}
+
+/* Marker numerado no mapa */
+.marker-numero-wrapper {
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marker-numero {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 0, #fef9c3, #facc15);
+  box-shadow:
+    0 0 0 2px #111827,
+    0 0 14px rgba(250, 204, 21, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marker-numero-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #111827;
+}
+
+/* ===== PIN DA MINHA LOCALIZAÇÃO (HTML + CSS) ===== */
+
+.pin-minha-localizacao {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  background: #ff5b6b;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.4);
+}
+
+/* círculo interno */
+.pin-minha-localizacao::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  background: #e3324d;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* “rabo” do pin */
+.pin-minha-localizacao::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  background: #ff5b6b;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 0 0 6px 0;
+}
+
+/* ==========================================================
+   RESPONSIVO
+   ========================================================== */
+
+@media (max-width: 1024px) {
+  .logistica-root {
+    padding: 8px 6px 10px;
+  }
+
+  .logistica-shell {
+    padding: 10px 8px 10px;
+    border-radius: 16px;
+  }
+
+  .logistica-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  #sidebar-wrapper {
+    order: 2;
+  }
+
+  #map-container {
+    order: 1;
+    min-height: 320px;
+  }
+
+  #sidebar-resizer {
+    display: none;
+  }
+
+  .rota-panel {
+    width: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  #map {
+    min-height: 260px;
+  }
+
+  .rota-panel {
+    top: 8px;
+    right: 8px;
+    width: 260px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logistica-shell {
+    padding: 8px 6px 6px;
+    border-radius: 14px;
+  }
+
+  .rota-panel {
+    width: 240px;
+  }
+
+  .sidebar-section {
+    padding: 6px 8px;
+  }
+
+  .clientes-lista {
+    max-height: 200px;
+  }
+}
+
+/* ==========================================================
+   TOAST – LINK COPIADO
+   ========================================================== */
+
+.toast-copiar-link {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.96);
+  color: #e5e7eb;
+  font-size: 13px;
+  border: 1px solid rgba(34, 197, 94, 0.8);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.9);
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.toast-copiar-link.show {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}

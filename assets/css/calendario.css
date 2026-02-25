@@ -9,6 +9,9 @@
   --accent-blue: #3b82f6;
   --accent-red: #ef4444;
   --accent-amber: #f97316;
+
+  /* largura padrão da sidebar logística */
+  --sidebar-width: 340px;
 }
 
 /* BASE – corpo ocupa a tela toda e vira flex */
@@ -39,13 +42,13 @@ body.calendario-page {
 .calendario-root {
   position: relative;
   z-index: 1;
-  flex: 1;                  /* ocupa todo o espaço abaixo do header */
+  flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 16px 16px 24px;  /* descola do header e das laterais */
-  width: 100%;              /* usa 100% da largura disponível */
-  max-width: none;          /* remove limite de 1320px */
-  margin: 0;                /* nada de centralizar */
+  padding: 16px 16px 24px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   box-sizing: border-box;
 }
 
@@ -150,7 +153,7 @@ body.calendario-page {
 
 /* GRID PRINCIPAL – ocupa largura total e cresce na altura */
 .calendario-grid {
-  flex: 1;  /* ocupa o resto da altura dentro do main */
+  flex: 1;
   margin-top: 8px;
   border-radius: 18px;
   border: 1px solid var(--cal-border);
@@ -167,7 +170,7 @@ body.calendario-page {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  width: 100%; /* usa toda a largura da root */
+  width: 100%;
 }
 
 .week-header {
@@ -186,10 +189,10 @@ body.calendario-page {
 }
 
 #gridDias {
-  flex: 1; /* grid de dias expande verticalmente */
+  flex: 1;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-auto-rows: minmax(90px, 1fr); /* ajusta altura dos dias */
+  grid-auto-rows: minmax(90px, 1fr);
   gap: 4px;
 }
 
