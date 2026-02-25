@@ -3,20 +3,24 @@ require("dotenv").config();
 
 const express = require("express");
 const cron = require("node-cron");
-const { sendWhatsApp, onWhatsAppReady } = require("./whatsapp"); // ajuste: expor onWhatsAppReady no whatsapp.js
+const {
+  sendWhatsApp,
+  onWhatsAppReady,
+  isClientReady
+} = require("./whatsapp");
 const sql = require("mssql");
 const msRestAzure = require("ms-rest-azure");
 
 const app = express();
 app.use(express.json());
 
-// flag global de prontidão do WhatsApp
+// flag global de prontidão do WhatsApp (apenas para log)
 let whatsappReady = false;
 
 // registra callback do whatsapp.js quando o cliente estiver pronto
 if (typeof onWhatsAppReady === "function") {
   onWhatsAppReady(() => {
-    console.log("WhatsApp pronto!");
+    console.log("WhatsApp pronto (callback server.js)!");
     whatsappReady = true;
   });
 }
@@ -34,6 +38,16 @@ app.use((req, res, next) => {
 
 app.get("/ping", (req, res) => {
   res.send("ok");
+});
+
+// Health-check do WhatsApp
+app.get("/api/whatsapp/status", async (req, res) => {
+  const ready = await isClientReady();
+  res.json({
+    ready,
+    whatsappReadyFlag: whatsappReady,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // ========== DB AZURE SQL (embed) ==========
@@ -168,6 +182,23 @@ app.post("/api/enviar-lembretes", async (req, res) => {
 
   if (!Array.isArray(lembretes) || !lembretes.length) {
     return res.status(400).json({ error: "Nenhum lembrete recebido." });
+  }
+
+  // Verificar estado do WhatsApp antes de processar
+  const ready = await isClientReady();
+  if (!ready) {
+    return res.status(503).json({
+      error:
+        "WhatsApp não está conectado no momento. Tente novamente em alguns minutos.",
+      enviados: 0,
+      envios: [],
+      falhas: lembretes.map(d => ({
+        telefone: null,
+        nome: null,
+        descricao: d.descricao || "",
+        motivo: "Cliente WhatsApp não conectado"
+      }))
+    });
   }
 
   let enviados = 0;
@@ -419,6 +450,15 @@ async function envioInternoSemHttp({ empresa, usuarioEmail, lembretes }) {
   if (!empresa || !["linhagro", "lithoplant"].includes(empresa)) return;
   if (!Array.isArray(lembretes) || !lembretes.length) return;
 
+  // Verifica estado do WhatsApp antes de processar
+  const ready = await isClientReady();
+  if (!ready) {
+    console.log(
+      "[AUTO] WhatsApp não está conectado. Cancelando envios automáticos."
+    );
+    return;
+  }
+
   let enviados = 0;
 
   console.log(
@@ -484,19 +524,23 @@ async function envioInternoSemHttp({ empresa, usuarioEmail, lembretes }) {
   console.log("[AUTO] Total de mensagens enviadas:", enviados);
 }
 
-// CRON: teste a cada 2 minutos (depois volte para "0 8 * * *")
-cron.schedule("0 8 * * *", () => {
-  if (!whatsappReady) {
+// CRON: execução diária às 08:00
+cron.schedule("0 8 * * *", async () => {
+  console.log("Scheduler(WhatsApp): disparo às 08:00 - checando estado...");
+
+  const ready = await isClientReady();
+  if (!ready) {
     console.log(
-      "Scheduler(WhatsApp): WhatsApp ainda não está pronto, pulando execução."
+      "Scheduler(WhatsApp): WhatsApp não está conectado, pulando execução. Verifique autenticação."
     );
     return;
   }
+
+  console.log("Scheduler(WhatsApp): WhatsApp conectado, processando envios...");
   processarEnviosAutomaticos().catch(err =>
     console.error("Scheduler(WhatsApp): erro não tratado:", err)
   );
 });
-
 
 console.log(
   "Scheduler(WhatsApp): agendador iniciado. Execução diária às 08:00."
@@ -506,4 +550,13 @@ console.log(
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Servidor rodando na porta " + PORT);
+
+  // Após 30s, logar status inicial do WhatsApp
+  setTimeout(async () => {
+    const ready = await isClientReady();
+    console.log(
+      "Status inicial WhatsApp após 30s:",
+      ready ? "CONECTADO" : "NÃO CONECTADO"
+    );
+  }, 30000);
 });

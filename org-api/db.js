@@ -1,51 +1,33 @@
-// db.js - VERSÃO CORRIGIDA
+// db.js
+// Conexão com Azure SQL usando Service Principal (Azure AD) com renovação de token
+
 require('dotenv').config();
 const sql = require('mssql');
 const msRestAzure = require('ms-rest-azure');
 
 let poolPromise = null;
-let tokenCache = {
-  token: null,
-  expiresAt: null
-};
+
+// ======== TOKEN AZURE AD ========
 
 async function getAccessToken() {
-  const now = Date.now();
-  
-  // Renova se não existe ou vai expirar em menos de 5 minutos (300000ms)
-  if (!tokenCache.token || !tokenCache.expiresAt || (tokenCache.expiresAt - now) < 300000) {
-    console.log('[DB] Renovando token Azure AD...');
-    
-    const creds = await msRestAzure.loginWithServicePrincipalSecret(
-      process.env.AZURE_CLIENT_ID,
-      process.env.AZURE_CLIENT_SECRET,
-      process.env.AZURE_TENANT_ID,
-      { tokenAudience: 'https://database.windows.net/' }
-    );
+  const creds = await msRestAzure.loginWithServicePrincipalSecret(
+    process.env.AZURE_CLIENT_ID,
+    process.env.AZURE_CLIENT_SECRET,
+    process.env.AZURE_TENANT_ID,
+    { tokenAudience: 'https://database.windows.net/' }
+  );
 
-    const tokenResponse = await new Promise((resolve, reject) => {
-      creds.getToken((err, res) => {
-        if (err) return reject(err);
-        resolve(res);
-      });
+  const token = await new Promise((resolve, reject) => {
+    creds.getToken((err, res) => {
+      if (err) return reject(err);
+      resolve(res.accessToken);
     });
+  });
 
-    // Tokens do Azure AD duram 1 hora (3600 segundos)
-    // Guarda expiresOn ou calcula 55 minutos a partir de agora
-    const expiresInMs = tokenResponse.expiresIn 
-      ? tokenResponse.expiresIn * 1000 
-      : 55 * 60 * 1000; // 55 minutos como fallback
-    
-    tokenCache = {
-      token: tokenResponse.accessToken,
-      expiresAt: now + expiresInMs
-    };
-
-    console.log('[DB] Token renovado. Expira em:', new Date(tokenCache.expiresAt).toISOString());
-  }
-
-  return tokenCache.token;
+  return token;
 }
+
+// ======== CRIAÇÃO DO POOL (sempre com token novo) ========
 
 async function criarPool() {
   const accessToken = await getAccessToken();
@@ -60,44 +42,30 @@ async function criarPool() {
     },
     options: {
       database: process.env.DB_DATABASE || 'dwLinhagro',
-      encrypt: true,
-      trustServerCertificate: false
-    },
-    pool: {
-      max: 10,
-      min: 0,
-      idleTimeoutMillis: 30 * 60 * 1000, // 30 minutos
-      acquireTimeoutMillis: 30000
-    },
-    connectionTimeout: 30000,
-    requestTimeout: 60000
+      encrypt: true
+    }
   };
 
-  console.log('[DB] Conectando em SQL:', {
+  console.log('Conectando em SQL:', {
     server: config.server,
     database: config.options.database
   });
 
-  return sql.connect(config);
+  const pool = await sql.connect(config);
+
+  // Log básico de erro de pool (ex.: perda de conexão)
+  pool.on('error', err => {
+    console.error('Erro no pool SQL:', err);
+    // Se der erro aqui, força recriação na próxima chamada
+    poolPromise = null;
+  });
+
+  return pool;
 }
 
+// ======== OBTENÇÃO DO POOL (com retry) ========
+
 async function getPool() {
-  // Verifica se o token está próximo de expirar
-  const now = Date.now();
-  const tokenProximoExpiracao = tokenCache.expiresAt && (tokenCache.expiresAt - now) < 300000;
-
-  // Se token vai expirar em breve, força recriação do pool
-  if (tokenProximoExpiracao && poolPromise) {
-    console.log('[DB] Token próximo de expirar, recriando pool...');
-    try {
-      const pool = await poolPromise;
-      await pool.close();
-    } catch (e) {
-      console.error('[DB] Erro ao fechar pool antigo:', e.message);
-    }
-    poolPromise = null;
-  }
-
   if (!poolPromise) {
     poolPromise = criarPool();
   }
@@ -105,36 +73,53 @@ async function getPool() {
   try {
     return await poolPromise;
   } catch (e) {
-    console.error('[DB] Erro no pool, recriando conexão:', e.message);
-    
-    // Limpa cache de token se erro de autenticação
-    if (e.message.includes('Token is expired') || e.code === 'ELOGIN') {
-      console.log('[DB] Limpando cache de token...');
-      tokenCache = { token: null, expiresAt: null };
-    }
-    
-    poolPromise = null;
+    console.error('Erro ao obter pool, recriando conexão:', e.message);
+    // força um novo token + novo pool
     poolPromise = criarPool();
     return await poolPromise;
   }
 }
 
-// Opcional: Função para fechar pool gracefully
-async function closePool() {
-  if (poolPromise) {
-    try {
-      const pool = await poolPromise;
-      await pool.close();
-      console.log('[DB] Pool fechado');
-    } catch (e) {
-      console.error('[DB] Erro ao fechar pool:', e.message);
+// ======== HELPER DE QUERY COM TRATAMENTO DE ELOGIN ========
+
+/**
+ * Executa uma query usando o pool atual.
+ * Se ocorrer erro de login/token expirado (ELOGIN), recria o pool e tenta 1 vez de novo.
+ * 
+ * @param {string} query - T-SQL a executar
+ * @param {function(sql.Request): void} configureRequest - opcional, para adicionar parâmetros etc.
+ * @returns {Promise<sql.IResult<any>>}
+ */
+async function runQuery(query, configureRequest) {
+  let pool = await getPool();
+
+  try {
+    const request = pool.request();
+    if (typeof configureRequest === 'function') {
+      configureRequest(request);
     }
-    poolPromise = null;
+    return await request.query(query);
+  } catch (err) {
+    // Se o problema for token expirado / login, recria pool e tenta de novo
+    if (err && err.code === 'ELOGIN') {
+      console.error('ELOGIN detectado (token expirado). Recriando pool e tentando novamente...');
+      poolPromise = null;
+      pool = await getPool();
+
+      const request2 = pool.request();
+      if (typeof configureRequest === 'function') {
+        configureRequest(request2);
+      }
+      return await request2.query(query);
+    }
+
+    // Outros erros sobem para o caller
+    throw err;
   }
 }
 
 module.exports = {
   getPool,
-  closePool,
+  runQuery,
   sql
 };

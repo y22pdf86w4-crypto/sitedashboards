@@ -314,6 +314,22 @@
                     </div>
                     <span class="label">Evitar pontes / perigos (futuro)</span>
                   </label>
+
+                  <!-- NOVO: Ver trânsito (TomTom) -->
+                  <label class="checkbox-wrapper">
+                    <input type="checkbox" id="chkVerTransito" />
+                    <div class="checkmark">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path
+                          d="M20 6L9 17L4 12"
+                          stroke-width="3"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        ></path>
+                      </svg>
+                    </div>
+                    <span class="label">Ver trânsito (TomTom)</span>
+                  </label>
                 </div>
               </div>
 
@@ -396,7 +412,7 @@
   <!-- JS globais -->
   <script src="../assets/js/global.js"></script>
 
-  <!-- JS da logística -->
-  <script src="../assets/js/logistica.js"></script>
+  <!-- JS da logística (com cache busting) -->
+  <script src="../assets/js/logistica.js?v=6"></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 // ======== CONFIG API BASE ========
 
+
 // Só define se ainda não existir
 if (window.API_BASE === undefined) {
   const DEFAULT_LOGISTICA_API_BASE =
@@ -19,6 +20,143 @@ console.log('logistica.js carregado. API_BASE =', window.API_BASE);
 // limite "seguro" de pontos para rota (origem + paradas + destino)
 const LIMITE_PONTOS_ROTA = 80;
 
+// ======== TOMTOM TRAFFIC (FLOW) ========
+
+// API key de teste (TomTom) – aqui só para tiles de fluxo
+const TOMTOM_API_KEY = 'l22aGTuKjY30e1lAcUqAup3XZ8pYzCOb';
+
+// Camada de fluxo de trânsito da TomTom (overlay sobre o tile base)
+const tomtomTrafficLayer = L.tileLayer(
+  'https://api.tomtom.com/traffic/map/4/tile/flow/absolute/{z}/{x}/{y}.png?key=' + TOMTOM_API_KEY,
+  {
+    opacity: 0.7,
+    attribution: '&copy; TomTom'
+  }
+);
+
+function toggleTraffic(ativo) {
+  if (ativo) {
+    tomtomTrafficLayer.addTo(map);
+  } else {
+    map.removeLayer(tomtomTrafficLayer);
+  }
+}
+
+// ======== TOMTOM TRAFFIC INCIDENTS (PONTOS) ========
+
+let incidentMarkers = [];
+
+// ícone simples por categoria
+function escolherIconePorCategoria(cat) {
+  let color = '#2563eb'; // default azul
+
+  if (cat === 1) color = '#ef4444';        // Accident
+  else if (cat === 6) color = '#f97316';   // Jam
+  else if (cat === 8) color = '#111827';   // RoadClosed
+  else if (cat === 9) color = '#eab308';   // RoadWorks
+
+  return L.divIcon({
+    className: 'incident-marker-wrapper',
+    html: `<div class="incident-marker" style="
+      width:14px;height:14px;border-radius:50%;
+      background:${color};border:2px solid #0f172a;
+      box-shadow:0 0 6px rgba(15,23,42,0.8);
+    "></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7]
+  });
+}
+
+// NOVO: traduz descrição da TomTom para texto customizado
+function traduzirDescricaoTomTom(desc, props = {}) {
+  if (!desc) return 'Incidente de trânsito';
+
+  const d = String(desc).toLowerCase();
+
+  // exemplos de mapeamento simples
+  if (d.includes('queuing traffic')) {
+    return '🚗🚗 Trânsito em fila (lento)';
+  }
+  if (d.includes('stationary traffic')) {
+    return '⛔ Trânsito parado';
+  }
+
+  // você pode usar iconCategory / magnitudeOfDelay / roadNumber etc. de props
+  // para montar mensagens mais ricas, ex:
+  // const delay = props.delay || props.magnitudeOfDelay;
+
+  // fallback: mantém a descrição original
+  return desc;
+}
+
+async function carregarIncidentesTomTom() {
+  // limpa markers antigos
+  incidentMarkers.forEach(m => map.removeLayer(m));
+  incidentMarkers = [];
+
+  const bounds = map.getBounds();
+  const minLat = bounds.getSouth();
+  const minLon = bounds.getWest();
+  const maxLat = bounds.getNorth();
+  const maxLon = bounds.getEast();
+
+  // Evita erro de área > 10.000km²: só chama com zoom mais próximo
+  if (map.getZoom() < 9) {
+    console.log('Zoom muito baixo para incidentes, pulando chamada TomTom');
+    return;
+  }
+
+  const bbox = `${minLon},${minLat},${maxLon},${maxLat}`;
+  const url = `${window.API_BASE}/logistica/tomtom/incidentes?bbox=${encodeURIComponent(bbox)}`;
+
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      console.warn('Incidentes HTTP', resp.status);
+      return;
+    }
+    const data = await resp.json();
+
+    (data.incidents || []).forEach(inc => {
+      const props = inc.properties || {};
+      const geom = inc.geometry || {};
+      const cat = props.iconCategory;
+      const evt = (props.events && props.events[0]) || {};
+      const descrOriginal = evt.description || 'Incidente de trânsito';
+
+      // usa texto customizado em vez do texto bruto da TomTom
+      const descr = traduzirDescricaoTomTom(descrOriginal, props);
+
+      let lat = null;
+      let lon = null;
+
+      if (geom.type === 'Point') {
+        const coords = geom.coordinates || [];
+        lon = coords[0];
+        lat = coords[1];
+      } else if (geom.type === 'LineString') {
+        const coords = geom.coordinates || [];
+        if (coords.length > 0) {
+          const mid = Math.floor(coords.length / 2);
+          lon = coords[mid][0];
+          lat = coords[mid][1];
+        }
+      }
+
+      if (lat == null || lon == null) return;
+
+      const marker = L.marker([lat, lon], {
+        icon: escolherIconePorCategoria(cat)
+      }).bindPopup(descr);
+
+      marker.addTo(map);
+      incidentMarkers.push(marker);
+    });
+  } catch (e) {
+    console.warn('Erro ao carregar incidentes TomTom:', e);
+  }
+}
+
 // ======== MAPA (CartoDB Voyager Labels Under) ========
 
 const map = L.map('map', {
@@ -26,9 +164,8 @@ const map = L.map('map', {
   zoomDelta: 0.5,
   wheelDebounceTime: 20,
   wheelPxPerZoomLevel: 80,
-  attributionControl: false // <– remove o controle de atribuição
+  attributionControl: false
 }).setView([-19.5, -40.3], 7);
-
 
 const CartoDB_VoyagerLabelsUnder = L.tileLayer(
   'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png',
@@ -42,6 +179,9 @@ const CartoDB_VoyagerLabelsUnder = L.tileLayer(
 );
 
 CartoDB_VoyagerLabelsUnder.addTo(map);
+
+// Opcional: desabilitar zoom por doubleclick para usar apenas dblclick como "adicionar ponto"
+map.doubleClickZoom.disable();
 
 // ======== ESTADO ========
 
@@ -63,9 +203,13 @@ let idsSelecionados = new Set();
 // marcador da origem (minha localização)
 let marcadorLocalizacao = null;
 
+// pontos manuais
+let pontosManuais = [];
+let manualIdSeq = 1;
+
 // ícone da origem: pin customizado em HTML/CSS
 const myLocationIcon = L.divIcon({
-  className: '', // sem classe padrão
+  className: '',
   html: '<div class="pin-minha-localizacao"></div>',
   iconSize: [26, 34],
   iconAnchor: [13, 26]
@@ -89,6 +233,12 @@ const btnGerarLinkMapsSidebar = document.getElementById('btnGerarLinkMapsSidebar
 const chkEvitarPedagios = document.getElementById('chkEvitarPedagios');
 const chkEvitarPontes = document.getElementById('chkEvitarPontes'); // reservado futuro
 const linkMapsDiv = document.getElementById('linkMaps');
+
+// checkbox de trânsito (usa chkVerTransito se existir ou chkEvitarPontes como fallback)
+let chkVerTransito = document.getElementById('chkVerTransito');
+if (!chkVerTransito) {
+  chkVerTransito = chkEvitarPontes;
+}
 
 // DOM painel rota
 const rotaListaDiv = document.getElementById('rotaListaPontos');
@@ -121,10 +271,6 @@ function dispararAtualizarRota() {
   gerarRotaAuto();
 }
 
-// pontos manuais
-let pontosManuais = [];
-let manualIdSeq = 1;
-
 // ======== UTILS ========
 
 function removerTodosMarkersDoMapa() {
@@ -139,7 +285,8 @@ function removerTodosMarkersDoMapa() {
   clienteMarkers = {};
 }
 
-function criarMarkerNumerado(lat, lng, numero, titulo) {
+// marcador numerado DRAGGABLE, com referência ao ponto
+function criarMarkerNumerado(lat, lng, numero, titulo, pontoRef) {
   const html = `
     <div class="marker-numero">
       <div class="marker-numero-label">${numero}</div>
@@ -151,7 +298,34 @@ function criarMarkerNumerado(lat, lng, numero, titulo) {
     iconSize: [26, 26],
     iconAnchor: [13, 26]
   });
-  return L.marker([lat, lng], { icon }).bindPopup(titulo);
+
+  const marker = L.marker([lat, lng], {
+    icon,
+    draggable: true
+  }).bindPopup(titulo);
+
+  // ao terminar de arrastar, atualiza a posição do ponto e recalcula rota
+  marker.on('dragend', e => {
+    const { lat: newLat, lng: newLng } = e.target.getLatLng();
+
+    if (pontoRef.tipo === 'cliente') {
+      const c = cacheClientes.find(x => x.id === pontoRef.id);
+      if (c) {
+        c.lat = newLat;
+        c.lng = newLng;
+      }
+    } else if (pontoRef.tipo === 'manual') {
+      const p = pontosManuais.find(x => x.id === pontoRef.id);
+      if (p) {
+        p.lat = newLat;
+        p.lng = newLng;
+      }
+    }
+
+    dispararAtualizacaoRotaDebounce();
+  });
+
+  return marker;
 }
 
 function getPosicaoAtual() {
@@ -185,7 +359,6 @@ function mostrarToastCopiarLink(mensagem) {
   if (!toast) return;
   toast.textContent = mensagem || 'Link copiado para a área de transferência.';
   toast.style.display = 'block';
-  // força reflow para aplicar transição
   void toast.offsetWidth;
   toast.classList.add('show');
 
@@ -497,7 +670,7 @@ function reconstruirPainelRota() {
   if (pontos.length > LIMITE_PONTOS_ROTA - 1) {
     alert(
       `Você selecionou muitos pontos (${pontos.length}). ` +
-      `Recomenda-se dividir em duas rotas (limite atual ~${LIMITE_PONTOS_ROTA - 1} paradas).`
+        `Recomenda-se dividir em duas rotas (limite atual ~${LIMITE_PONTOS_ROTA - 1} paradas).`
     );
   }
 
@@ -734,7 +907,7 @@ async function gerarRotaAuto() {
   if (totalWaypointsPotencial > LIMITE_PONTOS_ROTA) {
     alert(
       `Rota com muitos pontos (${totalParadas}). ` +
-      `Reduza para aproximadamente ${LIMITE_PONTOS_ROTA - 2} paradas ou divida em duas rotas.`
+        `Reduza para aproximadamente ${LIMITE_PONTOS_ROTA - 2} paradas ou divida em duas rotas.`
     );
     return;
   }
@@ -749,7 +922,6 @@ async function gerarRotaAuto() {
       const origemLatLng = L.latLng(origemAtual.lat, origemAtual.lng);
       waypoints.push(origemLatLng);
 
-      // marcador de origem com pin customizado
       if (!marcadorLocalizacao) {
         marcadorLocalizacao = L.marker(origemLatLng, { icon: myLocationIcon })
           .addTo(map)
@@ -789,7 +961,8 @@ async function gerarRotaAuto() {
       ponto.lat,
       ponto.lng,
       numero,
-      `${numero}. ${ponto.label}`
+      `${numero}. ${ponto.label}`,
+      ponto
     );
     marker.addTo(map);
     todosMarkersRota.push(marker);
@@ -800,25 +973,20 @@ async function gerarRotaAuto() {
     waypoints: waypoints,
     lineOptions: {
       styles: [
-        { color: '#0f172a', opacity: 0.6, weight: 9 },
-        { color: '#22c55e', opacity: 1, weight: 5 }
+        { color: '#581c87', opacity: 0.8, weight: 9 },  // roxo escuro
+        { color: '#a855f7', opacity: 1, weight: 5 }     // roxo neon
       ]
     },
     router: L.Routing.osrmv1({
       serviceUrl: 'https://router.project-osrm.org/route/v1'
     }),
     showAlternatives: false,
-    addWaypoints: true,
-    draggableWaypoints: true,
-    routeWhileDragging: true,
-    createMarker: function (i, wp, nWps) {
-      return L.circleMarker(wp.latLng, {
-        radius: 4,
-        color: '#f6e05e',
-        weight: 2,
-        fillColor: '#faf089',
-        fillOpacity: 1
-      });
+    // markers do L.Routing desativados; usamos nossos markers numerados
+    addWaypoints: false,
+    draggableWaypoints: false,
+    routeWhileDragging: false,
+    createMarker: function () {
+      return null;
     },
     show: false
   }).addTo(map);
@@ -881,8 +1049,31 @@ async function adicionarPontoManual() {
   };
   pontosManuais.push(novo);
   novoPontoInput.value = '';
+
+  // refletir no painel
+  reconstruirPainelRota();
+  // atualizar rota
   dispararAtualizacaoRotaDebounce();
 }
+
+// ======== CLICK / DOUBLE CLICK NO MAPA ========
+
+// duplo clique no mapa adiciona ponto manual
+map.on('dblclick', e => {
+  const { lat, lng } = e.latlng;
+
+  const novo = {
+    id: 'manual-' + manualIdSeq++,
+    tipo: 'manual',
+    label: `Ponto manual ${manualIdSeq - 1}`,
+    lat,
+    lng
+  };
+
+  pontosManuais.push(novo);
+  reconstruirPainelRota();
+  dispararAtualizacaoRotaDebounce();
+});
 
 // ======== LINK GOOGLE MAPS ========
 
@@ -921,15 +1112,12 @@ async function gerarLinkGoogleMaps() {
 
   const finalUrl = `${baseUrl}&${originParam}&${destParam}${waypointsParam}${travelMode}${avoidStr}`;
 
-  // mostra no textarea/div
   linkMapsDiv.textContent = finalUrl;
 
-  // tenta copiar automaticamente
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(finalUrl);
     } else {
-      // fallback para navegadores antigos
       const ta = document.createElement('textarea');
       ta.value = finalUrl;
       ta.style.position = 'fixed';
@@ -942,7 +1130,6 @@ async function gerarLinkGoogleMaps() {
       document.body.removeChild(ta);
     }
 
-    // popup próprio
     mostrarToastCopiarLink('Link gerado e copiado para a área de transferência.');
   } catch (err) {
     console.error('Erro ao copiar link:', err);
@@ -1054,10 +1241,23 @@ novoPontoInput.addEventListener('keydown', e => {
   }
 });
 
+// toggle de trânsito TomTom
+if (chkVerTransito) {
+  chkVerTransito.addEventListener('change', () => {
+    toggleTraffic(chkVerTransito.checked);
+  });
+}
+
 carregarClientesDoServidor();
+
+// atualiza incidentes sempre que o mapa parar de mexer
+map.on('moveend', () => {
+  carregarIncidentesTomTom();
+});
 
 window.addEventListener('load', () => {
   setTimeout(() => {
     map.invalidateSize();
+    carregarIncidentesTomTom();
   }, 200);
 });

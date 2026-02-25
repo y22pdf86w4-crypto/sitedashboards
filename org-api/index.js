@@ -3,22 +3,11 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const { getPool } = require('./db');
+const { getPool, runQuery } = require('./db');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// Middleware opcional para validar pool/token antes das rotas
-app.use(async (req, res, next) => {
-  try {
-    await getPool(); // força a lógica de recriar pool/token se necessário
-    return next();
-  } catch (e) {
-    console.error('[MIDDLEWARE DB] Erro ao preparar pool:', e.message);
-    return next(); // deixa a rota tratar o erro, se ocorrer
-  }
-});
 
 /* ========= HELPERS DE AUDITORIA ========= */
 
@@ -163,15 +152,117 @@ app.get('/api/v1/geocode', async (req, res) => {
   }
 });
 
+/* ================== TOMTOM TRAFFIC INCIDENTS (PROXY) ================== */
+
+const TOMTOM_KEY = process.env.TOMTOM_TRAFFIC_KEY;
+
+app.get('/api/v1/logistica/tomtom/incidentes', async (req, res) => {
+  try {
+    if (!TOMTOM_KEY) {
+      console.error('[TOMTOM INCIDENTS] TOMTOM_TRAFFIC_KEY não configurada');
+      return res.status(500).json({ error: 'TOMTOM_TRAFFIC_KEY não configurada no .env' });
+    }
+
+    let bboxStr = (req.query.bbox || '').toString().trim();
+    console.log('[TOMTOM INCIDENTS] bbox recebido:', bboxStr);
+
+    if (!bboxStr) {
+      return res.status(400).json({ error: 'Parâmetro bbox é obrigatório' });
+    }
+
+    const parts = bboxStr.split(',').map(x => parseFloat(x.trim()));
+    if (parts.length !== 4 || parts.some(x => Number.isNaN(x))) {
+      console.error('[TOMTOM INCIDENTS] bbox inválido:', bboxStr, parts);
+      return res.status(400).json({ error: 'Parâmetro bbox inválido' });
+    }
+
+    let [minLon, minLat, maxLon, maxLat] = parts;
+
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLon = (minLon + maxLon) / 2;
+
+    const HALF_DEG_LAT = 0.1;
+    const HALF_DEG_LON = 0.1;
+
+    minLat = centerLat - HALF_DEG_LAT;
+    maxLat = centerLat + HALF_DEG_LAT;
+    minLon = centerLon - HALF_DEG_LON;
+    maxLon = centerLon + HALF_DEG_LON;
+
+    const clampedBbox = `${minLon},${minLat},${maxLon},${maxLat}`;
+    console.log('[TOMTOM INCIDENTS] bbox clampado:', clampedBbox);
+
+    const baseUrl = 'https://api.tomtom.com/traffic/services/5/incidentDetails';
+
+    const params = new URLSearchParams({
+      key: TOMTOM_KEY,
+      bbox: clampedBbox,
+      fields: '{incidents{type,geometry{type,coordinates},properties{iconCategory,events{description}}}}',
+      language: 'en-GB',
+      timeValidityFilter: 'present'
+    });
+
+    const url = `${baseUrl}?${params.toString()}`;
+    console.log('[TOMTOM INCIDENTS] URL final:', url);
+
+    let resp;
+    try {
+      resp = await fetch(url);
+    } catch (err) {
+      console.error('[TOMTOM INCIDENTS] Erro de rede no fetch:', err);
+      return res.status(502).json({
+        error: 'Falha de rede ao chamar TomTom',
+        detail: err.message || String(err)
+      });
+    }
+
+    console.log('[TOMTOM INCIDENTS] HTTP status TomTom:', resp.status);
+
+    let text = '';
+    try {
+      text = await resp.text();
+    } catch (err) {
+      console.error('[TOMTOM INCIDENTS] Erro ao ler body:', err);
+    }
+
+    if (!resp.ok) {
+      console.error('[TOMTOM INCIDENTS] body erro TomTom:', text);
+      return res.status(502).json({
+        error: 'Erro HTTP na TomTom IncidentDetails',
+        status: resp.status,
+        body: text
+      });
+    }
+
+    let data = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (err) {
+      console.error('[TOMTOM INCIDENTS] Erro ao parsear JSON:', err, 'body=', text);
+      return res.status(502).json({
+        error: 'Resposta inválida da TomTom',
+        detail: err.message || String(err),
+        body: text
+      });
+    }
+
+    return res.json(data);
+  } catch (e) {
+    console.error('[TOMTOM INCIDENTS] Erro geral:', e);
+    return res.status(500).json({
+      error: 'Erro interno ao consultar incidentes TomTom',
+      detail: e.message || String(e)
+    });
+  }
+});
+
 /* ================== CLIENTES LOGÍSTICA ================== */
 
 app.get('/api/v1/logistica/clientes', async (req, res) => {
   try {
     const nomeFiltro = (req.query.nome || '').trim();
-    const pool = await getPool();
-    const request = pool.request();
 
-    let sqlQuery = `
+    const sqlBase = `
       SELECT
         ParceiroCodigo       AS codigo,
         ParceiroNome         AS nome,
@@ -187,14 +278,15 @@ app.get('/api/v1/logistica/clientes', async (req, res) => {
       WHERE ParceiroCodigo <> 0
     `;
 
-    if (nomeFiltro) {
-      sqlQuery += ' AND ParceiroNome LIKE @nome ';
-      request.input('nome', `%${nomeFiltro}%`);
-    }
+    const sqlQuery = nomeFiltro
+      ? sqlBase + ' AND ParceiroNome LIKE @nome ORDER BY ParceiroNome;'
+      : sqlBase + ' ORDER BY ParceiroNome;';
 
-    sqlQuery += ' ORDER BY ParceiroNome;';
-
-    const result = await request.query(sqlQuery);
+    const result = await runQuery(sqlQuery, request => {
+      if (nomeFiltro) {
+        request.input('nome', `%${nomeFiltro}%`);
+      }
+    });
 
     const clientes = result.recordset.map(r => {
       const nomeLimpo = (r.nome || '')

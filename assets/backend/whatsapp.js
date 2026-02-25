@@ -1,33 +1,50 @@
+// whatsapp.js
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
 const path = require("path");
 
+// Flag interna de prontidão e callbacks pendentes
 let isReady = false;
 let readyCallbacks = [];
 
-// Pasta de sessão (monte como volume persistente no Azure)
+// Pasta de sessão (monte como volume persistente no Azure / container)
 const SESSION_FOLDER = path.join(__dirname, ".wwebjsauth");
 
+// Instância do cliente WhatsApp
 const client = new Client({
   authStrategy: new LocalAuth({
-    clientId: "dashboard-bot",      // id fixo para manter a mesma sessão
-    dataPath: SESSION_FOLDER        // path que você vai montar no container
+    clientId: "dashboard-bot", // id fixo para manter a mesma sessão
+    dataPath: SESSION_FOLDER   // path que você vai montar no container
   }),
   puppeteer: {
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-accelerated-2d-canvas",
+      "--no-first-run",
+      "--no-zygote",
+      "--disable-gpu"
+    ]
   }
 });
 
 // QR para logar na primeira vez
 client.on("qr", qr => {
-  console.log("QR RECEIVED");
+  console.log("QR RECEIVED - escaneie para autenticar:");
   qrcode.generate(qr, { small: true });
+});
+
+// Autenticação
+client.on("authenticated", () => {
+  console.log("WhatsApp autenticado com sucesso!");
 });
 
 // Pronto
 client.on("ready", () => {
   isReady = true;
-  console.log("WhatsApp pronto!");
+  console.log("WhatsApp pronto e conectado!");
 
   // dispara callbacks registrados pelo server.js
   readyCallbacks.forEach(fn => {
@@ -40,18 +57,63 @@ client.on("ready", () => {
   readyCallbacks = [];
 });
 
-// Logs básicos de erro
+// Falha de autenticação
 client.on("auth_failure", msg => {
   isReady = false;
   console.error("Falha de autenticação WhatsApp:", msg);
 });
 
+// Desconectado
 client.on("disconnected", reason => {
   isReady = false;
   console.error("WhatsApp desconectado:", reason);
 });
 
-client.initialize();
+// Mudança de estado (CONNECTED, DISCONNECTED, etc.)
+client.on("change_state", state => {
+  console.log("WhatsApp estado mudou para:", state);
+  if (state !== "CONNECTED") {
+    isReady = false;
+  }
+});
+
+/**
+ * Inicialização com retry para mitigar "Execution context was destroyed"
+ */
+async function initializeWithRetry(maxRetries = 3, delayMs = 5000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(
+        `Tentativa ${attempt}/${maxRetries} de inicializar WhatsApp...`
+      );
+      await client.initialize();
+      return;
+    } catch (error) {
+      console.error(`Erro na tentativa ${attempt}:`, error.message);
+
+      // Erro típico de navegação/execução destruída
+      if (error.message.includes("Execution context was destroyed")) {
+        console.log(`Aguardando ${delayMs}ms antes de tentar novamente...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+
+        if (attempt === maxRetries) {
+          console.error("Falha ao inicializar após múltiplas tentativas.");
+          throw error;
+        }
+      } else {
+        // Erros não relacionados: não insistir
+        throw error;
+      }
+    }
+  }
+}
+
+// Chama inicialização com retry
+initializeWithRetry().catch(err => {
+  console.error("Erro crítico ao inicializar WhatsApp:", err);
+  // Se quiser que o container reinicie, descomente:
+  // process.exit(1);
+});
 
 /**
  * Registrar callback para quando o WhatsApp estiver pronto.
@@ -73,6 +135,25 @@ function onWhatsAppReady(cb) {
 }
 
 /**
+ * Verifica estado atual da conexão de forma robusta.
+ */
+async function isClientReady() {
+  if (!isReady) return false;
+
+  try {
+    const state = await client.getState(); // retorna WAState (ex: "CONNECTED")
+    const ok = state === "CONNECTED";
+    if (!ok) {
+      console.log("isClientReady: estado atual não é CONNECTED:", state);
+    }
+    return ok;
+  } catch (error) {
+    console.error("Erro ao verificar estado do cliente:", error);
+    return false;
+  }
+}
+
+/**
  * Normaliza número e envia mensagem.
  * Aceita:
  *  - "35988283970"
@@ -80,8 +161,12 @@ function onWhatsAppReady(cb) {
  *  - "35 98828-3970"
  */
 async function sendWhatsApp(to, message) {
-  if (!isReady) {
-    throw new Error("Cliente WhatsApp ainda não está pronto.");
+  // Verifica estado real antes de enviar
+  const clientReady = await isClientReady();
+  if (!clientReady) {
+    throw new Error(
+      "Cliente WhatsApp não está conectado. Estado atual não é CONNECTED."
+    );
   }
 
   if (!to) {
@@ -109,4 +194,4 @@ async function sendWhatsApp(to, message) {
   return client.sendMessage(numberId._serialized, message);
 }
 
-module.exports = { sendWhatsApp, onWhatsAppReady };
+module.exports = { sendWhatsApp, onWhatsAppReady, isClientReady };
