@@ -183,8 +183,15 @@ let idsSelecionados = new Set();
 // origemAtual: 'pedidos' | 'clientes' | 'carteira'
 let origemAtual = 'pedidos';
 
+// origem fixa para o ponto de partida
+const ORIGEM_FIXA = {
+  lat: -19.383869647653956,
+  lng: -40.067551247607746
+};
+
 let marcadorLocalizacao = null;
-let origemManual = null; // origem arrastável
+// começa na origem fixa, mas pode ser arrastado depois
+let origemManual = { ...ORIGEM_FIXA };
 let pontosManuais = [];
 let manualIdSeq = 1;
 
@@ -259,6 +266,7 @@ function setLinkMapsEnabled(enabled) {
   btnGerarLinkMapsSidebar.disabled = !enabled;
 }
 
+// NÃO remove o marcadorLocalizacao (pin vermelho)
 function removerTodosMarkersDoMapa() {
   todosMarkersRota.forEach(m => {
     if (map.hasLayer(m)) map.removeLayer(m);
@@ -1084,7 +1092,7 @@ function limparRota() {
   setLinkMapsEnabled(false);
   linkMapsDiv.textContent = 'Nenhum link gerado ainda.';
   setAlertasTexto('Nenhuma rota analisada ainda.');
-  removerTodosMarkersDoMapa();
+  removerTodosMarkersDoMapa(); // NÃO remove o marcadorLocalizacao
 }
 
 async function gerarRotaAuto() {
@@ -1114,16 +1122,24 @@ async function gerarRotaAuto() {
     return;
   }
 
-  limparRota();
+  // reset apenas da rota, mantendo o pin
+  if (routingControl) {
+    map.removeControl(routingControl);
+    routingControl = null;
+  }
+  ultimaRotaWaypoints = [];
+  ultimaAnaliseRota = null;
+  setLinkMapsEnabled(false);
+  linkMapsDiv.textContent = 'Nenhum link gerado ainda.';
+  setAlertasTexto('Nenhuma rota analisada ainda.');
+  removerTodosMarkersDoMapa();
 
   const waypoints = [];
 
-  // Origem = pin vermelho arrastável
+  // Origem sempre começa na coordenada fixa, mas permite arrastar depois
   if (!origemManual) {
-    const center = map.getCenter();
-    origemManual = { lat: center.lat, lng: center.lng };
+    origemManual = { ...ORIGEM_FIXA };
   }
-
   const origemLatLng = L.latLng(origemManual.lat, origemManual.lng);
   waypoints.push(origemLatLng);
 
@@ -1392,8 +1408,7 @@ function otimizarOrdemParadasVizinhoMaisProximo() {
   }
 
   if (!origemManual) {
-    const center = map.getCenter();
-    origemManual = { lat: center.lat, lng: center.lng };
+    origemManual = { ...ORIGEM_FIXA };
   }
 
   const origem = { lat: origemManual.lat, lng: origemManual.lng };

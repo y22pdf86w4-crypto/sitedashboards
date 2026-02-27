@@ -470,7 +470,7 @@ body.logistica-page {
 .clientes-lista {
   flex: 0 0 auto;
   min-height: 0;
-  max-height: 160px;
+  max-height: 290px;
   overflow-y: auto;
   padding-right: 4px;
   display: flex;
