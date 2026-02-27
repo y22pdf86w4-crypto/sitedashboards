@@ -1,6 +1,5 @@
 // ======== CONFIG API BASE ========
 
-// Só define se ainda não existir
 if (window.API_BASE === undefined) {
   const DEFAULT_LOGISTICA_API_BASE =
     'https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1';
@@ -23,7 +22,8 @@ const LIMITE_PONTOS_ROTA = 80;
 const TOMTOM_API_KEY = 'l22aGTuKjY30e1lAcUqAup3XZ8pYzCOb';
 
 const tomtomTrafficLayer = L.tileLayer(
-  'https://api.tomtom.com/traffic/map/4/tile/flow/absolute/{z}/{x}/{y}.png?key=' + TOMTOM_API_KEY,
+  'https://api.tomtom.com/traffic/map/4/tile/flow/absolute/{z}/{x}/{y}.png?key=' +
+    TOMTOM_API_KEY,
   {
     opacity: 0.7,
     attribution: '&copy; TomTom'
@@ -86,7 +86,9 @@ async function carregarIncidentesTomTom() {
   }
 
   const bbox = `${minLon},${minLat},${maxLon},${maxLat}`;
-  const url = `${window.API_BASE}/logistica/tomtom/incidentes?bbox=${encodeURIComponent(bbox)}`;
+  const url = `${window.API_BASE}/logistica/tomtom/incidentes?bbox=${encodeURIComponent(
+    bbox
+  )}`;
 
   try {
     const resp = await fetch(url);
@@ -134,7 +136,7 @@ async function carregarIncidentesTomTom() {
   }
 }
 
-// ======== MAPA (CartoDB Voyager Labels Under) ========
+// ======== MAPA (OpenStreetMap France, por ex.) ========
 
 const map = L.map('map', {
   zoomSnap: 0.25,
@@ -144,18 +146,18 @@ const map = L.map('map', {
   attributionControl: false
 }).setView([-19.5, -40.3], 7);
 
-const CartoDB_VoyagerLabelsUnder = L.tileLayer(
-  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png',
+// Você pode trocar o tileLayer aqui se quiser outro estilo
+const OpenStreetMap_France = L.tileLayer(
+  'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
   {
+    maxZoom: 20,
     attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> ' +
-      'contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 20
+      '&copy; OpenStreetMap France | &copy; ' +
+      '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }
 );
 
-CartoDB_VoyagerLabelsUnder.addTo(map);
+OpenStreetMap_France.addTo(map);
 map.doubleClickZoom.disable();
 
 // ======== ESTADO ========
@@ -182,6 +184,7 @@ let idsSelecionados = new Set();
 let origemAtual = 'pedidos';
 
 let marcadorLocalizacao = null;
+let origemManual = null; // origem arrastável
 let pontosManuais = [];
 let manualIdSeq = 1;
 
@@ -196,15 +199,20 @@ const myLocationIcon = L.divIcon({
 
 const listaClientesDiv = document.getElementById('listaClientes');
 const contadorClientesSpan = document.getElementById('contadorClientes');
-const contadorSelecionadosSpan = document.getElementById('contadorSelecionados');
-const resumoSelecionadosDiv = document.getElementById('resumoSelecionados');
+const contadorSelecionadosSpan = document.getElementById(
+  'contadorSelecionados'
+);
+const resumoSelecionadosDiv =
+  document.getElementById('resumoSelecionados');
 
 const alertasRota = document.getElementById('alertasRota');
 const alertasRotaSidebar = document.getElementById('alertasRotaSidebar');
 
 const filtroNomeInput = document.getElementById('filtroNome');
 
-const btnGerarLinkMapsSidebar = document.getElementById('btnGerarLinkMapsSidebar');
+const btnGerarLinkMapsSidebar = document.getElementById(
+  'btnGerarLinkMapsSidebar'
+);
 
 const chkEvitarPedagios = document.getElementById('chkEvitarPedagios');
 const chkEvitarPontes = document.getElementById('chkEvitarPontes');
@@ -227,9 +235,13 @@ const rotaPanel = document.getElementById('rota-panel');
 const rotaPanelHeader = document.getElementById('rota-panel-header');
 const rotaPanelMinimize = document.getElementById('rotaPanelMinimize');
 
-const destinoCampoPainel = document.getElementById('destinoCampoPainel');
+const destinoCampoPainel =
+  document.getElementById('destinoCampoPainel');
 const btnGerarRota = document.getElementById('btnGerarRota');
 const btnGerarLinkMaps = document.getElementById('btnGerarLinkMaps');
+const btnSelecionarTodos = document.getElementById('btnSelecionarTodos');
+const btnLimparSelecao = document.getElementById('btnLimparSelecao');
+const btnOtimizarRota = document.getElementById('btnOtimizarRota');
 
 // ======== HELPERS ========
 
@@ -245,10 +257,6 @@ function setAlertasTexto(texto) {
 function setLinkMapsEnabled(enabled) {
   btnGerarLinkMaps.disabled = !enabled;
   btnGerarLinkMapsSidebar.disabled = !enabled;
-}
-
-function dispararAtualizarRota() {
-  gerarRotaAuto();
 }
 
 function removerTodosMarkersDoMapa() {
@@ -320,75 +328,58 @@ function criarMarkerNumerado(lat, lng, numero, titulo, pontoRef) {
       }
     }
 
-    dispararAtualizacaoRotaDebounce();
+    gerarRotaAuto();
   });
 
   return marker;
 }
 
-function getPosicaoAtual() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      return reject(new Error('Geolocalização não suportada.'));
-    }
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        resolve({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude
-        });
-      },
-      err => {
-        reject(err);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 30000
-      }
-    );
-  });
-}
+// ======== COORDENADAS SEGURAS ========
 
-function mostrarToastCopiarLink(mensagem) {
-  const toast = document.getElementById('toast-copiar-link');
-  if (!toast) return;
-  toast.textContent = mensagem || 'Link copiado para a área de transferência.';
-  toast.style.display = 'block';
-  void toast.offsetWidth;
-  toast.classList.add('show');
+function normalizarLat(valor) {
+  if (valor == null) return null;
 
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => {
-      toast.style.display = 'none';
-    }, 200);
-  }, 2000);
-}
-
-// ======== GEOCODING ========
-
-async function geocodeEndereco(endereco) {
-  if (!endereco) return null;
-  const original = String(endereco).trim();
-  try {
-    const url = `${window.API_BASE}/geocode?q=${encodeURIComponent(original)}`;
-    const resp = await fetch(url);
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    if (!data || data.lat == null || data.lng == null) return null;
-    return { lat: parseFloat(data.lat), lng: parseFloat(data.lng) };
-  } catch {
-    return null;
+  if (typeof valor === 'number') {
+    return Number.isFinite(valor) && valor >= -90 && valor <= 90
+      ? valor
+      : null;
   }
+
+  const s = String(valor).trim();
+  if (!s) return null;
+  if (s.includes('°')) return null;
+
+  const n = parseFloat(s.replace(',', '.'));
+  if (!Number.isFinite(n) || n < -90 || n > 90) return null;
+  return n;
+}
+
+function normalizarLng(valor) {
+  if (valor == null) return null;
+
+  if (typeof valor === 'number') {
+    return Number.isFinite(valor) && valor >= -180 && valor <= 180
+      ? valor
+      : null;
+  }
+
+  const s = String(valor).trim();
+  if (!s) return null;
+  if (s.includes('°')) return null;
+
+  const n = parseFloat(s.replace(',', '.'));
+  if (!Number.isFinite(n) || n < -180 || n > 180) return null;
+  return n;
 }
 
 // ======== LISTA / SELEÇÃO ========
 
 function atualizarResumoSelecionados() {
   const qtde = idsSelecionados.size;
-  if (qtde === 0) resumoSelecionadosDiv.textContent = 'Nenhum cliente selecionado.';
-  else if (qtde === 1) resumoSelecionadosDiv.textContent = '1 cliente selecionado.';
+  if (qtde === 0)
+    resumoSelecionadosDiv.textContent = 'Nenhum cliente selecionado.';
+  else if (qtde === 1)
+    resumoSelecionadosDiv.textContent = '1 cliente selecionado.';
   else resumoSelecionadosDiv.textContent = `${qtde} clientes selecionados.`;
 }
 
@@ -404,18 +395,32 @@ function atualizarContadorSelecionados() {
   }
 
   reconstruirPainelRota();
-  dispararAtualizacaoRotaDebounce();
+  gerarRotaAuto();
 }
 
+// Selecionar até 20 primeiros visíveis
 function marcarTodosVisiveis(marcar) {
-  listaClientesDiv
-    .querySelectorAll('.cliente-item .cliente-checkbox')
-    .forEach(cb => {
-      const id = parseInt(cb.value, 10);
-      cb.checked = marcar;
-      if (marcar) idsSelecionados.add(id);
-      else idsSelecionados.delete(id);
-    });
+  const itens = Array.from(
+    listaClientesDiv.querySelectorAll('.cliente-item .cliente-checkbox')
+  );
+
+  const limite = 20;
+  let count = 0;
+
+  itens.forEach(cb => {
+    const id = parseInt(cb.value, 10);
+
+    if (marcar) {
+      if (count >= limite) return;
+      cb.checked = true;
+      idsSelecionados.add(id);
+      count++;
+    } else {
+      cb.checked = false;
+      idsSelecionados.delete(id);
+    }
+  });
+
   atualizarContadorSelecionados();
 }
 
@@ -483,6 +488,13 @@ function criarItemCliente(c) {
   spanAlerta.style.display = 'none';
   spanAlerta.textContent = '⚠ endereço não localizado';
 
+  const latValida = normalizarLat(c.lat) != null;
+  const lngValida = normalizarLng(c.lng) != null;
+  if (!latValida || !lngValida) {
+    spanAlerta.style.display = 'inline-block';
+    div.classList.add('cliente-sem-localizacao');
+  }
+
   textos.appendChild(spanNome);
   textos.appendChild(spanBadge);
   textos.appendChild(spanAlerta);
@@ -499,7 +511,8 @@ function configurarDragAndDropLista() {
 
   listaClientesDiv.addEventListener('dragover', e => {
     e.preventDefault();
-    const dragging = listaClientesDiv.querySelector('.cliente-item.dragging');
+    const dragging =
+      listaClientesDiv.querySelector('.cliente-item.dragging');
     if (!dragging) return;
     const afterElement = getDragAfterElement(
       listaClientesDiv,
@@ -539,7 +552,10 @@ function renderClientesPagina() {
   const inicio = paginaClientes * TAMANHO_PAGINA;
   if (inicio >= clientesFiltradosAtuais.length) return;
 
-  const fim = Math.min(inicio + TAMANHO_PAGINA, clientesFiltradosAtuais.length);
+  const fim = Math.min(
+    inicio + TAMANHO_PAGINA,
+    clientesFiltradosAtuais.length
+  );
 
   const frag = document.createDocumentFragment();
   for (let i = inicio; i < fim; i++) {
@@ -573,7 +589,8 @@ function renderClientes(clientes) {
 function configurarInfiniteScrollClientes() {
   listaClientesDiv.addEventListener('scroll', () => {
     if (carregandoMais) return;
-    const scrollBottom = listaClientesDiv.scrollTop + listaClientesDiv.clientHeight;
+    const scrollBottom =
+      listaClientesDiv.scrollTop + listaClientesDiv.clientHeight;
     const limite = listaClientesDiv.scrollHeight - 40;
 
     if (scrollBottom >= limite) {
@@ -645,8 +662,8 @@ async function carregarPedidosPendentes(codvendFiltro) {
         cidade: p.cidade,
         uf: p.uf,
         cep: p.cep,
-        lat: p.lat,
-        lng: p.lng
+        lat: normalizarLat(p.lat),
+        lng: normalizarLng(p.lng)
       };
     });
 
@@ -669,11 +686,20 @@ async function carregarClientesNormais() {
   try {
     listaClientesDiv.classList.add('loading');
     listaClientesDiv.innerHTML = '';
-    console.log('GET clientes em:', `${window.API_BASE}/logistica/clientes`);
-    const resp = await fetch(`${window.API_BASE}/logistica/clientes`);
+    console.log(
+      'GET clientes em:',
+      `${window.API_BASE}/logistica/clientes`
+    );
+    const resp = await fetch(
+      `${window.API_BASE}/logistica/clientes`
+    );
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
-    cacheClientes = data.clientes || [];
+    cacheClientes = (data.clientes || []).map(r => ({
+      ...r,
+      lat: normalizarLat(r.lat),
+      lng: normalizarLng(r.lng)
+    }));
 
     idsSelecionados.clear();
     pontosManuais = [];
@@ -697,7 +723,8 @@ async function carregarVendedores() {
     const data = await resp.json();
     cacheVendedores = data.vendedores || [];
 
-    selectVendedor.innerHTML = '<option value="">Selecione um vendedor...</option>';
+    selectVendedor.innerHTML =
+      '<option value="">Selecione um vendedor...</option>';
     cacheVendedores.forEach(v => {
       const opt = document.createElement('option');
       opt.value = v.codvend;
@@ -720,7 +747,9 @@ async function carregarCarteiraPorVendedor(codvend) {
   try {
     listaClientesDiv.classList.add('loading');
     listaClientesDiv.innerHTML = '';
-    const url = `${window.API_BASE}/carteira?codvend=${encodeURIComponent(codvend)}`;
+    const url = `${window.API_BASE}/carteira?codvend=${encodeURIComponent(
+      codvend
+    )}`;
     console.log('GET carteira em:', url);
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -745,8 +774,8 @@ async function carregarCarteiraPorVendedor(codvend) {
         cidade: c.cidade,
         uf: c.uf,
         cep: c.cep,
-        lat: c.lat,
-        lng: c.lng
+        lat: normalizarLat(c.lat),
+        lng: normalizarLng(c.lng)
       };
     });
 
@@ -815,14 +844,16 @@ function reconstruirPainelRota() {
   const pontos = [];
 
   clientesSelecionados.forEach(c => {
-    if (c.lat == null || c.lng == null) return;
+    const lat = normalizarLat(c.lat);
+    const lng = normalizarLng(c.lng);
+    if (lat == null || lng == null) return;
     pontos.push({
       tipo: 'cliente',
       id: c.id,
       label: `${c.codigo} - ${c.nome}`,
       endereco: c.endereco,
-      lat: c.lat,
-      lng: c.lng
+      lat,
+      lng
     });
   });
 
@@ -831,7 +862,9 @@ function reconstruirPainelRota() {
   if (pontos.length > LIMITE_PONTOS_ROTA - 1) {
     alert(
       `Você selecionou muitos pontos (${pontos.length}). ` +
-        `Recomenda-se dividir em duas rotas (limite atual ~${LIMITE_PONTOS_ROTA - 1} paradas).`
+        `Recomenda-se dividir em duas rotas (limite atual ~${
+          LIMITE_PONTOS_ROTA - 1
+        } paradas).`
     );
   }
 
@@ -862,7 +895,9 @@ function reconstruirPainelRota() {
 
     const sub = document.createElement('div');
     sub.className = 'rota-item-label-sub';
-    sub.textContent = ponto.endereco || `${ponto.lat.toFixed(5)}, ${ponto.lng.toFixed(5)}`;
+    sub.textContent =
+      ponto.endereco ||
+      `${ponto.lat.toFixed(5)}, ${ponto.lng.toFixed(5)}`;
 
     labelWrap.appendChild(main);
     labelWrap.appendChild(sub);
@@ -935,7 +970,7 @@ function configurarDragAndDropPainelRota() {
     draggingEl = null;
 
     renumerarPontosRota();
-    dispararAtualizacaoRotaDebounce();
+    gerarRotaAuto(); // recalcula rota imediatamente
   });
 
   rotaListaDiv.addEventListener('dragend', () => {
@@ -948,9 +983,14 @@ function configurarDragAndDropPainelRota() {
 
 function limpaDropzonesRota() {
   rotaListaDiv
-    .querySelectorAll('.rota-item-dropzone-before, .rota-item-dropzone-after')
+    .querySelectorAll(
+      '.rota-item-dropzone-before, .rota-item-dropzone-after'
+    )
     .forEach(el => {
-      el.classList.remove('rota-item-dropzone-before', 'rota-item-dropzone-after');
+      el.classList.remove(
+        'rota-item-dropzone-before',
+        'rota-item-dropzone-after'
+      );
     });
 }
 
@@ -999,7 +1039,7 @@ function removerPontoDaRota(ponto) {
     return;
   }
 
-  dispararAtualizacaoRotaDebounce();
+  gerarRotaAuto();
 }
 
 function getPontosNaOrdemPainel() {
@@ -1011,14 +1051,16 @@ function getPontosNaOrdemPainel() {
     if (tipo === 'cliente') {
       const base = getCacheAtual();
       const c = base.find(x => String(x.id) === String(id));
-      if (c && c.lat != null && c.lng != null) {
+      const lat = normalizarLat(c?.lat);
+      const lng = normalizarLng(c?.lng);
+      if (c && lat != null && lng != null) {
         pontos.push({
           tipo: 'cliente',
           id: c.id,
           label: `${c.codigo} - ${c.nome}`,
           endereco: c.endereco,
-          lat: c.lat,
-          lng: c.lng
+          lat,
+          lng
         });
       }
     } else if (tipo === 'manual') {
@@ -1047,14 +1089,10 @@ function limparRota() {
 
 async function gerarRotaAuto() {
   const selecionados = getClientesSelecionados();
+
   for (const c of selecionados) {
-    if (c.lat == null || c.lng == null) {
-      const geo = await geocodeEndereco(c.endereco);
-      if (geo) {
-        c.lat = geo.lat;
-        c.lng = geo.lng;
-      }
-    }
+    c.lat = normalizarLat(c.lat);
+    c.lng = normalizarLng(c.lng);
   }
 
   const destinoStr = getDestinoCampo();
@@ -1069,7 +1107,9 @@ async function gerarRotaAuto() {
   if (totalWaypointsPotencial > LIMITE_PONTOS_ROTA) {
     alert(
       `Rota com muitos pontos (${totalParadas}). ` +
-        `Reduza para aproximadamente ${LIMITE_PONTOS_ROTA - 2} paradas ou divida em duas rotas.`
+        `Reduza para aproximadamente ${
+          LIMITE_PONTOS_ROTA - 2
+        } paradas ou divida em duas rotas.`
     );
     return;
   }
@@ -1078,26 +1118,37 @@ async function gerarRotaAuto() {
 
   const waypoints = [];
 
-  try {
-    const origemAtualPos = await getPosicaoAtual();
-    if (origemAtualPos) {
-      const origemLatLng = L.latLng(origemAtualPos.lat, origemAtualPos.lng);
-      waypoints.push(origemLatLng);
+  // Origem = pin vermelho arrastável
+  if (!origemManual) {
+    const center = map.getCenter();
+    origemManual = { lat: center.lat, lng: center.lng };
+  }
 
-      if (!marcadorLocalizacao) {
-        marcadorLocalizacao = L.marker(origemLatLng, { icon: myLocationIcon })
-          .addTo(map)
-          .bindPopup('Minha localização de partida');
-      } else {
-        marcadorLocalizacao.setLatLng(origemLatLng);
-      }
-    }
-  } catch (e) {
-    console.warn('Não foi possível obter localização atual:', e);
+  const origemLatLng = L.latLng(origemManual.lat, origemManual.lng);
+  waypoints.push(origemLatLng);
+
+  if (!marcadorLocalizacao) {
+    marcadorLocalizacao = L.marker(origemLatLng, {
+      icon: myLocationIcon,
+      draggable: true
+    })
+      .addTo(map)
+      .bindPopup('Ponto de partida (arraste para ajustar)');
+
+    marcadorLocalizacao.on('dragend', e => {
+      const pos = e.target.getLatLng();
+      origemManual = { lat: pos.lat, lng: pos.lng };
+      gerarRotaAuto();
+    });
+  } else {
+    marcadorLocalizacao.setLatLng(origemLatLng);
   }
 
   pontosPainel.forEach(p => {
-    waypoints.push(L.latLng(p.lat, p.lng));
+    const lat = normalizarLat(p.lat);
+    const lng = normalizarLng(p.lng);
+    if (lat == null || lng == null) return;
+    waypoints.push(L.latLng(lat, lng));
   });
 
   if (destinoStr) {
@@ -1106,7 +1157,13 @@ async function gerarRotaAuto() {
       alert('Destino inválido. Use "lat,lng".');
       return;
     }
-    waypoints.push(L.latLng(parsed.lat, parsed.lng));
+    const lat = normalizarLat(parsed.lat);
+    const lng = normalizarLng(parsed.lng);
+    if (lat == null || lng == null) {
+      alert('Destino inválido.');
+      return;
+    }
+    waypoints.push(L.latLng(lat, lng));
   }
 
   if (waypoints.length < 2) {
@@ -1119,9 +1176,13 @@ async function gerarRotaAuto() {
   removerTodosMarkersDoMapa();
   pontosPainel.forEach((ponto, idx) => {
     const numero = idx + 1;
+    const lat = normalizarLat(ponto.lat);
+    const lng = normalizarLng(ponto.lng);
+    if (lat == null || lng == null) return;
+
     const marker = criarMarkerNumerado(
-      ponto.lat,
-      ponto.lng,
+      lat,
+      lng,
       numero,
       `${numero}. ${ponto.label}`,
       ponto
@@ -1152,9 +1213,9 @@ async function gerarRotaAuto() {
     show: false
   }).addTo(map);
 
-  Array.from(document.getElementsByClassName('leaflet-routing-container')).forEach(
-    el => (el.style.display = 'none')
-  );
+  Array.from(
+    document.getElementsByClassName('leaflet-routing-container')
+  ).forEach(el => (el.style.display = 'none'));
 
   routingControl.on('routesfound', function (e) {
     if (!e.routes || !e.routes.length) return;
@@ -1165,14 +1226,12 @@ async function gerarRotaAuto() {
     setAlertasTexto(`Resumo da rota: ${texto}`);
   });
 
-  setLinkMapsEnabled(true);
-}
+  routingControl.on('routingerror', function (e) {
+    console.error('Erro na rota OSRM', e);
+    setAlertasTexto('Não foi possível calcular a rota (OSRM).');
+  });
 
-function dispararAtualizacaoRotaDebounce() {
-  if (rotaDebounceTimeout) clearTimeout(rotaDebounceTimeout);
-  rotaDebounceTimeout = setTimeout(() => {
-    gerarRotaAuto();
-  }, 700);
+  setLinkMapsEnabled(true);
 }
 
 // ======== PONTO MANUAL / MAP CLICK ========
@@ -1187,16 +1246,16 @@ async function adicionarPontoManual() {
   let label = texto;
 
   if (latlng) {
-    lat = latlng.lat;
-    lng = latlng.lng;
+    lat = normalizarLat(latlng.lat);
+    lng = normalizarLng(latlng.lng);
   } else {
-    const geo = await geocodeEndereco(texto);
-    if (!geo) {
-      alert('Não foi possível localizar este endereço.');
-      return;
-    }
-    lat = geo.lat;
-    lng = geo.lng;
+    alert('Formato inválido. Use "lat,lng" ou implemente geocode aqui.');
+    return;
+  }
+
+  if (lat == null || lng == null) {
+    alert('Coordenada inválida.');
+    return;
   }
 
   const novo = {
@@ -1210,7 +1269,7 @@ async function adicionarPontoManual() {
   novoPontoInput.value = '';
 
   reconstruirPainelRota();
-  dispararAtualizacaoRotaDebounce();
+  gerarRotaAuto();
 }
 
 map.on('dblclick', e => {
@@ -1226,7 +1285,7 @@ map.on('dblclick', e => {
 
   pontosManuais.push(novo);
   reconstruirPainelRota();
-  dispararAtualizacaoRotaDebounce();
+  gerarRotaAuto();
 });
 
 // ======== LINK GOOGLE MAPS ========
@@ -1238,21 +1297,26 @@ async function gerarLinkGoogleMaps() {
   }
 
   const origin = ultimaRotaWaypoints[0];
-  const destination = ultimaRotaWaypoints[ultimaRotaWaypoints.length - 1];
+  const destination =
+    ultimaRotaWaypoints[ultimaRotaWaypoints.length - 1];
   const intermediarios = ultimaRotaWaypoints.slice(
     1,
     ultimaRotaWaypoints.length - 1
   );
 
   const baseUrl = 'https://www.google.com/maps/dir/?api=1';
-  const originParam = `origin=${encodeURIComponent(origin.lat + ',' + origin.lng)}`;
+  const originParam = `origin=${encodeURIComponent(
+    origin.lat + ',' + origin.lng
+  )}`;
   const destParam = `destination=${encodeURIComponent(
     destination.lat + ',' + destination.lng
   )}`;
 
   let waypointsParam = '';
   if (intermediarios.length > 0) {
-    const wps = intermediarios.map(wp => wp.lat + ',' + wp.lng).join('|');
+    const wps = intermediarios
+      .map(wp => wp.lat + ',' + wp.lng)
+      .join('|');
     waypointsParam = `&waypoints=${encodeURIComponent(wps)}`;
   }
 
@@ -1284,187 +1348,220 @@ async function gerarLinkGoogleMaps() {
       document.body.removeChild(ta);
     }
 
-    mostrarToastCopiarLink('Link gerado e copiado para a área de transferência.');
+    mostrarToastCopiarLink(
+      'Link gerado e copiado para a área de transferência.'
+    );
   } catch (err) {
     console.error('Erro ao copiar link:', err);
-    mostrarToastCopiarLink('Link gerado, mas não foi possível copiar automaticamente.');
+    mostrarToastCopiarLink(
+      'Link gerado, mas não foi possível copiar automaticamente.'
+    );
   }
 }
 
-// ======== PAINEL ARRASTÁVEL ========
+function mostrarToastCopiarLink(mensagem) {
+  const toast = document.getElementById('toast-copiar-link');
+  if (!toast) return;
+  toast.textContent =
+    mensagem || 'Link copiado para a área de transferência.';
+  toast.style.display = 'block';
+  void toast.offsetWidth;
+  toast.classList.add('show');
 
-(function configurarDragPainelRota() {
-  let dragging = false;
-  let startX = 0;
-  let startY = 0;
-  let startTop = 0;
-  let startRight = 0;
-  let frameRequested = false;
-  let targetTop = 0;
-  let targetRight = 0;
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => {
+      toast.style.display = 'none';
+    }, 200);
+  }, 2000);
+}
 
-  const container = document.getElementById('map-container');
+// ======== OTIMIZAR ORDEM DAS PARADAS (heurística simples) ========
 
-  function applyPosition() {
-    rotaPanel.style.top = targetTop + 'px';
-    rotaPanel.style.right = targetRight + 'px';
-    frameRequested = false;
+function distanciaPontos(a, b) {
+  const dx = a.lat - b.lat;
+  const dy = a.lng - b.lng;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function otimizarOrdemParadasVizinhoMaisProximo() {
+  const pontos = getPontosNaOrdemPainel();
+  if (!pontos.length) {
+    alert('Nenhuma parada para otimizar.');
+    return;
   }
 
-  rotaPanelHeader.addEventListener('mousedown', e => {
-    dragging = true;
-    const rect = rotaPanel.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
+  if (!origemManual) {
+    const center = map.getCenter();
+    origemManual = { lat: center.lat, lng: center.lng };
+  }
 
-    startX = e.clientX;
-    startY = e.clientY;
-    startTop = rect.top - containerRect.top;
-    startRight = containerRect.right - rect.right;
+  const origem = { lat: origemManual.lat, lng: origemManual.lng };
 
-    document.body.style.userSelect = 'none';
+  const naoVisitados = pontos.map(p => ({ ...p }));
+  const caminho = [];
+
+  let atual = origem;
+
+  while (naoVisitados.length > 0) {
+    let melhorIdx = 0;
+    let melhorDist = Infinity;
+
+    naoVisitados.forEach((p, idx) => {
+      const d = distanciaPontos(atual, p);
+      if (d < melhorDist) {
+        melhorDist = d;
+        melhorIdx = idx;
+      }
+    });
+
+    const escolhido = naoVisitados.splice(melhorIdx, 1)[0];
+    caminho.push(escolhido);
+    atual = escolhido;
+  }
+
+  rotaListaDiv.innerHTML = '';
+  caminho.forEach((ponto, idx) => {
+    const li = document.createElement('li');
+    li.className = 'rota-item';
+    li.setAttribute('draggable', 'true');
+    li.dataset.tipo = ponto.tipo;
+    li.dataset.id = ponto.id;
+
+    const handle = document.createElement('div');
+    handle.className = 'rota-item-handle';
+    handle.innerHTML = '⋮⋮';
+
+    const num = document.createElement('div');
+    num.className = 'rota-item-num';
+    num.textContent = idx + 1;
+
+    const labelWrap = document.createElement('div');
+    labelWrap.className = 'rota-item-label';
+
+    const main = document.createElement('div');
+    main.className = 'rota-item-label-main';
+    main.textContent =
+      ponto.tipo === 'cliente'
+        ? ponto.label
+        : `[Manual] ${ponto.label}`;
+
+    const sub = document.createElement('div');
+    sub.className = 'rota-item-label-sub';
+    sub.textContent =
+      ponto.endereco ||
+      `${ponto.lat.toFixed(5)}, ${ponto.lng.toFixed(5)}`;
+
+    labelWrap.appendChild(main);
+    labelWrap.appendChild(sub);
+
+    const remover = document.createElement('button');
+    remover.className = 'rota-item-remove';
+    remover.type = 'button';
+    remover.textContent = '×';
+    remover.title = 'Remover ponto';
+    remover.addEventListener('click', e => {
+      e.stopPropagation();
+      removerPontoDaRota(ponto);
+    });
+
+    li.appendChild(handle);
+    li.appendChild(num);
+    li.appendChild(labelWrap);
+    li.appendChild(remover);
+
+    rotaListaDiv.appendChild(li);
   });
 
-  window.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
+  configurarDragAndDropPainelRota();
+  gerarRotaAuto(); // recalcula rota na hora
+}
 
-    const containerRect = container.getBoundingClientRect();
-    const painelLargura = rotaPanel.offsetWidth || 260;
+// ======== INIT / EVENTOS ========
 
-    let newTop = startTop + dy;
-    let newRight = startRight - dx;
+function initLogistica() {
+  tipoOrigemSelect.addEventListener('change', () => {
+    origemAtual = tipoOrigemSelect.value;
+    idsSelecionados.clear();
+    pontosManuais = [];
+    limparRota();
 
-    const minTop = 8;
-    const maxTop = containerRect.height - 80;
-    if (newTop < minTop) newTop = minTop;
-    if (newTop > maxTop) newTop = maxTop;
-
-    const minRight = 8;
-    const maxRight = containerRect.width - painelLargura - 8;
-    if (newRight < minRight) newRight = minRight;
-    if (newRight > maxRight) newRight = maxRight;
-
-    targetTop = newTop;
-    targetRight = newRight;
-
-    if (!frameRequested) {
-      frameRequested = true;
-      window.requestAnimationFrame(applyPosition);
+    if (origemAtual === 'pedidos') {
+      grupoVendedoresDiv.style.display = 'none';
+      carregarPedidosPendentes();
+    } else if (origemAtual === 'clientes') {
+      grupoVendedoresDiv.style.display = 'none';
+      carregarClientesNormais();
+    } else if (origemAtual === 'carteira') {
+      grupoVendedoresDiv.style.display = '';
+      carregarVendedores();
+      renderClientes([]);
     }
   });
 
-  window.addEventListener('mouseup', () => {
-    if (dragging) {
-      dragging = false;
-      document.body.style.userSelect = '';
-    }
+  selectVendedor.addEventListener('change', () => {
+    const codvend = selectVendedor.value;
+    carregarCarteiraPorVendedor(codvend);
   });
-})();
 
-rotaPanelMinimize.addEventListener('click', () => {
-  const body = rotaPanel.querySelector('.rota-body');
-  const isHidden = body.style.display === 'none';
-  body.style.display = isHidden ? 'flex' : 'none';
-  rotaPanelMinimize.textContent = isHidden ? '−' : '+';
-});
+  filtroNomeInput.addEventListener('input', () => {
+    aplicarFiltroLocal();
+  });
 
-// ======== EVENTOS / INIT ========
+  btnSelecionarTodos.addEventListener('click', () => {
+    marcarTodosVisiveis(true);
+  });
 
-configurarInfiniteScrollClientes();
-filtroNomeInput.addEventListener('input', aplicarFiltroLocal);
+  btnLimparSelecao.addEventListener('click', () => {
+    marcarTodosVisiveis(false);
+  });
 
-document
-  .getElementById('btnSelecionarTodos')
-  .addEventListener('click', () => marcarTodosVisiveis(true));
+  btnGerarRota.addEventListener('click', () => {
+    gerarRotaAuto();
+  });
 
-document
-  .getElementById('btnLimparSelecao')
-  .addEventListener('click', () => marcarTodosVisiveis(false));
+  btnGerarLinkMaps.addEventListener('click', () => {
+    gerarLinkGoogleMaps();
+  });
 
-btnGerarRota.addEventListener('click', dispararAtualizarRota);
+  btnGerarLinkMapsSidebar.addEventListener('click', () => {
+    gerarLinkGoogleMaps();
+  });
 
-btnGerarLinkMaps.addEventListener('click', gerarLinkGoogleMaps);
-btnGerarLinkMapsSidebar.addEventListener('click', gerarLinkGoogleMaps);
-
-btnAdicionarPonto.addEventListener('click', adicionarPontoManual);
-novoPontoInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
+  btnAdicionarPonto.addEventListener('click', () => {
     adicionarPontoManual();
-  }
-});
+  });
 
-if (chkVerTransito) {
+  novoPontoInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      adicionarPontoManual();
+    }
+  });
+
   chkVerTransito.addEventListener('change', () => {
     toggleTraffic(chkVerTransito.checked);
+    if (chkVerTransito.checked) {
+      carregarIncidentesTomTom();
+      map.on('moveend', carregarIncidentesTomTom);
+    } else {
+      incidentMarkers.forEach(m => map.removeLayer(m));
+      incidentMarkers = [];
+      map.off('moveend', carregarIncidentesTomTom);
+    }
   });
+
+  btnOtimizarRota.addEventListener('click', () => {
+    otimizarOrdemParadasVizinhoMaisProximo();
+  });
+
+  rotaPanelMinimize.addEventListener('click', () => {
+    rotaPanel.classList.toggle('minimized');
+  });
+
+  configurarInfiniteScrollClientes();
+
+  carregarPedidosPendentes();
 }
 
-// seleção de origem:
-// - pedidos: NÃO mostra vendedor, carrega pedidos geral (pode dar 500, mas tratado)
-// - clientes: NÃO mostra vendedor, carrega clientes
-// - carteira: MOSTRA vendedor, só carrega carteira após escolher vendedor
-tipoOrigemSelect.addEventListener('change', async () => {
-  origemAtual = tipoOrigemSelect.value;
-
-  filtroNomeInput.value = '';
-  idsSelecionados.clear();
-  pontosManuais = [];
-  limparRota();
-  rotaListaDiv.innerHTML = '';
-  atualizarContadorSelecionados();
-
-  if (origemAtual === 'pedidos') {
-    grupoVendedoresDiv.style.display = 'none';
-    await carregarPedidosPendentes(null);
-  } else if (origemAtual === 'clientes') {
-    grupoVendedoresDiv.style.display = 'none';
-    await carregarClientesNormais();
-  } else if (origemAtual === 'carteira') {
-    grupoVendedoresDiv.style.display = 'block';
-    if (!cacheVendedores.length) {
-      await carregarVendedores();
-    }
-    renderClientes([]);
-  }
-});
-
-// mudança de vendedor: só faz sentido em carteira
-selectVendedor.addEventListener('change', async () => {
-  const codvend = selectVendedor.value;
-  idsSelecionados.clear();
-  pontosManuais = [];
-  limparRota();
-  rotaListaDiv.innerHTML = '';
-  atualizarContadorSelecionados();
-
-  if (origemAtual !== 'carteira') {
-    return;
-  }
-
-  if (!codvend) {
-    renderClientes([]);
-    return;
-  }
-
-  await carregarCarteiraPorVendedor(codvend);
-});
-
-// origem padrão: pedidos pendentes (sem vendedor)
-(async function initOrigemPadrao() {
-  origemAtual = 'pedidos';
-  grupoVendedoresDiv.style.display = 'none';
-  await carregarPedidosPendentes(null);
-})();
-
-map.on('moveend', () => {
-  carregarIncidentesTomTom();
-});
-
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    map.invalidateSize();
-    carregarIncidentesTomTom();
-  }, 200);
-});
+document.addEventListener('DOMContentLoaded', initLogistica);

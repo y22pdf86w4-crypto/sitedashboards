@@ -1,4 +1,3 @@
-// index.js
 require('dotenv').config();
 
 const express = require('express');
@@ -15,17 +14,13 @@ function getUsuarioFromReq(req) {
   return (req.headers['x-usuario-email'] || '').toString();
 }
 
-async function logDespesa(pool, {
-  operacao,
-  usuarioEmail,
-  idDespesa,
-  empresa,
-  antes,
-  depois,
-  detalhes
-}) {
+async function logDespesa(
+  pool,
+  { operacao, usuarioEmail, idDespesa, empresa, antes, depois, detalhes }
+) {
   try {
-    const reqSql = pool.request()
+    const reqSql = pool
+      .request()
       .input('Operacao', operacao)
       .input('UsuarioEmail', usuarioEmail || 'desconhecido')
       .input('IdDespesa', idDespesa || null)
@@ -45,16 +40,13 @@ async function logDespesa(pool, {
   }
 }
 
-async function logAuditGenerico(pool, {
-  entidade,
-  entidadeId,
-  acao,
-  usuarioEmail,
-  empresa,
-  detalhes
-}) {
+async function logAuditGenerico(
+  pool,
+  { entidade, entidadeId, acao, usuarioEmail, empresa, detalhes }
+) {
   try {
-    const reqSql = pool.request()
+    const reqSql = pool
+      .request()
       .input('entidade', entidade)
       .input('entidade_id', entidadeId || null)
       .input('acao', acao)
@@ -105,7 +97,9 @@ app.get('/api/v1/geocode', async (req, res) => {
   }
 
   if (!GOOGLE_KEY) {
-    return res.status(500).json({ error: 'GEOCODING key não configurada no .env' });
+    return res
+      .status(500)
+      .json({ error: 'GEOCODING key não configurada no .env' });
   }
 
   const original = String(endereco).trim();
@@ -125,14 +119,20 @@ app.get('/api/v1/geocode', async (req, res) => {
     console.log('[GEOCODE] HTTP status Google:', resp.status);
 
     if (!resp.ok) {
-      return res.status(502).json({ error: 'Erro HTTP no Google Geocoding', status: resp.status });
+      return res.status(502).json({
+        error: 'Erro HTTP no Google Geocoding',
+        status: resp.status
+      });
     }
 
     const data = await resp.json();
     console.log('[GEOCODE] Google status:', data.status);
 
     if (data.status !== 'OK' || !data.results || !data.results.length) {
-      return res.status(404).json({ error: 'Nenhum resultado para o endereço', google_status: data.status });
+      return res.status(404).json({
+        error: 'Nenhum resultado para o endereço',
+        google_status: data.status
+      });
     }
 
     const loc = data.results[0].geometry.location;
@@ -148,7 +148,9 @@ app.get('/api/v1/geocode', async (req, res) => {
     });
   } catch (e) {
     console.error('[GEOCODE] Erro geral:', e);
-    return res.status(500).json({ error: 'Erro interno no geocode', detail: e.message });
+    return res
+      .status(500)
+      .json({ error: 'Erro interno no geocode', detail: e.message });
   }
 });
 
@@ -160,7 +162,9 @@ app.get('/api/v1/logistica/tomtom/incidentes', async (req, res) => {
   try {
     if (!TOMTOM_KEY) {
       console.error('[TOMTOM INCIDENTS] TOMTOM_TRAFFIC_KEY não configurada');
-      return res.status(500).json({ error: 'TOMTOM_TRAFFIC_KEY não configurada no .env' });
+      return res
+        .status(500)
+        .json({ error: 'TOMTOM_TRAFFIC_KEY não configurada no .env' });
     }
 
     let bboxStr = (req.query.bbox || '').toString().trim();
@@ -197,7 +201,8 @@ app.get('/api/v1/logistica/tomtom/incidentes', async (req, res) => {
     const params = new URLSearchParams({
       key: TOMTOM_KEY,
       bbox: clampedBbox,
-      fields: '{incidents{type,geometry{type,coordinates},properties{iconCategory,events{description}}}}',
+      fields:
+        '{incidents{type,geometry{type,coordinates},properties{iconCategory,events{description}}}}',
       language: 'en-GB',
       timeValidityFilter: 'present'
     });
@@ -238,7 +243,12 @@ app.get('/api/v1/logistica/tomtom/incidentes', async (req, res) => {
     try {
       data = text ? JSON.parse(text) : {};
     } catch (err) {
-      console.error('[TOMTOM INCIDENTS] Erro ao parsear JSON:', err, 'body=', text);
+      console.error(
+        '[TOMTOM INCIDENTS] Erro ao parsear JSON:',
+        err,
+        'body=',
+        text
+      );
       return res.status(502).json({
         error: 'Resposta inválida da TomTom',
         detail: err.message || String(err),
@@ -309,9 +319,13 @@ app.get('/api/v1/logistica/clientes', async (req, res) => {
       ].filter(Boolean);
 
       const latNum =
-        r.lat !== null && !isNaN(parseFloat(r.lat)) ? parseFloat(r.lat) : null;
+        r.lat !== null && !isNaN(parseFloat(r.lat))
+          ? parseFloat(r.lat)
+          : null;
       const lngNum =
-        r.lng !== null && !isNaN(parseFloat(r.lng)) ? parseFloat(r.lng) : null;
+        r.lng !== null && !isNaN(parseFloat(r.lng))
+          ? parseFloat(r.lng)
+          : null;
 
       return {
         id: r.codigo,
@@ -329,41 +343,65 @@ app.get('/api/v1/logistica/clientes', async (req, res) => {
     res.json({ clientes });
   } catch (e) {
     console.error('Erro GET /api/v1/logistica/clientes:', e);
-    res.status(500).json({ error: 'Erro ao buscar clientes', detail: e.message });
+    res
+      .status(500)
+      .json({ error: 'Erro ao buscar clientes', detail: e.message });
   }
 });
 
-/* ================== VENDEDORES ================== */
+/* ================== VENDEDORES (unificados via CASE) ================== */
 // GET /api/v1/vendedores
 // GET /api/v1/vendedores?nome=THIAGO
 app.get('/api/v1/vendedores', async (req, res) => {
   try {
     const nomeFiltro = (req.query.nome || '').trim();
 
-    const sqlBase = `
+    const sqlWrapped = `
       SELECT
-        CODIGOVENDEDOR AS codvend,
-        NOMEVENDEDOR   AS nome_vendedor,
-        CARGO          AS cargo,
-        CODIGOPARCEIRO AS codparc
-      FROM dbo.dimVendedorSKW
-      WHERE 1 = 1
+        MIN(codvend)   AS codvend,
+        nome_unificado AS nome_vendedor,
+        COUNT(DISTINCT codparc) AS QtdeClientes
+      FROM (
+        SELECT
+          c.CODVEND AS codvend,
+          c.CODPARC AS codparc,
+          CASE
+            WHEN c.CODVEND IN (148, 128)           THEN 'JANDIERRE SANTOS BRAGA'
+            WHEN c.CODVEND IN (163, 171)           THEN 'BERSONN NESTAN'
+            WHEN c.CODVEND IN (15, 51)             THEN 'JOSE VICENTE'
+            WHEN c.CODVEND = 2                     THEN 'ALTEMIR POLEZE'
+            WHEN c.CODVEND IN (22, 61)             THEN 'LITHO'
+            ELSE c.NOME_VENDEDOR
+          END AS nome_unificado
+        FROM dbo.dimCarteiraSKW c
+        WHERE c.CODVEND IS NOT NULL
+          AND c.CODVEND <> 0
+      ) v
+      ${nomeFiltro ? 'WHERE v.nome_unificado LIKE @nome' : ''}
+      GROUP BY nome_unificado
+      ORDER BY nome_unificado;
     `;
 
-    const sqlQuery = nomeFiltro
-      ? sqlBase + ' AND NOMEVENDEDOR LIKE @nome ORDER BY NOMEVENDEDOR;'
-      : sqlBase + ' ORDER BY NOMEVENDEDOR;';
-
-    const result = await runQuery(sqlQuery, request => {
+    const result = await runQuery(sqlWrapped, request => {
       if (nomeFiltro) {
         request.input('nome', `%${nomeFiltro}%`);
       }
     });
 
-    res.json({ vendedores: result.recordset });
+    const vendedores = result.recordset.map(r => ({
+      codvend: r.codvend,
+      nome_vendedor: r.nome_vendedor,
+      qtde_clientes: r.QtdeClientes,
+      cargo: null,
+      codparc: null
+    }));
+
+    res.json({ vendedores });
   } catch (e) {
     console.error('Erro GET /api/v1/vendedores:', e);
-    res.status(500).json({ error: 'Erro ao buscar vendedores', detail: e.message });
+    res
+      .status(500)
+      .json({ error: 'Erro ao buscar vendedores', detail: e.message });
   }
 });
 
@@ -379,29 +417,81 @@ app.get('/api/v1/carteira', async (req, res) => {
       });
     }
 
-    const sqlQuery = `
-      SELECT
-        c.CODVEND       AS codvend,
-        c.NOME_VENDEDOR AS nome_vendedor,
-        c.CODPARC       AS codparc,
-        c.NOME_CLIENTE  AS nome_cliente,
-        c.CODEMP        AS codemp,
-        c.DTLIM         AS dtlim,
-        c.LIMCRED       AS limcred,
-        p.ParceiroLogradouro             AS logradouro,
-        ISNULL(p.ParceiroEnderecoNumero, 0) AS numero,
-        p.ParceiroBairro                 AS bairro,
-        p.ParceiroCidade                 AS cidade,
-        p.ParceiroUFSigla                AS uf,
-        p.ParceiroCEP                    AS cep,
-        p.ParceiroLatitude               AS lat,
-        p.ParceiroLongitude              AS lng
-      FROM dbo.dimCarteiraSKW c
-      LEFT JOIN dbo.dimParceiroSkw p
-             ON p.ParceiroCodigo = c.CODPARC
-      WHERE c.CODVEND = @codvend
-      ORDER BY c.NOME_CLIENTE;
-    `;
+const sqlQuery = `
+  WITH CTE AS (
+    SELECT
+      c.CODVEND       AS codvend,
+      c.NOME_VENDEDOR AS nome_vendedor,
+      c.CODPARC       AS codparc,
+      c.NOME_CLIENTE  AS nome_cliente,
+      c.CODEMP        AS codemp,
+      c.DTLIM         AS dtlim,
+      c.LIMCRED       AS limcred,
+      p.ParceiroLogradouro             AS logradouro,
+      ISNULL(p.ParceiroEnderecoNumero, 0) AS numero,
+      p.ParceiroBairro                 AS bairro,
+      p.ParceiroCidade                 AS cidade,
+      p.ParceiroUFSigla                AS uf,
+      p.ParceiroCEP                    AS cep,
+      p.ParceiroLatitude               AS lat,
+      p.ParceiroLongitude              AS lng,
+      ROW_NUMBER() OVER (
+        PARTITION BY c.CODVEND, c.CODPARC
+        ORDER BY c.DTLIM DESC, c.CODEMP DESC
+      ) AS rn
+    FROM dbo.dimCarteiraSKW c
+    LEFT JOIN dbo.dimParceiroSkw p
+           ON p.ParceiroCodigo = c.CODPARC
+    WHERE
+      (
+        -- JANDIERRE
+        (@codvend = 148 AND c.CODVEND IN (148, 128)) OR
+        (@codvend = 128 AND c.CODVEND IN (148, 128)) OR
+
+        -- BERSONN
+        (@codvend = 163 AND c.CODVEND IN (163, 171)) OR
+        (@codvend = 171 AND c.CODVEND IN (163, 171)) OR
+
+        -- JOSE VICENTE
+        (@codvend = 15  AND c.CODVEND IN (15, 51)) OR
+        (@codvend = 51  AND c.CODVEND IN (15, 51)) OR
+
+        -- ALTEMIR
+        (@codvend = 2   AND c.CODVEND = 2) OR
+
+        -- LITHO
+        (@codvend = 22  AND c.CODVEND IN (22, 61)) OR
+        (@codvend = 61  AND c.CODVEND IN (22, 61)) OR
+
+        -- demais vendedores
+        (
+          c.CODVEND NOT IN (148,128,163,171,15,51,2,22,61)
+          AND c.CODVEND = @codvend
+        )
+      )
+  )
+  SELECT
+    codvend,
+    nome_vendedor,
+    codparc,
+    nome_cliente,
+    codemp,
+    dtlim,
+    limcred,
+    logradouro,
+    numero,
+    bairro,
+    cidade,
+    uf,
+    cep,
+    lat,
+    lng
+  FROM CTE
+  WHERE rn = 1
+  ORDER BY nome_cliente;
+`;
+
+
 
     const result = await runQuery(sqlQuery, request => {
       request.input('codvend', codvend);
@@ -410,7 +500,9 @@ app.get('/api/v1/carteira', async (req, res) => {
     res.json({ carteira: result.recordset });
   } catch (e) {
     console.error('Erro GET /api/v1/carteira:', e);
-    res.status(500).json({ error: 'Erro ao buscar carteira', detail: e.message });
+    res
+      .status(500)
+      .json({ error: 'Erro ao buscar carteira', detail: e.message });
   }
 });
 
@@ -457,7 +549,8 @@ app.get('/api/v1/pedidos-pendentes', async (req, res) => {
     `;
 
     const sqlQuery = codvend
-      ? sqlBase + ' AND pped.CODVEND = @codvend ORDER BY pped.DTNEG DESC, pped.NUNOTA DESC;'
+      ? sqlBase +
+        ' AND pped.CODVEND = @codvend ORDER BY pped.DTNEG DESC, pped.NUNOTA DESC;'
       : sqlBase + ' ORDER BY pped.DTNEG DESC, pped.NUNOTA DESC;';
 
     const result = await runQuery(sqlQuery, request => {
@@ -469,7 +562,10 @@ app.get('/api/v1/pedidos-pendentes', async (req, res) => {
     res.json({ pedidos: result.recordset });
   } catch (e) {
     console.error('Erro GET /api/v1/pedidos-pendentes:', e);
-    res.status(500).json({ error: 'Erro ao buscar pedidos pendentes', detail: e.message });
+    res.status(500).json({
+      error: 'Erro ao buscar pedidos pendentes',
+      detail: e.message
+    });
   }
 });
 
@@ -479,11 +575,14 @@ app.get('/api/v1/contatos', async (req, res) => {
   try {
     const empresa = req.query.empresa;
     if (!empresa) {
-      return res.status(400).json({ error: 'Parâmetro "empresa" é obrigatório.' });
+      return res
+        .status(400)
+        .json({ error: 'Parâmetro "empresa" é obrigatório.' });
     }
 
     const pool = await getPoolWithRetry();
-    const result = await pool.request()
+    const result = await pool
+      .request()
       .input('empresa', empresa)
       .query(`
         SELECT
@@ -503,7 +602,9 @@ app.get('/api/v1/contatos', async (req, res) => {
     res.json({ contatos: result.recordset });
   } catch (e) {
     console.error('Erro GET /api/v1/contatos:', e);
-    res.status(500).json({ error: 'Erro ao buscar contatos', detail: e.message });
+    res
+      .status(500)
+      .json({ error: 'Erro ao buscar contatos', detail: e.message });
   }
 });
 
@@ -518,7 +619,8 @@ app.post('/api/v1/contatos', async (req, res) => {
     }
 
     const pool = await getPoolWithRetry();
-    const result = await pool.request()
+    const result = await pool
+      .request()
       .input('empresa', empresa)
       .input('nome', nome)
       .input('telefone', telefone)
@@ -543,7 +645,9 @@ app.post('/api/v1/contatos', async (req, res) => {
     res.status(201).json({ contato });
   } catch (e) {
     console.error('Erro POST /api/v1/contatos:', e);
-    res.status(500).json({ error: 'Erro ao criar contato', detail: e.message });
+    res
+      .status(500)
+      .json({ error: 'Erro ao criar contato', detail: e.message });
   }
 });
 
@@ -563,7 +667,8 @@ app.put('/api/v1/contatos/:id', async (req, res) => {
 
     const pool = await getPoolWithRetry();
 
-    const rsAntes = await pool.request()
+    const rsAntes = await pool
+      .request()
       .input('id', id)
       .query(`
         SELECT *
@@ -576,7 +681,8 @@ app.put('/api/v1/contatos/:id', async (req, res) => {
       return res.status(404).json({ error: 'Contato não encontrado.' });
     }
 
-    const result = await pool.request()
+    const result = await pool
+      .request()
       .input('id', id)
       .input('nome', nome)
       .input('telefone', telefone)
@@ -606,7 +712,9 @@ app.put('/api/v1/contatos/:id', async (req, res) => {
     res.json({ contato });
   } catch (e) {
     console.error('Erro PUT /api/v1/contatos/:id:', e);
-    res.status(500).json({ error: 'Erro ao atualizar contato', detail: e.message });
+    res
+      .status(500)
+      .json({ error: 'Erro ao atualizar contato', detail: e.message });
   }
 });
 
@@ -622,7 +730,8 @@ app.delete('/api/v1/contatos/:id', async (req, res) => {
 
     const pool = await getPoolWithRetry();
 
-    const rsAntes = await pool.request()
+    const rsAntes = await pool
+      .request()
       .input('id', id)
       .query(`
         SELECT *
@@ -635,14 +744,18 @@ app.delete('/api/v1/contatos/:id', async (req, res) => {
       return res.status(404).json({ error: 'Contato não encontrado.' });
     }
 
-    const result = await pool.request()
+    const result = await pool
+      .request()
       .input('id', id)
       .query(`
         DELETE FROM dbo.dimContatos
         WHERE id = @id;
       `);
 
-    const rows = result.rowsAffected && result.rowsAffected[0] ? result.rowsAffected[0] : 0;
+    const rows =
+      result.rowsAffected && result.rowsAffected[0]
+        ? result.rowsAffected[0]
+        : 0;
     if (rows === 0) {
       return res.status(404).json({ error: 'Contato não encontrado.' });
     }
@@ -659,7 +772,9 @@ app.delete('/api/v1/contatos/:id', async (req, res) => {
     res.status(204).send();
   } catch (e) {
     console.error('Erro DELETE /api/v1/contatos/:id:', e);
-    res.status(500).json({ error: 'Erro ao excluir despesa', detail: e.message });
+    res
+      .status(500)
+      .json({ error: 'Erro ao excluir despesa', detail: e.message });
   }
 });
 
@@ -689,7 +804,9 @@ app.get('/api/v1/despesas', async (req, res) => {
     const dataProxMes = new Date(
       `${anoProx}-${String(proximoMes).padStart(2, '0')}-01T00:00:00Z`
     );
-    const dataFimDate = new Date(dataProxMes.getTime() - 24 * 60 * 60 * 1000);
+    const dataFimDate = new Date(
+      dataProxMes.getTime() - 24 * 60 * 60 * 1000
+    );
     const dataFim = dataFimDate.toISOString().substring(0, 10);
 
     const pool = await getPoolWithRetry();
@@ -723,7 +840,10 @@ app.get('/api/v1/despesas', async (req, res) => {
       status: d.status,
       recorrencia_tipo: d.recorrencia_tipo,
       tipos_aviso: d.tipos_aviso
-        ? String(d.tipos_aviso).split(',').map(x => x.trim()).filter(Boolean)
+        ? String(d.tipos_aviso)
+            .split(',')
+            .map(x => x.trim())
+            .filter(Boolean)
         : ['3'],
       contatos: d.contatos_json ? JSON.parse(d.contatos_json) : []
     }));
@@ -736,7 +856,9 @@ app.get('/api/v1/despesas', async (req, res) => {
     });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Erro ao buscar despesas', detail: e.message });
+    res
+      .status(500)
+      .json({ error: 'Erro ao buscar despesas', detail: e.message });
   }
 });
 
@@ -822,7 +944,9 @@ app.post('/api/v1/despesas', async (req, res) => {
     });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Erro ao criar despesa', detail: e.message });
+    res
+      .status(500)
+      .json({ error: 'Erro ao criar despesa', detail: e.message });
   }
 });
 
@@ -887,7 +1011,8 @@ app.put('/api/v1/despesas/:id', async (req, res) => {
 
     const pool = await getPoolWithRetry();
 
-    const rsAntes = await pool.request()
+    const rsAntes = await pool
+      .request()
       .input('id', id)
       .query(`
         SELECT
@@ -984,13 +1109,18 @@ app.put('/api/v1/despesas/:id', async (req, res) => {
       status: d.status,
       recorrencia_tipo: d.recorrencia_tipo,
       tipos_aviso: d.tipos_aviso
-        ? String(d.tipos_aviso).split(',').map(x => x.trim()).filter(Boolean)
+        ? String(d.tipos_aviso)
+            .split(',')
+            .map(x => x.trim())
+            .filter(Boolean)
         : ['3'],
       contatos: d.contatos_json ? JSON.parse(d.contatos_json) : []
     });
   } catch (e) {
     console.error('Erro ao atualizar despesa', e);
-    res.status(500).json({ error: 'Erro ao atualizar despesa', detail: e.message });
+    res
+      .status(500)
+      .json({ error: 'Erro ao atualizar despesa', detail: e.message });
   }
 });
 
@@ -1003,7 +1133,8 @@ app.delete('/api/v1/despesas/:id', async (req, res) => {
 
     const pool = await getPoolWithRetry();
 
-    const rsAntes = await pool.request()
+    const rsAntes = await pool
+      .request()
       .input('id', id)
       .query(`
         SELECT
@@ -1029,7 +1160,10 @@ app.delete('/api/v1/despesas/:id', async (req, res) => {
         WHERE IdDespesa = @id;
       `);
 
-    const rows = result.rowsAffected && result.rowsAffected[0] ? result.rowsAffected[0] : 0;
+    const rows =
+      result.rowsAffected && result.rowsAffected[0]
+        ? result.rowsAffected[0]
+        : 0;
 
     if (rows === 0) {
       return res.status(404).json({ error: 'Despesa não encontrada.' });
@@ -1063,7 +1197,9 @@ app.delete('/api/v1/despesas/:id', async (req, res) => {
     res.status(204).send();
   } catch (e) {
     console.error('Erro ao excluir despesa', e);
-    res.status(500).json({ error: 'Erro ao excluir despesa', detail: e.message });
+    res
+      .status(500)
+      .json({ error: 'Erro ao excluir despesa', detail: e.message });
   }
 });
 

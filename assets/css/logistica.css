@@ -534,6 +534,21 @@ body.logistica-page {
   border-color: rgba(59, 130, 246, 0.9);
 }
 
+/* NOVO: clientes sem localização */
+.cliente-sem-localizacao {
+  border-left: 3px solid #f97316;
+  background: linear-gradient(
+      90deg,
+      rgba(248, 113, 113, 0.15),
+      transparent 60%
+    ),
+    rgba(15, 23, 42, 0.95);
+}
+
+.cliente-sem-localizacao .nome {
+  color: #fed7aa;
+}
+
 /* wrapper do checkbox do cliente (usa neon também) */
 .cliente-checkbox {
   /* input fica invisível, estilo vem do .checkbox-wrapper */
@@ -570,6 +585,7 @@ body.logistica-page {
 }
 
 .cliente-textos .badge.alerta {
+  font-size: 11px;
   color: #fecaca;
   border-color: rgba(248, 113, 113, 0.85);
   background: rgba(127, 29, 29, 0.85);
@@ -1133,41 +1149,28 @@ body.logistica-page {
 }
 
 /* ===== PIN DA MINHA LOCALIZAÇÃO (HTML + CSS) ===== */
+.pin-minha-localizacao { 
+  position: relative; 
+  width: 26px; 
+  height: 26px; 
+  background: #ff5b6b; 
+  border-radius: 50%; 
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.4); 
+} 
 
-.pin-minha-localizacao {
-  position: relative;
-  width: 26px;
-  height: 26px;
-  background: #ff5b6b;
-  border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.4);
-}
+/* círculo interno */ 
+.pin-minha-localizacao::before { 
+  content: ""; 
+  position: absolute; 
+  top: 50%; 
+  left: 50%; 
+  width: 14px; 
+  height: 14px; 
+  background: #e3324d; 
+  border-radius: 50%; 
+  transform: translate(-50%, -50%); 
+} 
 
-/* círculo interno */
-.pin-minha-localizacao::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 14px;
-  height: 14px;
-  background: #e3324d;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* “rabo” do pin */
-.pin-minha-localizacao::after {
-  content: "";
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  width: 14px;
-  height: 14px;
-  background: #ff5b6b;
-  transform: translateX(-50%) rotate(45deg);
-  border-radius: 0 0 6px 0;
-}
 
 /* ==========================================================
    RESPONSIVO
