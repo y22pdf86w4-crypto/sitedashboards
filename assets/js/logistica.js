@@ -1,6 +1,5 @@
 // ======== CONFIG API BASE ========
 
-
 // Só define se ainda não existir
 if (window.API_BASE === undefined) {
   const DEFAULT_LOGISTICA_API_BASE =
@@ -17,15 +16,12 @@ console.log('logistica.js carregado. API_BASE =', window.API_BASE);
 
 // ======== CONSTANTES DE LIMITE ========
 
-// limite "seguro" de pontos para rota (origem + paradas + destino)
 const LIMITE_PONTOS_ROTA = 80;
 
 // ======== TOMTOM TRAFFIC (FLOW) ========
 
-// API key de teste (TomTom) – aqui só para tiles de fluxo
 const TOMTOM_API_KEY = 'l22aGTuKjY30e1lAcUqAup3XZ8pYzCOb';
 
-// Camada de fluxo de trânsito da TomTom (overlay sobre o tile base)
 const tomtomTrafficLayer = L.tileLayer(
   'https://api.tomtom.com/traffic/map/4/tile/flow/absolute/{z}/{x}/{y}.png?key=' + TOMTOM_API_KEY,
   {
@@ -46,14 +42,13 @@ function toggleTraffic(ativo) {
 
 let incidentMarkers = [];
 
-// ícone simples por categoria
 function escolherIconePorCategoria(cat) {
-  let color = '#2563eb'; // default azul
+  let color = '#2563eb';
 
-  if (cat === 1) color = '#ef4444';        // Accident
-  else if (cat === 6) color = '#f97316';   // Jam
-  else if (cat === 8) color = '#111827';   // RoadClosed
-  else if (cat === 9) color = '#eab308';   // RoadWorks
+  if (cat === 1) color = '#ef4444';
+  else if (cat === 6) color = '#f97316';
+  else if (cat === 8) color = '#111827';
+  else if (cat === 9) color = '#eab308';
 
   return L.divIcon({
     className: 'incident-marker-wrapper',
@@ -67,30 +62,15 @@ function escolherIconePorCategoria(cat) {
   });
 }
 
-// NOVO: traduz descrição da TomTom para texto customizado
 function traduzirDescricaoTomTom(desc, props = {}) {
   if (!desc) return 'Incidente de trânsito';
-
   const d = String(desc).toLowerCase();
-
-  // exemplos de mapeamento simples
-  if (d.includes('queuing traffic')) {
-    return '🚗🚗 Trânsito em fila (lento)';
-  }
-  if (d.includes('stationary traffic')) {
-    return '⛔ Trânsito parado';
-  }
-
-  // você pode usar iconCategory / magnitudeOfDelay / roadNumber etc. de props
-  // para montar mensagens mais ricas, ex:
-  // const delay = props.delay || props.magnitudeOfDelay;
-
-  // fallback: mantém a descrição original
+  if (d.includes('queuing traffic')) return '🚗🚗 Trânsito em fila (lento)';
+  if (d.includes('stationary traffic')) return '⛔ Trânsito parado';
   return desc;
 }
 
 async function carregarIncidentesTomTom() {
-  // limpa markers antigos
   incidentMarkers.forEach(m => map.removeLayer(m));
   incidentMarkers = [];
 
@@ -100,7 +80,6 @@ async function carregarIncidentesTomTom() {
   const maxLat = bounds.getNorth();
   const maxLon = bounds.getEast();
 
-  // Evita erro de área > 10.000km²: só chama com zoom mais próximo
   if (map.getZoom() < 9) {
     console.log('Zoom muito baixo para incidentes, pulando chamada TomTom');
     return;
@@ -123,8 +102,6 @@ async function carregarIncidentesTomTom() {
       const cat = props.iconCategory;
       const evt = (props.events && props.events[0]) || {};
       const descrOriginal = evt.description || 'Incidente de trânsito';
-
-      // usa texto customizado em vez do texto bruto da TomTom
       const descr = traduzirDescricaoTomTom(descrOriginal, props);
 
       let lat = null;
@@ -179,17 +156,18 @@ const CartoDB_VoyagerLabelsUnder = L.tileLayer(
 );
 
 CartoDB_VoyagerLabelsUnder.addTo(map);
-
-// Opcional: desabilitar zoom por doubleclick para usar apenas dblclick como "adicionar ponto"
 map.doubleClickZoom.disable();
 
 // ======== ESTADO ========
 
 let routingControl = null;
 let clienteMarkers = {};
-let todosMarkersRota = [];        // markers de rota (clientes + manuais)
+let todosMarkersRota = [];
 let ultimaRotaWaypoints = [];
 let cacheClientes = [];
+let cachePedidosPendentes = [];
+let cacheCarteira = [];
+let cacheVendedores = [];
 let clientesFiltradosAtuais = [];
 let paginaClientes = 0;
 const TAMANHO_PAGINA = 30;
@@ -200,14 +178,13 @@ let dragListaConfigurado = false;
 
 let idsSelecionados = new Set();
 
-// marcador da origem (minha localização)
-let marcadorLocalizacao = null;
+// origemAtual: 'pedidos' | 'clientes' | 'carteira'
+let origemAtual = 'pedidos';
 
-// pontos manuais
+let marcadorLocalizacao = null;
 let pontosManuais = [];
 let manualIdSeq = 1;
 
-// ícone da origem: pin customizado em HTML/CSS
 const myLocationIcon = L.divIcon({
   className: '',
   html: '<div class="pin-minha-localizacao"></div>',
@@ -217,7 +194,6 @@ const myLocationIcon = L.divIcon({
 
 // ======== DOM ========
 
-// DOM - sidebar
 const listaClientesDiv = document.getElementById('listaClientes');
 const contadorClientesSpan = document.getElementById('contadorClientes');
 const contadorSelecionadosSpan = document.getElementById('contadorSelecionados');
@@ -231,16 +207,19 @@ const filtroNomeInput = document.getElementById('filtroNome');
 const btnGerarLinkMapsSidebar = document.getElementById('btnGerarLinkMapsSidebar');
 
 const chkEvitarPedagios = document.getElementById('chkEvitarPedagios');
-const chkEvitarPontes = document.getElementById('chkEvitarPontes'); // reservado futuro
+const chkEvitarPontes = document.getElementById('chkEvitarPontes');
 const linkMapsDiv = document.getElementById('linkMaps');
 
-// checkbox de trânsito (usa chkVerTransito se existir ou chkEvitarPontes como fallback)
-let chkVerTransito = document.getElementById('chkVerTransito');
-if (!chkVerTransito) {
-  chkVerTransito = chkEvitarPontes;
-}
+// seletor de origem e vendedores
+const tipoOrigemSelect = document.getElementById('tipoOrigem');
+const grupoVendedoresDiv = document.getElementById('grupoVendedores');
+const selectVendedor = document.getElementById('selectVendedor');
 
-// DOM painel rota
+// trânsito
+let chkVerTransito = document.getElementById('chkVerTransito');
+if (!chkVerTransito) chkVerTransito = chkEvitarPontes;
+
+// painel rota
 const rotaListaDiv = document.getElementById('rotaListaPontos');
 const novoPontoInput = document.getElementById('novoPontoInput');
 const btnAdicionarPonto = document.getElementById('btnAdicionarPonto');
@@ -252,7 +231,8 @@ const destinoCampoPainel = document.getElementById('destinoCampoPainel');
 const btnGerarRota = document.getElementById('btnGerarRota');
 const btnGerarLinkMaps = document.getElementById('btnGerarLinkMaps');
 
-// destino só no painel
+// ======== HELPERS ========
+
 function getDestinoCampo() {
   return destinoCampoPainel.value.trim();
 }
@@ -271,8 +251,6 @@ function dispararAtualizarRota() {
   gerarRotaAuto();
 }
 
-// ======== UTILS ========
-
 function removerTodosMarkersDoMapa() {
   todosMarkersRota.forEach(m => {
     if (map.hasLayer(m)) map.removeLayer(m);
@@ -285,7 +263,27 @@ function removerTodosMarkersDoMapa() {
   clienteMarkers = {};
 }
 
-// marcador numerado DRAGGABLE, com referência ao ponto
+// monta string de endereço
+function montarEnderecoPadrao(item) {
+  const partes = [];
+
+  if (item.logradouro) {
+    let log = item.logradouro;
+    if (item.numero) log += `, ${item.numero}`;
+    partes.push(log);
+  }
+
+  const linha2 = [];
+  if (item.bairro) linha2.push(item.bairro);
+  if (item.cidade) linha2.push(item.cidade);
+  if (item.uf) linha2.push(item.uf);
+  if (linha2.length) partes.push(linha2.join(' - '));
+
+  if (item.cep) partes.push(`CEP ${item.cep}`);
+
+  return partes.join(' | ');
+}
+
 function criarMarkerNumerado(lat, lng, numero, titulo, pontoRef) {
   const html = `
     <div class="marker-numero">
@@ -304,12 +302,12 @@ function criarMarkerNumerado(lat, lng, numero, titulo, pontoRef) {
     draggable: true
   }).bindPopup(titulo);
 
-  // ao terminar de arrastar, atualiza a posição do ponto e recalcula rota
   marker.on('dragend', e => {
     const { lat: newLat, lng: newLng } = e.target.getLatLng();
 
     if (pontoRef.tipo === 'cliente') {
-      const c = cacheClientes.find(x => x.id === pontoRef.id);
+      const base = getCacheAtual();
+      const c = base.find(x => x.id === pontoRef.id);
       if (c) {
         c.lat = newLat;
         c.lng = newLng;
@@ -352,8 +350,6 @@ function getPosicaoAtual() {
   });
 }
 
-// ======== TOAST COPIAR LINK ========
-
 function mostrarToastCopiarLink(mensagem) {
   const toast = document.getElementById('toast-copiar-link');
   if (!toast) return;
@@ -387,7 +383,7 @@ async function geocodeEndereco(endereco) {
   }
 }
 
-// ======== LISTA CLIENTES ========
+// ======== LISTA / SELEÇÃO ========
 
 function atualizarResumoSelecionados() {
   const qtde = idsSelecionados.size;
@@ -462,6 +458,7 @@ function criarItemCliente(c) {
     if (checkbox.checked) idsSelecionados.add(c.id);
     else idsSelecionados.delete(c.id);
     atualizarContadorSelecionados();
+    div.classList.toggle('selecionado', checkbox.checked);
   });
 
   const textos = document.createElement('div');
@@ -469,7 +466,13 @@ function criarItemCliente(c) {
 
   const spanNome = document.createElement('span');
   spanNome.className = 'nome';
-  spanNome.textContent = `${c.codigo} - ${c.nome}`;
+
+  const nomePrincipal =
+    c.origemTipo === 'pedido'
+      ? `${c.nunota} - ${c.nome}`
+      : `${c.codigo} - ${c.nome}`;
+
+  spanNome.textContent = nomePrincipal;
 
   const spanBadge = document.createElement('span');
   spanBadge.className = 'badge';
@@ -558,14 +561,14 @@ function renderClientesPagina() {
 }
 
 function renderClientes(clientes) {
-  clientesFiltradosAtuais = clientes || [];
+  clientesFiltradosAtuais = clientes || getCacheAtual();
   paginaClientes = 0;
   limparListaClientesVisual();
   renderClientesPagina();
   configurarDragAndDropLista();
 }
 
-// ======== INFINITE SCROLL CLIENTES ========
+// ======== INFINITE SCROLL ========
 
 function configurarInfiniteScrollClientes() {
   listaClientesDiv.addEventListener('scroll', () => {
@@ -586,9 +589,83 @@ function configurarInfiniteScrollClientes() {
   });
 }
 
-// ======== CARGA INICIAL ========
+// ======== ORIGENS / APIS ========
 
-async function carregarClientesDoServidor() {
+function getCacheAtual() {
+  if (origemAtual === 'pedidos') return cachePedidosPendentes;
+  if (origemAtual === 'clientes') return cacheClientes;
+  if (origemAtual === 'carteira') return cacheCarteira;
+  return [];
+}
+
+async function carregarPedidosPendentes(codvendFiltro) {
+  try {
+    listaClientesDiv.classList.add('loading');
+    listaClientesDiv.innerHTML = '';
+
+    let url = `${window.API_BASE}/pedidos-pendentes`;
+    if (codvendFiltro) {
+      const sep = url.includes('?') ? '&' : '?';
+      url += `${sep}codvend=${encodeURIComponent(codvendFiltro)}`;
+    }
+
+    console.log('GET pedidos pendentes em:', url);
+    const resp = await fetch(url);
+
+    if (!resp.ok) {
+      console.error('Erro HTTP em pedidos pendentes:', resp.status);
+      listaClientesDiv.innerHTML =
+        '<div style="padding:8px;font-size:12px;color:#fca5a5;">Erro ao carregar pedidos pendentes (HTTP ' +
+        resp.status +
+        ').</div>';
+      cachePedidosPendentes = [];
+      return;
+    }
+
+    const data = await resp.json();
+
+    cachePedidosPendentes = (data.pedidos || []).map(p => {
+      const endereco = montarEnderecoPadrao(p);
+
+      return {
+        id: p.NUNOTA,
+        codigo: p.NUNOTA,
+        nome: p.NOME_CLIENTE,
+        endereco,
+        origemTipo: 'pedido',
+        nunota: p.NUNOTA,
+        numnota: p.NUMNOTA,
+        codparc: p.CODPARC,
+        codvend: p.CODVEND,
+        nome_vendedor: p.NOME_VENDEDOR,
+        codemp: p.CODEMP,
+        logradouro: p.logradouro,
+        numero: p.numero,
+        bairro: p.bairro,
+        cidade: p.cidade,
+        uf: p.uf,
+        cep: p.cep,
+        lat: p.lat,
+        lng: p.lng
+      };
+    });
+
+    idsSelecionados.clear();
+    pontosManuais = [];
+    limparRota();
+
+    renderClientes(cachePedidosPendentes);
+  } catch (e) {
+    console.error('Exception em pedidos pendentes:', e);
+    listaClientesDiv.innerHTML =
+      '<div style="padding:8px;font-size:12px;color:#fca5a5;">Erro inesperado ao carregar pedidos pendentes.</div>';
+    cachePedidosPendentes = [];
+  } finally {
+    listaClientesDiv.classList.remove('loading');
+  }
+}
+
+async function carregarClientesNormais() {
   try {
     listaClientesDiv.classList.add('loading');
     listaClientesDiv.innerHTML = '';
@@ -597,10 +674,91 @@ async function carregarClientesDoServidor() {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
     cacheClientes = data.clientes || [];
+
+    idsSelecionados.clear();
+    pontosManuais = [];
+    limparRota();
+
     renderClientes(cacheClientes);
   } catch (e) {
     console.error(e);
-    alert('Erro ao carregar clientes. Veja console.');
+    listaClientesDiv.innerHTML =
+      '<div style="padding:8px;font-size:12px;color:#fca5a5;">Erro ao carregar clientes.</div>';
+  } finally {
+    listaClientesDiv.classList.remove('loading');
+  }
+}
+
+async function carregarVendedores() {
+  try {
+    console.log('GET vendedores em:', `${window.API_BASE}/vendedores`);
+    const resp = await fetch(`${window.API_BASE}/vendedores`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    cacheVendedores = data.vendedores || [];
+
+    selectVendedor.innerHTML = '<option value="">Selecione um vendedor...</option>';
+    cacheVendedores.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.codvend;
+      opt.textContent = `${v.codvend} - ${v.nome_vendedor}`;
+      selectVendedor.appendChild(opt);
+    });
+  } catch (e) {
+    console.error(e);
+    alert('Erro ao carregar vendedores. Veja console.');
+  }
+}
+
+async function carregarCarteiraPorVendedor(codvend) {
+  if (!codvend) {
+    cacheCarteira = [];
+    renderClientes([]);
+    return;
+  }
+
+  try {
+    listaClientesDiv.classList.add('loading');
+    listaClientesDiv.innerHTML = '';
+    const url = `${window.API_BASE}/carteira?codvend=${encodeURIComponent(codvend)}`;
+    console.log('GET carteira em:', url);
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    cacheCarteira = (data.carteira || []).map(c => {
+      const endereco = montarEnderecoPadrao(c);
+
+      return {
+        id: c.codparc,
+        codigo: c.codparc,
+        nome: c.nome_cliente,
+        endereco,
+        origemTipo: 'carteira',
+        codparc: c.codparc,
+        codvend: c.codvend,
+        nome_vendedor: c.nome_vendedor,
+        codemp: c.codemp,
+        logradouro: c.logradouro,
+        numero: c.numero,
+        bairro: c.bairro,
+        cidade: c.cidade,
+        uf: c.uf,
+        cep: c.cep,
+        lat: c.lat,
+        lng: c.lng
+      };
+    });
+
+    idsSelecionados.clear();
+    pontosManuais = [];
+    limparRota();
+
+    renderClientes(cacheCarteira);
+  } catch (e) {
+    console.error(e);
+    listaClientesDiv.innerHTML =
+      '<div style="padding:8px;font-size:12px;color:#fca5a5;">Erro ao carregar carteira do vendedor.</div>';
   } finally {
     listaClientesDiv.classList.remove('loading');
   }
@@ -612,12 +770,14 @@ function aplicarFiltroLocal() {
   const filtro = filtroNomeInput.value.trim().toLowerCase();
   listaClientesDiv.scrollTop = 0;
 
+  const base = getCacheAtual();
+
   if (!filtro) {
-    renderClientes(cacheClientes);
+    renderClientes(base);
     return;
   }
 
-  const filtrados = cacheClientes.filter(c => {
+  const filtrados = base.filter(c => {
     const cod = String(c.codigo || '').toLowerCase();
     const nome = String(c.nome || '').toLowerCase();
     const end = String(c.endereco || '').toLowerCase();
@@ -627,7 +787,7 @@ function aplicarFiltroLocal() {
   renderClientes(filtrados);
 }
 
-// ======== PONTOS / PAINEL ========
+// ======== PONTOS / ROTA ========
 
 function parseLatLngText(txt) {
   if (!txt) return null;
@@ -640,8 +800,9 @@ function parseLatLngText(txt) {
 }
 
 function getClientesSelecionados() {
+  const base = getCacheAtual();
   const clientes = [];
-  cacheClientes.forEach(c => {
+  base.forEach(c => {
     if (idsSelecionados.has(c.id)) clientes.push(c);
   });
   return clientes;
@@ -848,7 +1009,8 @@ function getPontosNaOrdemPainel() {
     const tipo = div.dataset.tipo;
     const id = div.dataset.id;
     if (tipo === 'cliente') {
-      const c = cacheClientes.find(x => String(x.id) === String(id));
+      const base = getCacheAtual();
+      const c = base.find(x => String(x.id) === String(id));
       if (c && c.lat != null && c.lng != null) {
         pontos.push({
           tipo: 'cliente',
@@ -917,9 +1079,9 @@ async function gerarRotaAuto() {
   const waypoints = [];
 
   try {
-    const origemAtual = await getPosicaoAtual();
-    if (origemAtual) {
-      const origemLatLng = L.latLng(origemAtual.lat, origemAtual.lng);
+    const origemAtualPos = await getPosicaoAtual();
+    if (origemAtualPos) {
+      const origemLatLng = L.latLng(origemAtualPos.lat, origemAtualPos.lng);
       waypoints.push(origemLatLng);
 
       if (!marcadorLocalizacao) {
@@ -973,15 +1135,14 @@ async function gerarRotaAuto() {
     waypoints: waypoints,
     lineOptions: {
       styles: [
-        { color: '#581c87', opacity: 0.8, weight: 9 },  // roxo escuro
-        { color: '#a855f7', opacity: 1, weight: 5 }     // roxo neon
+        { color: '#581c87', opacity: 0.8, weight: 9 },
+        { color: '#a855f7', opacity: 1, weight: 5 }
       ]
     },
     router: L.Routing.osrmv1({
       serviceUrl: 'https://router.project-osrm.org/route/v1'
     }),
     showAlternatives: false,
-    // markers do L.Routing desativados; usamos nossos markers numerados
     addWaypoints: false,
     draggableWaypoints: false,
     routeWhileDragging: false,
@@ -1000,7 +1161,6 @@ async function gerarRotaAuto() {
     const route = e.routes[0];
     const distKm = (route.summary.totalDistance / 1000).toFixed(1);
     const durMin = Math.round(route.summary.totalTime / 60);
-
     const texto = `${distKm} km • ~${durMin} min`;
     setAlertasTexto(`Resumo da rota: ${texto}`);
   });
@@ -1008,7 +1168,6 @@ async function gerarRotaAuto() {
   setLinkMapsEnabled(true);
 }
 
-// debounce
 function dispararAtualizacaoRotaDebounce() {
   if (rotaDebounceTimeout) clearTimeout(rotaDebounceTimeout);
   rotaDebounceTimeout = setTimeout(() => {
@@ -1016,7 +1175,7 @@ function dispararAtualizacaoRotaDebounce() {
   }, 700);
 }
 
-// ======== PONTO MANUAL ========
+// ======== PONTO MANUAL / MAP CLICK ========
 
 async function adicionarPontoManual() {
   const texto = novoPontoInput.value.trim();
@@ -1050,15 +1209,10 @@ async function adicionarPontoManual() {
   pontosManuais.push(novo);
   novoPontoInput.value = '';
 
-  // refletir no painel
   reconstruirPainelRota();
-  // atualizar rota
   dispararAtualizacaoRotaDebounce();
 }
 
-// ======== CLICK / DOUBLE CLICK NO MAPA ========
-
-// duplo clique no mapa adiciona ponto manual
 map.on('dblclick', e => {
   const { lat, lng } = e.latlng;
 
@@ -1137,7 +1291,7 @@ async function gerarLinkGoogleMaps() {
   }
 }
 
-// ======== PAINEL ARRASTÁVEL / MINIMIZAR ========
+// ======== PAINEL ARRASTÁVEL ========
 
 (function configurarDragPainelRota() {
   let dragging = false;
@@ -1241,16 +1395,69 @@ novoPontoInput.addEventListener('keydown', e => {
   }
 });
 
-// toggle de trânsito TomTom
 if (chkVerTransito) {
   chkVerTransito.addEventListener('change', () => {
     toggleTraffic(chkVerTransito.checked);
   });
 }
 
-carregarClientesDoServidor();
+// seleção de origem:
+// - pedidos: NÃO mostra vendedor, carrega pedidos geral (pode dar 500, mas tratado)
+// - clientes: NÃO mostra vendedor, carrega clientes
+// - carteira: MOSTRA vendedor, só carrega carteira após escolher vendedor
+tipoOrigemSelect.addEventListener('change', async () => {
+  origemAtual = tipoOrigemSelect.value;
 
-// atualiza incidentes sempre que o mapa parar de mexer
+  filtroNomeInput.value = '';
+  idsSelecionados.clear();
+  pontosManuais = [];
+  limparRota();
+  rotaListaDiv.innerHTML = '';
+  atualizarContadorSelecionados();
+
+  if (origemAtual === 'pedidos') {
+    grupoVendedoresDiv.style.display = 'none';
+    await carregarPedidosPendentes(null);
+  } else if (origemAtual === 'clientes') {
+    grupoVendedoresDiv.style.display = 'none';
+    await carregarClientesNormais();
+  } else if (origemAtual === 'carteira') {
+    grupoVendedoresDiv.style.display = 'block';
+    if (!cacheVendedores.length) {
+      await carregarVendedores();
+    }
+    renderClientes([]);
+  }
+});
+
+// mudança de vendedor: só faz sentido em carteira
+selectVendedor.addEventListener('change', async () => {
+  const codvend = selectVendedor.value;
+  idsSelecionados.clear();
+  pontosManuais = [];
+  limparRota();
+  rotaListaDiv.innerHTML = '';
+  atualizarContadorSelecionados();
+
+  if (origemAtual !== 'carteira') {
+    return;
+  }
+
+  if (!codvend) {
+    renderClientes([]);
+    return;
+  }
+
+  await carregarCarteiraPorVendedor(codvend);
+});
+
+// origem padrão: pedidos pendentes (sem vendedor)
+(async function initOrigemPadrao() {
+  origemAtual = 'pedidos';
+  grupoVendedoresDiv.style.display = 'none';
+  await carregarPedidosPendentes(null);
+})();
+
 map.on('moveend', () => {
   carregarIncidentesTomTom();
 });

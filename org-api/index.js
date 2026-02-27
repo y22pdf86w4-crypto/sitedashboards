@@ -3,7 +3,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const { getPool, runQuery } = require('./db');
+const { getPoolWithRetry, runQuery, sql } = require('./db');
 
 const app = express();
 app.use(cors());
@@ -81,7 +81,7 @@ app.get('/api/v1/ping', (req, res) => {
 
 app.get('/api/v1/test-db', async (req, res) => {
   try {
-    const pool = await getPool();
+    const pool = await getPoolWithRetry();
     const result = await pool.request().query(`
       SELECT 
         DB_NAME() AS CurrentDB,
@@ -263,24 +263,29 @@ app.get('/api/v1/logistica/clientes', async (req, res) => {
     const nomeFiltro = (req.query.nome || '').trim();
 
     const sqlBase = `
-      SELECT
-        ParceiroCodigo       AS codigo,
-        ParceiroNome         AS nome,
-        ParceiroLogradouro   AS logradouro,
-        ISNULL(ParceiroNumero, ParceiroEnderecoNumero) AS numero,
-        ParceiroBairro       AS bairro,
-        ParceiroCidade       AS cidade,
-        ParceiroUFSigla      AS uf,
-        ParceiroCEP          AS cep,
-        ParceiroLatitude     AS lat,
-        ParceiroLongitude    AS lng
-      FROM dbo.dimParceiroSkw
-      WHERE ParceiroCodigo <> 0
+      SELECT DISTINCT
+        p.ParceiroCodigo        AS codigo,
+        p.ParceiroNome          AS nome,
+        p.ParceiroLogradouro    AS logradouro,
+        ISNULL(p.ParceiroEnderecoNumero, 0) AS numero,
+        p.ParceiroBairro        AS bairro,
+        p.ParceiroCidade        AS cidade,
+        p.ParceiroUFSigla       AS uf,
+        p.ParceiroCEP           AS cep,
+        p.ParceiroLatitude      AS lat,
+        p.ParceiroLongitude     AS lng
+      FROM dbo.dimParceiroSkw p
+      INNER JOIN dbo.fatVendas f
+        ON f.ParceiroCodigo = p.ParceiroCodigo
+       AND f.DataVenda >= DATEADD(YEAR, -3, CAST(GETDATE() AS date))
+      WHERE p.ParceiroCodigo <> 0
     `;
 
     const sqlQuery = nomeFiltro
-      ? sqlBase + ' AND ParceiroNome LIKE @nome ORDER BY ParceiroNome;'
-      : sqlBase + ' ORDER BY ParceiroNome;';
+      ? sqlBase + ' AND p.ParceiroNome LIKE @nome ORDER BY p.ParceiroNome;'
+      : sqlBase + ' ORDER BY p.ParceiroNome;';
+
+    console.log('[SQL CLIENTES] sqlQuery=', sqlQuery);
 
     const result = await runQuery(sqlQuery, request => {
       if (nomeFiltro) {
@@ -328,6 +333,146 @@ app.get('/api/v1/logistica/clientes', async (req, res) => {
   }
 });
 
+/* ================== VENDEDORES ================== */
+// GET /api/v1/vendedores
+// GET /api/v1/vendedores?nome=THIAGO
+app.get('/api/v1/vendedores', async (req, res) => {
+  try {
+    const nomeFiltro = (req.query.nome || '').trim();
+
+    const sqlBase = `
+      SELECT
+        CODIGOVENDEDOR AS codvend,
+        NOMEVENDEDOR   AS nome_vendedor,
+        CARGO          AS cargo,
+        CODIGOPARCEIRO AS codparc
+      FROM dbo.dimVendedorSKW
+      WHERE 1 = 1
+    `;
+
+    const sqlQuery = nomeFiltro
+      ? sqlBase + ' AND NOMEVENDEDOR LIKE @nome ORDER BY NOMEVENDEDOR;'
+      : sqlBase + ' ORDER BY NOMEVENDEDOR;';
+
+    const result = await runQuery(sqlQuery, request => {
+      if (nomeFiltro) {
+        request.input('nome', `%${nomeFiltro}%`);
+      }
+    });
+
+    res.json({ vendedores: result.recordset });
+  } catch (e) {
+    console.error('Erro GET /api/v1/vendedores:', e);
+    res.status(500).json({ error: 'Erro ao buscar vendedores', detail: e.message });
+  }
+});
+
+/* ================== CARTEIRA POR VENDEDOR ================== */
+// GET /api/v1/carteira?codvend=123
+app.get('/api/v1/carteira', async (req, res) => {
+  try {
+    const codvend = parseInt(req.query.codvend, 10);
+
+    if (!codvend || Number.isNaN(codvend)) {
+      return res.status(400).json({
+        error: 'Parâmetro "codvend" é obrigatório e deve ser numérico.'
+      });
+    }
+
+    const sqlQuery = `
+      SELECT
+        c.CODVEND       AS codvend,
+        c.NOME_VENDEDOR AS nome_vendedor,
+        c.CODPARC       AS codparc,
+        c.NOME_CLIENTE  AS nome_cliente,
+        c.CODEMP        AS codemp,
+        c.DTLIM         AS dtlim,
+        c.LIMCRED       AS limcred,
+        p.ParceiroLogradouro             AS logradouro,
+        ISNULL(p.ParceiroEnderecoNumero, 0) AS numero,
+        p.ParceiroBairro                 AS bairro,
+        p.ParceiroCidade                 AS cidade,
+        p.ParceiroUFSigla                AS uf,
+        p.ParceiroCEP                    AS cep,
+        p.ParceiroLatitude               AS lat,
+        p.ParceiroLongitude              AS lng
+      FROM dbo.dimCarteiraSKW c
+      LEFT JOIN dbo.dimParceiroSkw p
+             ON p.ParceiroCodigo = c.CODPARC
+      WHERE c.CODVEND = @codvend
+      ORDER BY c.NOME_CLIENTE;
+    `;
+
+    const result = await runQuery(sqlQuery, request => {
+      request.input('codvend', codvend);
+    });
+
+    res.json({ carteira: result.recordset });
+  } catch (e) {
+    console.error('Erro GET /api/v1/carteira:', e);
+    res.status(500).json({ error: 'Erro ao buscar carteira', detail: e.message });
+  }
+});
+
+/* ================== PEDIDOS PENDENTES ================== */
+// GET /api/v1/pedidos-pendentes
+// GET /api/v1/pedidos-pendentes?codvend=123
+app.get('/api/v1/pedidos-pendentes', async (req, res) => {
+  try {
+    const codvendRaw = req.query.codvend;
+    const codvend = codvendRaw ? parseInt(codvendRaw, 10) : null;
+
+    if (codvendRaw && (Number.isNaN(codvend) || codvend <= 0)) {
+      return res.status(400).json({
+        error: 'Parâmetro "codvend", se informado, deve ser numérico e > 0.'
+      });
+    }
+
+    const sqlBase = `
+      SELECT
+        pped.NUNOTA,
+        pped.NUMNOTA,
+        pped.CODPARC,
+        pped.NOME_CLIENTE,
+        pped.CODVEND,
+        pped.NOME_VENDEDOR,
+        pped.CODEMP,
+        pped.DTNEG,
+        pped.TIPMOV,
+        pped.CODTIPOPER,
+        pped.CODTIPVENDA,
+        pped.PENDENTE,
+        par.ParceiroLogradouro             AS logradouro,
+        ISNULL(par.ParceiroEnderecoNumero, 0) AS numero,
+        par.ParceiroBairro                 AS bairro,
+        par.ParceiroCidade                 AS cidade,
+        par.ParceiroUFSigla                AS uf,
+        par.ParceiroCEP                    AS cep,
+        par.ParceiroLatitude               AS lat,
+        par.ParceiroLongitude              AS lng
+      FROM dbo.fatVendasPendentes pped
+      LEFT JOIN dbo.dimParceiroSkw par
+             ON par.ParceiroCodigo = pped.CODPARC
+      WHERE 1 = 1
+    `;
+
+    const sqlQuery = codvend
+      ? sqlBase + ' AND pped.CODVEND = @codvend ORDER BY pped.DTNEG DESC, pped.NUNOTA DESC;'
+      : sqlBase + ' ORDER BY pped.DTNEG DESC, pped.NUNOTA DESC;';
+
+    const result = await runQuery(sqlQuery, request => {
+      if (codvend) {
+        request.input('codvend', codvend);
+      }
+    });
+
+    res.json({ pedidos: result.recordset });
+  } catch (e) {
+    console.error('Erro GET /api/v1/pedidos-pendentes:', e);
+    res.status(500).json({ error: 'Erro ao buscar pedidos pendentes', detail: e.message });
+  }
+});
+
 /* ================== CONTATOS ================== */
 
 app.get('/api/v1/contatos', async (req, res) => {
@@ -337,7 +482,7 @@ app.get('/api/v1/contatos', async (req, res) => {
       return res.status(400).json({ error: 'Parâmetro "empresa" é obrigatório.' });
     }
 
-    const pool = await getPool();
+    const pool = await getPoolWithRetry();
     const result = await pool.request()
       .input('empresa', empresa)
       .query(`
@@ -372,7 +517,7 @@ app.post('/api/v1/contatos', async (req, res) => {
       });
     }
 
-    const pool = await getPool();
+    const pool = await getPoolWithRetry();
     const result = await pool.request()
       .input('empresa', empresa)
       .input('nome', nome)
@@ -416,7 +561,7 @@ app.put('/api/v1/contatos/:id', async (req, res) => {
       });
     }
 
-    const pool = await getPool();
+    const pool = await getPoolWithRetry();
 
     const rsAntes = await pool.request()
       .input('id', id)
@@ -475,7 +620,7 @@ app.delete('/api/v1/contatos/:id', async (req, res) => {
     const usuarioEmailBody = (req.body && req.body.usuarioEmail) || null;
     const usuario = usuarioEmailBody || getUsuarioFromReq(req);
 
-    const pool = await getPool();
+    const pool = await getPoolWithRetry();
 
     const rsAntes = await pool.request()
       .input('id', id)
@@ -514,7 +659,7 @@ app.delete('/api/v1/contatos/:id', async (req, res) => {
     res.status(204).send();
   } catch (e) {
     console.error('Erro DELETE /api/v1/contatos/:id:', e);
-    res.status(500).json({ error: 'Erro ao excluir contato', detail: e.message });
+    res.status(500).json({ error: 'Erro ao excluir despesa', detail: e.message });
   }
 });
 
@@ -547,7 +692,7 @@ app.get('/api/v1/despesas', async (req, res) => {
     const dataFimDate = new Date(dataProxMes.getTime() - 24 * 60 * 60 * 1000);
     const dataFim = dataFimDate.toISOString().substring(0, 10);
 
-    const pool = await getPool();
+    const pool = await getPoolWithRetry();
 
     const result = await pool
       .request()
@@ -621,7 +766,7 @@ app.post('/api/v1/despesas', async (req, res) => {
       ? JSON.stringify(contatos)
       : JSON.stringify([]);
 
-    const pool = await getPool();
+    const pool = await getPoolWithRetry();
 
     const insertResult = await pool
       .request()
@@ -740,7 +885,7 @@ app.put('/api/v1/despesas/:id', async (req, res) => {
       return res.status(400).json({ error: 'Nenhum campo para atualizar.' });
     }
 
-    const pool = await getPool();
+    const pool = await getPoolWithRetry();
 
     const rsAntes = await pool.request()
       .input('id', id)
@@ -856,7 +1001,7 @@ app.delete('/api/v1/despesas/:id', async (req, res) => {
       return res.status(400).json({ error: 'Id inválido.' });
     }
 
-    const pool = await getPool();
+    const pool = await getPoolWithRetry();
 
     const rsAntes = await pool.request()
       .input('id', id)

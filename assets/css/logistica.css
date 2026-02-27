@@ -229,6 +229,30 @@ body.logistica-page {
   box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.45);
 }
 
+/* NOVO: select na mesma pegada dos inputs */
+.field-group select {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  background: rgba(15, 23, 42, 0.85);
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #e5e7eb;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.18s ease-out;
+}
+
+.field-group select:hover {
+  border-color: rgba(16, 185, 129, 0.6);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+.field-group select:focus {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.45);
+}
+
 /* Botões antigos (mantidos para compatibilidade) */
 .toolbar-row {
   display: flex;
