@@ -99,11 +99,11 @@ async function getPool() {
 }
 
 // ========== HELPERS MENSAGEM ==========
-function gerarSaudacao() {
+function gerarSaudacaoComEmoji() {
   const hora = new Date().getHours();
-  if (hora < 12) return "Bom dia";
-  if (hora < 18) return "Boa tarde";
-  return "Boa noite";
+  if (hora < 12) return "☀️ Bom dia";
+  if (hora < 18) return "🌤️ Boa tarde";
+  return "🌙 Boa noite";
 }
 
 function formatarNome(nome) {
@@ -120,13 +120,14 @@ function obterNomeResponsavelPrincipal(responsaveis) {
   return formatarNome(resp.nome || "o responsável");
 }
 
+// (mantida, se ainda quiser usar em casos de 1 despesa)
 function montarMensagemWhatsApp(
   despesa,
   contato,
   nomeResponsavelPrincipal,
   empresa
 ) {
-  const saudacao = gerarSaudacao();
+  const saudacao = gerarSaudacaoComEmoji();
   const nomeContato = formatarNome(contato.nome || "cliente");
   const tipo = contato.tipo || "responsavel";
 
@@ -149,8 +150,8 @@ function montarMensagemWhatsApp(
 
   const topo =
     tipo === "responsavel"
-      ? `🌙 ${saudacao}, ${nomeContato}! Tudo bem?\nAqui é da ${nomeEmpresa} passando um lembrete rápido sobre um pagamento em aberto:\n`
-      : `🌙 ${saudacao}, ${nomeContato}! Tudo bem?\nAqui é da ${nomeEmpresa}. ${nomeResponsavelPrincipal} tem um pagamento em aberto e gostaríamos de avisar:\n`;
+      ? `${saudacao}, ${nomeContato}! Tudo bem?\nAqui é da ${nomeEmpresa} passando um lembrete rápido sobre um pagamento em aberto:\n`
+      : `${saudacao}, ${nomeContato}! Tudo bem?\nAqui é da ${nomeEmpresa}. ${nomeResponsavelPrincipal} tem um pagamento em aberto e gostaríamos de avisar:\n`;
 
   const detalhes = [
     "📌 *Detalhes do pagamento*",
@@ -170,7 +171,41 @@ function montarMensagemWhatsApp(
   return topo + "\n" + detalhes.join("\n") + "\n\n" + rodape.join("\n");
 }
 
-// ========== ENVIO MANUAL (FRONT) ==========
+// NOVO: mensagem agrupada (várias despesas em uma mensagem)
+function montarMensagemWhatsAppAgrupada(empresa, contato, despesasDoContato) {
+  const saudacao = gerarSaudacaoComEmoji();
+  const nomeContato = formatarNome(contato.nome || "cliente");
+  const nomeEmpresa = empresa === "linhagro" ? "Linhagro" : "Lithoplant";
+
+  const topo =
+    `${saudacao}, ${nomeContato}! Tudo bem?\n` +
+    `Aqui é da ${nomeEmpresa}. Seguem os pagamentos que vencem *hoje* no seu nome:\n`;
+
+  const linhas = despesasDoContato.map((d, idx) => {
+    const desc = d.descricao || "Despesa";
+    const dataPtBr = d.vencimento
+      ? d.vencimento.split("-").reverse().join("/")
+      : "data não informada";
+
+    const valor = d.valor || d.VLRDESDOB || d.vlr || null;
+    const valorStr = valor
+      ? ` – Valor: R$ ${Number(valor).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })}`
+      : "";
+
+    return `\n${idx + 1}. ${desc}\n   📅 Vencimento: ${dataPtBr}${valorStr}`;
+  });
+
+  const rodape =
+    "\n\nPedimos, por gentileza, que verifique esses pagamentos assim que possível. 🙏\n" +
+    "Se todos já foram realizados, por favor desconsidere esta mensagem.";
+
+  return topo + linhas.join("") + rodape;
+}
+
+// ========== ENVIO MANUAL (FRONT) – AGRUPADO ==========
 app.post("/api/enviar-lembretes", async (req, res) => {
   const { empresa, usuarioEmail, lembretes } = req.body;
 
@@ -184,7 +219,6 @@ app.post("/api/enviar-lembretes", async (req, res) => {
     return res.status(400).json({ error: "Nenhum lembrete recebido." });
   }
 
-  // Verificar estado do WhatsApp antes de processar
   const ready = await isClientReady();
   if (!ready) {
     return res.status(503).json({
@@ -201,94 +235,102 @@ app.post("/api/enviar-lembretes", async (req, res) => {
     });
   }
 
-  let enviados = 0;
-  const envios = [];
-  const falhas = [];
-
   console.log(
-    `Recebido para envio: ${lembretes.length} despesa(s), empresa=${empresa}, usuario=${
+    `Recebido para envio (manual): ${lembretes.length} despesa(s), empresa=${empresa}, usuario=${
       usuarioEmail || "-"
     }`
   );
 
+  // Agrupa por telefone
+  const mapaContato = new Map(); // chave: telefone, valor: { contato, despesas[] }
+
   for (const d of lembretes) {
     const responsaveis = Array.isArray(d.responsaveis) ? d.responsaveis : [];
     if (!responsaveis.length) {
-      console.log("Despesa sem responsaveis, ignorando:", d.descricao);
+      console.log("[MANUAL] Despesa sem responsaveis, ignorando:", d.descricao);
       continue;
     }
 
-    const nomeRespPrincipal = obterNomeResponsavelPrincipal(responsaveis);
-
     for (const contato of responsaveis) {
       if (!contato || !contato.telefone) {
-        console.log("Contato inválido em despesa:", d.descricao, contato);
+        console.log(
+          "[MANUAL] Contato inválido em despesa:",
+          d.descricao,
+          contato
+        );
+        continue;
+      }
+
+      const tel = String(contato.telefone).trim();
+      if (!tel) continue;
+
+      if (!mapaContato.has(tel)) {
+        mapaContato.set(tel, {
+          contato,
+          despesas: []
+        });
+      }
+      mapaContato.get(tel).despesas.push(d);
+    }
+  }
+
+  const envios = [];
+  const falhas = [];
+  let enviados = 0;
+
+  for (const [telefone, item] of mapaContato.entries()) {
+    const { contato, despesas } = item;
+
+    const texto = montarMensagemWhatsAppAgrupada(empresa, contato, despesas);
+
+    try {
+      const resultado = await sendWhatsApp(telefone, texto);
+      if (!resultado) {
+        console.error(
+          "[MANUAL] Falha ao enviar WhatsApp para",
+          telefone,
+          "despesas:",
+          despesas.map(d => d.descricao).join(" | ")
+        );
         falhas.push({
-          telefone: contato && contato.telefone,
-          nome: contato && contato.nome,
-          descricao: d.descricao || "",
-          motivo: "Telefone vazio ou contato inválido"
+          telefone,
+          nome: contato.nome || "",
+          descricao: despesas.map(d => d.descricao).join(" | "),
+          motivo:
+            "Envio retornou falso (provável número inválido ou sem 55)"
         });
         continue;
       }
 
-      const texto = montarMensagemWhatsApp(
-        d,
-        contato,
-        nomeRespPrincipal,
+      enviados++;
+      envios.push({
+        telefone,
+        nome: contato.nome || "",
+        quantidadeDespesas: despesas.length,
+        descricoes: despesas.map(d => d.descricao),
+        empresa
+      });
+
+      console.log(
+        "[MANUAL] WhatsApp enviado para",
+        contato.nome || telefone,
+        "com",
+        despesas.length,
+        "despesa(s), empresa:",
         empresa
       );
-
-      try {
-        const resultado = await sendWhatsApp(contato.telefone, texto);
-
-        if (resultado === false || resultado === null) {
-          console.error(
-            "Falha ao enviar WhatsApp (retorno falso) para",
-            contato.telefone,
-            "descrição:",
-            d.descricao
-          );
-          falhas.push({
-            telefone: contato.telefone,
-            nome: contato.nome || "",
-            descricao: d.descricao || "",
-            motivo:
-              "Envio retornou falso (provável número inválido ou sem 55)"
-          });
-          continue;
-        }
-
-        enviados++;
-        envios.push({
-          telefone: contato.telefone,
-          nome: contato.nome || "",
-          descricao: d.descricao || "",
-          vencimento: d.vencimento || "",
-          empresa
-        });
-
-        console.log(
-          "WhatsApp enviado para",
-          contato.nome || contato.telefone,
-          "descrição:",
-          d.descricao,
-          "empresa:",
-          empresa
-        );
-      } catch (err) {
-        console.error(
-          "Erro ao enviar WhatsApp para",
-          contato.telefone,
-          err.message
-        );
-        falhas.push({
-          telefone: contato.telefone,
-          nome: contato.nome || "",
-          descricao: d.descricao || "",
-          motivo: err.message || "Erro inesperado ao enviar WhatsApp"
-        });
-      }
+    } catch (err) {
+      console.error(
+        "[MANUAL] Erro ao enviar WhatsApp para",
+        telefone,
+        err.message
+      );
+      falhas.push({
+        telefone,
+        nome: contato.nome || "",
+        descricao: despesas.map(d => d.descricao).join(" | "),
+        motivo: err.message || "Erro inesperado ao enviar WhatsApp"
+      });
     }
   }
 
@@ -301,10 +343,9 @@ app.post("/api/enviar-lembretes", async (req, res) => {
     )
     .join(" | ");
 
-  console.log("Total de mensagens enviadas:", enviados);
-  console.log("Resumo envios:", resumoSucesso || "nenhum");
+  console.log("[MANUAL] Total de mensagens (agrupadas) enviadas:", enviados);
   if (falhas.length) {
-    console.log("Falhas de envio:", resumoFalhas);
+    console.log("[MANUAL] Falhas de envio:", resumoFalhas);
   }
 
   return res.json({
@@ -344,11 +385,9 @@ async function processarEnviosAutomaticos() {
         `Scheduler(WhatsApp): carregando despesas para empresa=${empresa}`
       );
 
+      // apenas o dia de hoje
       const dataInicio = hojeISO;
-      const dataFimDate = new Date(
-        hoje.getTime() + 7 * 24 * 60 * 60 * 1000
-      );
-      const dataFim = dataISO(dataFimDate);
+      const dataFim = hojeISO;
 
       const result = await pool
         .request()
@@ -364,7 +403,8 @@ async function processarEnviosAutomaticos() {
             Status          AS status,
             RecorrenciaTipo AS recorrencia_tipo,
             TiposAviso      AS tipos_aviso,
-            ContatosJson    AS contatos_json
+            ContatosJson    AS contatos_json,
+            Valor           AS valor
           FROM dbo.dimDespesasVisya
           WHERE DataVencimento BETWEEN @dataInicio AND @dataFim
             AND (@empresa IS NULL OR Empresa = @empresa)
@@ -376,7 +416,8 @@ async function processarEnviosAutomaticos() {
               .split(",")
               .map(x => x.trim())
               .filter(Boolean)
-          : ["3"];
+          : ["0"]; // padrão: avisar no dia
+
         const contatos = d.contatos_json ? JSON.parse(d.contatos_json) : [];
         return {
           id: d.id,
@@ -386,7 +427,8 @@ async function processarEnviosAutomaticos() {
           status: d.status,
           recorrente: d.recorrencia_tipo,
           tiposAviso: tiposAvisoArr,
-          responsaveis: contatos
+          responsaveis: contatos,
+          valor: d.valor
         };
       });
 
@@ -401,22 +443,17 @@ async function processarEnviosAutomaticos() {
 
       for (const d of despesas) {
         if (!d.vencimento) continue;
-        if (!Array.isArray(d.responsaveis) || !d.responsaveis.length)
-          continue;
+        if (!Array.isArray(d.responsaveis) || !d.responsaveis.length) continue;
 
         const diff = diffDias(d.vencimento, hojeISO);
-        if (diff < 0 || diff > 7) continue;
+        if (diff !== 0) continue; // APENAS no dia do vencimento
 
-        const chave = String(diff); // "7","5","3","1","0"
+        if (!d.tiposAviso.includes("0")) continue;
 
-        if (d.tiposAviso.includes(chave)) {
-          console.log(
-            `Scheduler(WhatsApp): despesa id=${d.id} empresa=${empresa} elegível (diff=${diff}, tiposAviso=${d.tiposAviso.join(
-              ","
-            )})`
-          );
-          lembretesDeHoje.push(d);
-        }
+        console.log(
+          `Scheduler(WhatsApp): despesa id=${d.id} empresa=${empresa} elegível (vencimento hoje)`
+        );
+        lembretesDeHoje.push(d);
       }
 
       if (!lembretesDeHoje.length) {
@@ -446,11 +483,11 @@ async function processarEnviosAutomaticos() {
   console.log("=== Scheduler(WhatsApp): fim execução em", hojeISO, "===");
 }
 
+// ENVIO AUTOMÁTICO AGRUPADO
 async function envioInternoSemHttp({ empresa, usuarioEmail, lembretes }) {
   if (!empresa || !["linhagro", "lithoplant"].includes(empresa)) return;
   if (!Array.isArray(lembretes) || !lembretes.length) return;
 
-  // Verifica estado do WhatsApp antes de processar
   const ready = await isClientReady();
   if (!ready) {
     console.log(
@@ -459,11 +496,11 @@ async function envioInternoSemHttp({ empresa, usuarioEmail, lembretes }) {
     return;
   }
 
-  let enviados = 0;
-
   console.log(
     `[AUTO] Recebido para envio: ${lembretes.length} despesa(s), empresa=${empresa}, usuario=${usuarioEmail}`
   );
+
+  const mapaContato = new Map(); // chave: telefone, valor: { contato, despesas[] }
 
   for (const d of lembretes) {
     const responsaveis = Array.isArray(d.responsaveis) ? d.responsaveis : [];
@@ -471,8 +508,6 @@ async function envioInternoSemHttp({ empresa, usuarioEmail, lembretes }) {
       console.log("[AUTO] Despesa sem responsaveis, ignorando:", d.descricao);
       continue;
     }
-
-    const nomeRespPrincipal = obterNomeResponsavelPrincipal(responsaveis);
 
     for (const contato of responsaveis) {
       if (!contato || !contato.telefone) {
@@ -484,44 +519,62 @@ async function envioInternoSemHttp({ empresa, usuarioEmail, lembretes }) {
         continue;
       }
 
-      const texto = montarMensagemWhatsApp(
-        d,
-        contato,
-        nomeRespPrincipal,
-        empresa
-      );
+      const tel = String(contato.telefone).trim();
+      if (!tel) continue;
 
-      try {
-        const resultado = await sendWhatsApp(contato.telefone, texto);
-        if (!resultado) {
-          console.error(
-            "[AUTO] Falha ao enviar WhatsApp para",
-            contato.telefone,
-            "descrição:",
-            d.descricao
-          );
-          continue;
-        }
-        enviados++;
-        console.log(
-          "[AUTO] WhatsApp enviado para",
-          contato.nome || contato.telefone,
-          "descrição:",
-          d.descricao,
-          "empresa:",
-          empresa
-        );
-      } catch (err) {
-        console.error(
-          "[AUTO] Erro ao enviar WhatsApp para",
-          contato.telefone,
-          err.message
-        );
+      if (!mapaContato.has(tel)) {
+        mapaContato.set(tel, {
+          contato,
+          despesas: []
+        });
       }
+      mapaContato.get(tel).despesas.push(d);
     }
   }
 
-  console.log("[AUTO] Total de mensagens enviadas:", enviados);
+  if (!mapaContato.size) {
+    console.log("[AUTO] Nenhum contato elegível após agrupamento.");
+    return;
+  }
+
+  let enviados = 0;
+
+  for (const [telefone, item] of mapaContato.entries()) {
+    const { contato, despesas } = item;
+
+    const texto = montarMensagemWhatsAppAgrupada(empresa, contato, despesas);
+
+    try {
+      const resultado = await sendWhatsApp(telefone, texto);
+      if (!resultado) {
+        console.error(
+          "[AUTO] Falha ao enviar WhatsApp para",
+          telefone,
+          "despesas:",
+          despesas.map(d => d.descricao).join(" | ")
+        );
+        continue;
+      }
+
+      enviados++;
+      console.log(
+        "[AUTO] WhatsApp enviado para",
+        contato.nome || telefone,
+        "com",
+        despesas.length,
+        "despesa(s), empresa:",
+        empresa
+      );
+    } catch (err) {
+      console.error(
+        "[AUTO] Erro ao enviar WhatsApp para",
+        telefone,
+        err.message
+      );
+    }
+  }
+
+  console.log("[AUTO] Total de mensagens (agrupadas) enviadas:", enviados);
 }
 
 // CRON: execução diária às 08:00
@@ -551,7 +604,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Servidor rodando na porta " + PORT);
 
-  // Após 30s, logar status inicial do WhatsApp
   setTimeout(async () => {
     const ready = await isClientReady();
     console.log(

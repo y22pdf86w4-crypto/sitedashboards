@@ -91,7 +91,6 @@ async function initializeWithRetry(maxRetries = 3, delayMs = 5000) {
     } catch (error) {
       console.error(`Erro na tentativa ${attempt}:`, error.message);
 
-      // Erro típico de navegação/execução destruída
       if (error.message.includes("Execution context was destroyed")) {
         console.log(`Aguardando ${delayMs}ms antes de tentar novamente...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
@@ -101,7 +100,6 @@ async function initializeWithRetry(maxRetries = 3, delayMs = 5000) {
           throw error;
         }
       } else {
-        // Erros não relacionados: não insistir
         throw error;
       }
     }
@@ -111,17 +109,14 @@ async function initializeWithRetry(maxRetries = 3, delayMs = 5000) {
 // Chama inicialização com retry
 initializeWithRetry().catch(err => {
   console.error("Erro crítico ao inicializar WhatsApp:", err);
-  // Se quiser que o container reinicie, descomente:
   // process.exit(1);
 });
 
 /**
  * Registrar callback para quando o WhatsApp estiver pronto.
- * Usado pelo server.js para controlar o scheduler.
  */
 function onWhatsAppReady(cb) {
   if (typeof cb === "function") {
-    // se já estiver pronto, dispara imediatamente
     if (isReady) {
       try {
         cb();
@@ -141,7 +136,7 @@ async function isClientReady() {
   if (!isReady) return false;
 
   try {
-    const state = await client.getState(); // retorna WAState (ex: "CONNECTED")
+    const state = await client.getState(); // ex: "CONNECTED"
     const ok = state === "CONNECTED";
     if (!ok) {
       console.log("isClientReady: estado atual não é CONNECTED:", state);
@@ -155,13 +150,8 @@ async function isClientReady() {
 
 /**
  * Normaliza número e envia mensagem.
- * Aceita:
- *  - "35988283970"
- *  - "5535988283970"
- *  - "35 98828-3970"
  */
 async function sendWhatsApp(to, message) {
-  // Verifica estado real antes de enviar
   const clientReady = await isClientReady();
   if (!clientReady) {
     throw new Error(
@@ -175,17 +165,15 @@ async function sendWhatsApp(to, message) {
 
   let num = to.toString().replace(/\D/g, ""); // só dígitos
 
-  // Se tiver 10 ou 11 dígitos sem DDI, prefixa 55 (Brasil)
   if (!num.startsWith("55")) {
     num = "55" + num;
   }
 
-  // remove zeros extras logo após o DDI, se houver (casos tipo 55035...)
+  // remove zeros extras logo após o DDI, se houver
   num = num.replace(/^550+/, "55");
 
   console.log("Enviando para número normalizado:", num);
 
-  // Confere se o número existe no WhatsApp
   const numberId = await client.getNumberId(num);
   if (!numberId) {
     throw new Error("Número não está no WhatsApp ou formato inválido: " + num);

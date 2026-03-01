@@ -27,37 +27,19 @@ body.login-page {
 }
 
 /* ====================== FUNDO ========================== */
+/* Usa o mesmo fundo padrão do background.css */
 
-.bg-fx {
+.bg-container {
   position: fixed;
   inset: 0;
-  pointer-events: none;
   z-index: 0;
-  overflow: hidden;
+  pointer-events: none;
 }
-.bg-fx .particles-container { position: absolute; inset: 0; }
-.bg-fx .wave-container,
-.bg-fx .glow-orb,
-.bg-fx .grid-bg { position: absolute; }
 
-/* Suaviza orbs */
+/* Pequena suavização extra das orbs no menu (opcional) */
 .glow-orb {
   opacity: 0.22;
   filter: blur(80px);
-}
-
-.glow-orb.orb-1 {
-  top: -120px;
-  left: -80px;
-  width: 320px;
-  height: 320px;
-}
-
-.glow-orb.orb-2 {
-  bottom: -140px;
-  right: -120px;
-  width: 360px;
-  height: 360px;
 }
 
 /* ====================== HEADER ========================= */
@@ -409,7 +391,6 @@ body.login-page {
   display: flex;
   padding: 1.25rem 0 1.75rem;
   box-sizing: border-box;
-  transition: transform 0.25s ease-out;
 }
 
 .sidebar-card {

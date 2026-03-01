@@ -349,9 +349,8 @@ app.get('/api/v1/logistica/clientes', async (req, res) => {
   }
 });
 
-/* ================== VENDEDORES (unificados via CASE) ================== */
-// GET /api/v1/vendedores
-// GET /api/v1/vendedores?nome=THIAGO
+/* ================== VENDEDORES ================== */
+
 app.get('/api/v1/vendedores', async (req, res) => {
   try {
     const nomeFiltro = (req.query.nome || '').trim();
@@ -406,7 +405,7 @@ app.get('/api/v1/vendedores', async (req, res) => {
 });
 
 /* ================== CARTEIRA POR VENDEDOR ================== */
-// GET /api/v1/carteira?codvend=123
+
 app.get('/api/v1/carteira', async (req, res) => {
   try {
     const codvend = parseInt(req.query.codvend, 10);
@@ -417,81 +416,68 @@ app.get('/api/v1/carteira', async (req, res) => {
       });
     }
 
-const sqlQuery = `
-  WITH CTE AS (
-    SELECT
-      c.CODVEND       AS codvend,
-      c.NOME_VENDEDOR AS nome_vendedor,
-      c.CODPARC       AS codparc,
-      c.NOME_CLIENTE  AS nome_cliente,
-      c.CODEMP        AS codemp,
-      c.DTLIM         AS dtlim,
-      c.LIMCRED       AS limcred,
-      p.ParceiroLogradouro             AS logradouro,
-      ISNULL(p.ParceiroEnderecoNumero, 0) AS numero,
-      p.ParceiroBairro                 AS bairro,
-      p.ParceiroCidade                 AS cidade,
-      p.ParceiroUFSigla                AS uf,
-      p.ParceiroCEP                    AS cep,
-      p.ParceiroLatitude               AS lat,
-      p.ParceiroLongitude              AS lng,
-      ROW_NUMBER() OVER (
-        PARTITION BY c.CODVEND, c.CODPARC
-        ORDER BY c.DTLIM DESC, c.CODEMP DESC
-      ) AS rn
-    FROM dbo.dimCarteiraSKW c
-    LEFT JOIN dbo.dimParceiroSkw p
-           ON p.ParceiroCodigo = c.CODPARC
-    WHERE
-      (
-        -- JANDIERRE
-        (@codvend = 148 AND c.CODVEND IN (148, 128)) OR
-        (@codvend = 128 AND c.CODVEND IN (148, 128)) OR
-
-        -- BERSONN
-        (@codvend = 163 AND c.CODVEND IN (163, 171)) OR
-        (@codvend = 171 AND c.CODVEND IN (163, 171)) OR
-
-        -- JOSE VICENTE
-        (@codvend = 15  AND c.CODVEND IN (15, 51)) OR
-        (@codvend = 51  AND c.CODVEND IN (15, 51)) OR
-
-        -- ALTEMIR
-        (@codvend = 2   AND c.CODVEND = 2) OR
-
-        -- LITHO
-        (@codvend = 22  AND c.CODVEND IN (22, 61)) OR
-        (@codvend = 61  AND c.CODVEND IN (22, 61)) OR
-
-        -- demais vendedores
-        (
-          c.CODVEND NOT IN (148,128,163,171,15,51,2,22,61)
-          AND c.CODVEND = @codvend
-        )
+    const sqlQuery = `
+      WITH CTE AS (
+        SELECT
+          c.CODVEND       AS codvend,
+          c.NOME_VENDEDOR AS nome_vendedor,
+          c.CODPARC       AS codparc,
+          c.NOME_CLIENTE  AS nome_cliente,
+          c.CODEMP        AS codemp,
+          c.DTLIM         AS dtlim,
+          c.LIMCRED       AS limcred,
+          p.ParceiroLogradouro             AS logradouro,
+          ISNULL(p.ParceiroEnderecoNumero, 0) AS numero,
+          p.ParceiroBairro                 AS bairro,
+          p.ParceiroCidade                 AS cidade,
+          p.ParceiroUFSigla                AS uf,
+          p.ParceiroCEP                    AS cep,
+          p.ParceiroLatitude               AS lat,
+          p.ParceiroLongitude              AS lng,
+          ROW_NUMBER() OVER (
+            PARTITION BY c.CODVEND, c.CODPARC
+            ORDER BY c.DTLIM DESC, c.CODEMP DESC
+          ) AS rn
+        FROM dbo.dimCarteiraSKW c
+        LEFT JOIN dbo.dimParceiroSkw p
+               ON p.ParceiroCodigo = c.CODPARC
+        WHERE
+          (
+            (@codvend = 148 AND c.CODVEND IN (148, 128)) OR
+            (@codvend = 128 AND c.CODVEND IN (148, 128)) OR
+            (@codvend = 163 AND c.CODVEND IN (163, 171)) OR
+            (@codvend = 171 AND c.CODVEND IN (163, 171)) OR
+            (@codvend = 15  AND c.CODVEND IN (15, 51)) OR
+            (@codvend = 51  AND c.CODVEND IN (15, 51)) OR
+            (@codvend = 2   AND c.CODVEND = 2) OR
+            (@codvend = 22  AND c.CODVEND IN (22, 61)) OR
+            (@codvend = 61  AND c.CODVEND IN (22, 61)) OR
+            (
+              c.CODVEND NOT IN (148,128,163,171,15,51,2,22,61)
+              AND c.CODVEND = @codvend
+            )
+          )
       )
-  )
-  SELECT
-    codvend,
-    nome_vendedor,
-    codparc,
-    nome_cliente,
-    codemp,
-    dtlim,
-    limcred,
-    logradouro,
-    numero,
-    bairro,
-    cidade,
-    uf,
-    cep,
-    lat,
-    lng
-  FROM CTE
-  WHERE rn = 1
-  ORDER BY nome_cliente;
-`;
-
-
+      SELECT
+        codvend,
+        nome_vendedor,
+        codparc,
+        nome_cliente,
+        codemp,
+        dtlim,
+        limcred,
+        logradouro,
+        numero,
+        bairro,
+        cidade,
+        uf,
+        cep,
+        lat,
+        lng
+      FROM CTE
+      WHERE rn = 1
+      ORDER BY nome_cliente;
+    `;
 
     const result = await runQuery(sqlQuery, request => {
       request.input('codvend', codvend);
@@ -507,8 +493,7 @@ const sqlQuery = `
 });
 
 /* ================== PEDIDOS PENDENTES ================== */
-// GET /api/v1/pedidos-pendentes
-// GET /api/v1/pedidos-pendentes?codvend=123
+
 app.get('/api/v1/pedidos-pendentes', async (req, res) => {
   try {
     const codvendRaw = req.query.codvend;
@@ -778,7 +763,7 @@ app.delete('/api/v1/contatos/:id', async (req, res) => {
   }
 });
 
-/* ================== DESPESAS ================== */
+/* ================== DESPESAS (MANUAIS DO SITE) ================== */
 
 app.get('/api/v1/despesas', async (req, res) => {
   const mes = req.query.mes;
@@ -1202,6 +1187,45 @@ app.delete('/api/v1/despesas/:id', async (req, res) => {
       .json({ error: 'Erro ao excluir despesa', detail: e.message });
   }
 });
+
+app.get('/api/v1/despesas-financeiro', async (req, res) => {
+  try {
+    const empresa = (req.query.empresa || '').toString();
+
+    let sqlBusca = `
+      SELECT
+        Id, NUFIN, NUMNOTA, CODPARC, CODEMP, CODTIPOPER, RECDESP,
+        DESDOBRAMENTO, NURENEG, CODNAT, NOME_NATUREZA, NUFTC,
+        CODCENCUS, CODCTABCOINT, CODTIPTIT, ORIGEM, NUNOTA,
+        PROVISAO, VLRDESDOB, DTENTSAI, DHBAIXA, DTVENC,
+        CODVEND, HISTORICO
+      FROM dbo.fatFinanceiroSkwDespesa
+      WHERE RECDESP = -1
+        AND DTVENC >= '2026-01-01'
+    `;
+
+    if (empresa === 'linhagro') {
+      sqlBusca += ' AND CODEMP BETWEEN 30 AND 39';
+    } else if (empresa === 'lithoplant') {
+      sqlBusca += ' AND CODEMP IN (80, 81)';
+    } else {
+      // se quiser deixar sem filtro quando não passar empresa:
+      sqlBusca += ' AND (CODEMP BETWEEN 30 AND 39 OR CODEMP IN (80,81))';
+    }
+
+    sqlBusca += ' ORDER BY DTVENC ASC, Id ASC;';
+
+    const result = await runQuery(sqlBusca, () => {});
+    res.json({ despesas_financeiro: result.recordset });
+  } catch (e) {
+    console.error('Erro GET /api/v1/despesas-financeiro:', e);
+    res.status(500).json({
+      error: 'Erro ao buscar despesas financeiro',
+      detail: e.message
+    });
+  }
+});
+
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log('API rodando na porta ' + port));

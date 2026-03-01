@@ -18,6 +18,9 @@
 
   <script defer>
     function carregarSelecaoEmpresa() {
+      // FUNDO: gera partículas
+      gerarParticulasSelector(".particles-container", 22);
+
       // garante usuário logado
       const user = getUsuarioAtual();
       if (!user) {

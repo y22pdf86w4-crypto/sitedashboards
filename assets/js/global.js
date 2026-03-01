@@ -7,42 +7,43 @@ const USERS = [
     senha: "admin",
     tipo: "ADMIN",
     empresas: ["linhagro", "lithoplant"],
-    nome: "Usuário Padrão"
+    nome: "Usuário Padrão",
   },
   {
     email: "luciano.rastoldo@lithoplant.com.br",
     senha: "admin",
     tipo: "ADMIN",
     empresas: ["linhagro", "lithoplant"],
-    nome: "Luciano Rastoldo"
+    nome: "Luciano Rastoldo",
   },
   {
     email: "marcussi@linhagro.com.br",
     senha: "admin",
     tipo: "ADMIN",
     empresas: ["linhagro", "lithoplant"],
-    nome: "Robson Marcussi"
+    nome: "Robson Marcussi",
   },
   {
     email: "joaogabriel.reis@linhagro.com.br",
     senha: "admin",
     tipo: "ADMIN",
     empresas: ["linhagro", "lithoplant"],
-    nome: "João Gabriel Reis"
+    nome: "João Gabriel Reis",
   },
+  // Gestores comerciais (RBAC por empresa)
   {
     email: "g.comercial@lithoplant.com.br",
     senha: "admin",
     tipo: "LITHO_ONLY",
     empresas: ["lithoplant"],
-    nome: "Wesley Nunes"
+    nome: "Wesley Nunes",
   },
   {
     email: "g.comercial@linhagro.com.br",
     senha: "admin",
     tipo: "LINHA_ONLY",
     empresas: ["linhagro"],
-    nome: "Gustavo Braga"
+    nome: "Gustavo Braga",
   },
 
   // ==== VENDEDORES LITHOPLANT ====
@@ -51,29 +52,29 @@ const USERS = [
     senha: "admin",
     tipo: "LITHO_ONLY",
     empresas: ["lithoplant"],
-    nome: "Gracielli"
+    nome: "Gracielli",
   },
   {
     email: "joaopaulo.damascena@lithoplant.com.br",
     senha: "admin",
     tipo: "LITHO_ONLY",
     empresas: ["lithoplant"],
-    nome: "João Paulo"
+    nome: "João Paulo",
   },
   {
     email: "ctvsulbahia@lithoplant.com.br",
     senha: "admin",
     tipo: "LITHO_ONLY",
     empresas: ["lithoplant"],
-    nome: "Paulo Modesto"
+    nome: "Paulo Modesto",
   },
   {
     email: "raphael.brandao@lithoplant.com.br",
     senha: "admin",
     tipo: "LITHO_ONLY",
     empresas: ["lithoplant"],
-    nome: "Raphael Brandão"
-  }
+    nome: "Raphael Brandão",
+  },
 ];
 
 // Login centralizado (chamado pelo index.html)
@@ -188,6 +189,7 @@ function gerarParticulasSelector(selector, totalParticles) {
 
 /**
  * Monta cards de dashboards em um grid, com RBAC por empresa, tipo e usuário.
+ * Regra: admin master vê tudo; para os demais, regra por tipo/e-mail abaixo.
  */
 function montarHubGenerico(options) {
   const { gridId, dashboards, user, empresaObrigatoria } = options || {};
@@ -199,27 +201,41 @@ function montarHubGenerico(options) {
   const userEmail = user && user.email ? user.email.toLowerCase() : "";
   const isMasterAdmin = userEmail === "admin"; // só o usuário admin vê tudo
 
-  dashboards
+  (Array.isArray(dashboards) ? dashboards : [])
     .filter((dash) => {
       // Empresa obrigatória
       if (empresaObrigatoria && dash.empresa && dash.empresa !== empresaObrigatoria) {
         return false;
       }
 
-      // RBAC por usuário específico (ignorado para o admin master)
-      if (!isMasterAdmin && Array.isArray(dash.usuariosPermitidos) && dash.usuariosPermitidos.length > 0) {
-        if (!userEmail) return false;
-        const emailsNorm = dash.usuariosPermitidos.map((e) => (e || "").toLowerCase());
-        if (!emailsNorm.includes(userEmail)) return false;
+      // Admin master passa direto
+      if (isMasterAdmin) {
+        return true;
       }
 
-      // RBAC por tipo (role) (ignorado para o admin master)
-      if (!isMasterAdmin && Array.isArray(dash.tiposPermitidos) && dash.tiposPermitidos.length > 0) {
-        if (!userTipo) return false;
-        if (!dash.tiposPermitidos.includes(userTipo)) return false;
-      }
+      const tipos = Array.isArray(dash.tiposPermitidos)
+        ? dash.tiposPermitidos
+        : [];
+      const emails = Array.isArray(dash.usuariosPermitidos)
+        ? dash.usuariosPermitidos.map((e) => (e || "").toLowerCase())
+        : [];
 
-      return true;
+      const temTipos = tipos.length > 0;
+      const temEmails = emails.length > 0;
+
+      if (temTipos) {
+        // Dashboards gerais (ex: Atividades, DualForce)
+        const liberaPorTipo = tipos.includes(userTipo);
+        const liberaPorEmail = !temEmails || emails.includes(userEmail);
+        return liberaPorTipo || liberaPorEmail;
+      } else {
+        // Dashboards nominais (sem tipos): só por e-mail
+        if (!temEmails) {
+          // sem tipos e sem e-mails => ninguém vê (exceto admin master)
+          return false;
+        }
+        return emails.includes(userEmail);
+      }
     })
     .forEach((dash) => {
       const card = document.createElement("article");
@@ -329,7 +345,7 @@ function buildDefaultHeaders(extra) {
   return Object.assign(
     {
       "Content-Type": "application/json",
-      "x-usuario-email": email
+      "x-usuario-email": email,
     },
     extra || {}
   );
@@ -340,7 +356,7 @@ async function apiGet(path) {
   const url = `${API_BASE}${path}`;
   const resp = await fetch(url, {
     method: "GET",
-    headers: buildDefaultHeaders({ "Content-Type": undefined })
+    headers: buildDefaultHeaders({ "Content-Type": undefined }),
   });
 
   if (!resp.ok) {
@@ -356,7 +372,7 @@ async function apiPost(path, bodyObj) {
   const resp = await fetch(url, {
     method: "POST",
     headers: buildDefaultHeaders(),
-    body: JSON.stringify(bodyObj || {})
+    body: JSON.stringify(bodyObj || {}),
   });
 
   if (!resp.ok) {
@@ -372,7 +388,7 @@ async function apiPut(path, bodyObj) {
   const resp = await fetch(url, {
     method: "PUT",
     headers: buildDefaultHeaders(),
-    body: JSON.stringify(bodyObj || {})
+    body: JSON.stringify(bodyObj || {}),
   });
 
   if (!resp.ok) {
@@ -387,7 +403,7 @@ async function apiDelete(path) {
   const url = `${API_BASE}${path}`;
   const resp = await fetch(url, {
     method: "DELETE",
-    headers: buildDefaultHeaders({ "Content-Type": undefined })
+    headers: buildDefaultHeaders({ "Content-Type": undefined }),
   });
 
   if (!resp.ok && resp.status !== 204) {
