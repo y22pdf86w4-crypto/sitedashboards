@@ -2,27 +2,27 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Selecione a empresa</title>
+  <title>Dashboard - Empresas, Avisos e Imagens</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Favicon -->
   <link rel="icon" href="../assets/imagem/favicon.png" type="image/png" />
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="../assets/css/global.css" />
-  <link rel="stylesheet" href="../assets/css/background.css" />
+  <!-- CSS externo deste layout -->
   <link rel="stylesheet" href="../assets/css/select-company.css" />
 
-  <!-- JS global -->
+  <!-- JS global com login, RBAC, partículas, etc. -->
   <script src="../assets/js/global.js" defer></script>
 
   <script defer>
     function carregarSelecaoEmpresa() {
-      // FUNDO: gera partículas
-      gerarParticulasSelector(".particles-container", 22);
+      if (typeof gerarParticulasSelector === "function") {
+        const particlesContainer = document.querySelector(".particles-container");
+        if (particlesContainer && particlesContainer.children.length === 0) {
+          gerarParticulasSelector(".particles-container", 22);
+        }
+      }
 
-      // garante usuário logado
-      const user = getUsuarioAtual();
+      const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
       if (!user) {
         window.location.href = "../index.html";
         return;
@@ -30,13 +30,13 @@
 
       const empresasUser = user.empresas || [];
 
-      // se só tiver 1 empresa, já salva e vai direto para o menu único
+      // Se só tem 1 empresa, já redireciona para o menu
       if (empresasUser.length === 1) {
         selecionarEmpresa(empresasUser[0]);
         return;
       }
 
-      // mostra/esconde cards conforme permissão
+      // Mostrar/esconder cards conforme empresas do usuário
       const cardLinhagro = document.querySelector('[data-empresa="linhagro"]');
       const cardLitho    = document.querySelector('[data-empresa="lithoplant"]');
 
@@ -55,150 +55,333 @@
       window.location.href = "./menu.html";
     }
 
+    function abrirLogistica() {
+      const urlPrincipal = "./logistica.html";
+      window.location.href = urlPrincipal;
+    }
+
     function voltarLogin() {
       if (window.sessionStorage) {
         sessionStorage.removeItem("empresaSelecionada");
       }
       window.location.href = "../index.html";
     }
+
+    function atualizarGlow(e, card) {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      card.style.setProperty("--mouse-x", x + "%");
+      card.style.setProperty("--mouse-y", y + "%");
+    }
+
+    function initGallery() {
+      const track = document.getElementById("galleryTrack");
+      const counter = document.getElementById("galleryCounter");
+      const btnPrev = document.getElementById("galleryPrev");
+      const btnNext = document.getElementById("galleryNext");
+
+      if (!track || !counter || !btnPrev || !btnNext) return;
+
+      let currentSlide = 0;
+      const totalSlides = 2;
+
+      function updateGallery() {
+        const offset = -(currentSlide * 50);
+        track.style.transform = `translateX(${offset}%)`;
+        counter.textContent = (currentSlide + 1) + " / " + totalSlides;
+      }
+
+      btnPrev.addEventListener("click", () => {
+        currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+        updateGallery();
+      });
+
+      btnNext.addEventListener("click", () => {
+        currentSlide = (currentSlide + 1) % totalSlides;
+        updateGallery();
+      });
+
+      setInterval(() => {
+        currentSlide = (currentSlide + 1) % totalSlides;
+        updateGallery();
+      }, 8000);
+    }
+
+    function initSidebarToggle() {
+      const app = document.getElementById("app");
+      const btnToggle = document.getElementById("btnToggleSidebar");
+
+      if (!app || !btnToggle) return;
+
+      btnToggle.addEventListener("click", () => {
+        app.classList.toggle("sidebar-collapsed");
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      carregarSelecaoEmpresa();
+      initGallery();
+      initSidebarToggle();
+    });
   </script>
 </head>
-<body class="select-company-page" onload="carregarSelecaoEmpresa()">
-  <!-- Fundo padrão -->
-  <div class="bg-container" aria-hidden="true">
+<body>
+  <!-- Fundo animado -->
+  <div class="bg-container">
     <div class="animated-bg"></div>
+    <div class="grid-bg"></div>
+
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
     <div class="particles-container"></div>
+
     <div class="wave-container">
       <div class="wave"></div>
       <div class="wave"></div>
       <div class="wave"></div>
     </div>
-    <div class="glow-orb orb-1"></div>
-    <div class="glow-orb orb-2"></div>
-    <div class="grid-bg"></div>
   </div>
 
-  <!-- HEADER -->
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="header-left">
-        <div class="header-logo-pill">
-          <div class="header-logo">
-            <img src="../assets/imagem/logolinhagro.png" alt="Linhagro & Lithoplant" />
-          </div>
-          <div class="header-text">
-            <p class="header-title">Selecione a empresa</p>
-            <p class="header-subtitle">
-              Escolha o ambiente que deseja acessar.
-            </p>
-          </div>
+  <!-- Botão ☰ -->
+  <button class="sidebar-toggle" type="button" id="btnToggleSidebar" aria-label="Alternar menu lateral">
+    <span>☰</span>
+  </button>
+
+  <div class="app" id="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">LG</div>
+        <div class="sidebar-title-block">
+          <span class="sidebar-title">Portal de dashboards</span>
+          <span class="sidebar-sub">Ambientes corporativos</span>
         </div>
       </div>
 
-      <div class="header-right">
-        <!-- Botão Logística no cabeçalho -->
-        <button
-          type="button"
-          class="btn-access"
-          onclick="window.location.href='./logistica.html'"
-        >
-          <span>Logística</span>
-          <span class="btn-access-glow"></span>
-        </button>
+      <div class="sidebar-section">
+        <p class="sidebar-section-title">Navegação</p>
+        <ul class="sidebar-nav">
+          <li class="sidebar-item sidebar-item-active">
+            <span class="icon">🏢</span>
+            <span class="label">Seleção de empresa</span>
+          </li>
+          <li class="sidebar-item" onclick="abrirLogistica()">
+            <span class="icon">⛟</span>
+            <span class="label">Logística</span>
+          </li>
+        </ul>
+      </div>
 
-        <!-- Botão Sair -->
-        <button
-          type="button"
-          class="btn-exit"
-          title="Voltar para login"
-          onclick="voltarLogin()"
-        >
-          <span class="btn-exit-icon">⟵</span>
-          <span class="btn-exit-text">Sair</span>
+      <div class="sidebar-footer">
+        <!-- Botão sair com layout Uiverse -->
+        <button class="Btn sidebar-logout-btn" type="button" onclick="voltarLogin()">
+          <div class="sign">
+            <svg viewBox="0 0 512 512" aria-hidden="true">
+              <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
+            </svg>
+          </div>
+          <div class="text">Sair</div>
         </button>
       </div>
-    </div>
-  </header>
+    </aside>
 
-  <!-- CONTEÚDO -->
-  <main class="page-main">
-    <section class="company-shell" aria-label="Seleção de empresas">
-      <header class="company-shell-header">
-        <h1 class="company-shell-title">
-          Selecione a <span class="gradient-text">empresa</span>
-        </h1>
-        <p class="company-shell-subtitle">
-          Escolha abaixo qual estrutura de dashboards deseja visualizar.
-        </p>
+    <!-- MAIN -->
+    <main class="main">
+      <header class="main-header">
+        <div class="main-header-text">
+          <span class="main-kicker">Ambientes disponíveis</span>
+          <h1 class="main-title">
+            Selecione a <span>empresa</span> e acompanhe os avisos.
+          </h1>
+          <p class="main-sub">
+            Cards 50/50 alinhados, galeria ampliada e visual integrado à paleta em verde/teal do fundo animado.
+          </p>
+        </div>
       </header>
 
-      <div class="company-row">
-        <!-- Linhagro -->
-        <article
-          class="company-card company-card--animated"
-          data-empresa="linhagro"
-          tabindex="0"
-          role="button"
-          aria-label="Acessar dashboards da empresa Linhagro"
-          onclick="selecionarEmpresa('linhagro')"
-          onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selecionarEmpresa('linhagro'); }"
-        >
-          <div class="company-card-logo-wrap">
-            <img src="../assets/imagem/logolinhagro.png" alt="Linhagro" />
+      <section class="row-top" aria-label="Empresas e avisos">
+        <!-- CARD EMPRESAS -->
+        <section class="card" aria-label="Seleção de empresas">
+          <div class="flow-box">
+            <p class="flow-title">Fluxo de acesso</p>
+            <div class="flow-steps">
+              <span class="flow-step"><span class="dot"></span>Login</span>
+              <span class="flow-step"><span class="dot"></span>Seleção de empresa</span>
+              <span class="flow-step"><span class="dot"></span>Dashboards</span>
+            </div>
+            <p class="flow-text">
+              Usuários com apenas uma empresa são redirecionados automaticamente para o ambiente correspondente.
+            </p>
           </div>
-          <div class="company-card-name">Linhagro</div>
-          <p class="company-card-meta">
-            Matriz e filiais – dashboards comerciais e operacionais.
-          </p>
-          <button
-            type="button"
-            class="btn-access"
-            onclick="event.stopPropagation(); selecionarEmpresa('linhagro');"
-          >
-            <span>Acessar</span>
-            <span class="btn-access-glow"></span>
-          </button>
-        </article>
 
-        <!-- Lithoplant -->
-        <article
-          class="company-card company-card--animated"
-          data-empresa="lithoplant"
-          tabindex="0"
-          role="button"
-          aria-label="Acessar dashboards da empresa Lithoplant"
-          onclick="selecionarEmpresa('lithoplant')"
-          onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selecionarEmpresa('lithoplant'); }"
-        >
-          <div class="company-card-logo-wrap">
-            <img src="../assets/imagem/logolitho.png" alt="Lithoplant" />
+          <div class="companies-header">
+            <div class="companies-title-block">
+              <p class="companies-title">Empresas</p>
+              <p class="companies-sub">Escolha onde você quer analisar seus indicadores.</p>
+            </div>
+            <span class="pill">Acesso controlado</span>
           </div>
-          <div class="company-card-name">Lithoplant</div>
-          <p class="company-card-meta">
-            Indicadores específicos da unidade Lithoplant.
-          </p>
-          <button
-            type="button"
-            class="btn-access"
-            onclick="event.stopPropagation(); selecionarEmpresa('lithoplant');"
-          >
-            <span>Acessar</span>
-            <span class="btn-access-glow"></span>
-          </button>
-        </article>
-      </div>
 
-      <div class="company-shell-footer">
-        <button
-          type="button"
-          class="btn-access"
-          onclick="voltarLogin()"
-        >
-          <span>Voltar para login</span>
-          <span class="btn-access-glow"></span>
-        </button>
-      </div>
-    </section>
-  </main>
+          <div class="companies-grid">
+            <!-- Linhagro -->
+            <article
+              class="company-card"
+              data-empresa="linhagro"
+              tabindex="0"
+              role="button"
+              aria-label="Acessar dashboards da empresa Linhagro"
+              onclick="selecionarEmpresa('linhagro')"
+              onmousemove="atualizarGlow(event, this)"
+              onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selecionarEmpresa('linhagro'); }"
+            >
+              <div class="company-top">
+                <div class="company-logo">
+                  <img src="../assets/imagem/logolinhagro.png" alt="Linhagro" />
+                </div>
+                <div class="company-main">
+                  <p class="company-name">Linhagro</p>
+                  <span class="company-tag">Matriz + filiais</span>
+                </div>
+              </div>
+              <p class="company-meta">
+                Visão consolidada de vendas, carteira, margem e indicadores operacionais.
+              </p>
+              <div class="company-footer">
+                <button
+                  type="button"
+                  class="btn-access"
+                  onclick="event.stopPropagation(); selecionarEmpresa('linhagro');"
+                >
+                  <span>Acessar</span>
+                  <span class="btn-access-glow"></span>
+                </button>
+              </div>
+            </article>
+
+            <!-- Lithoplant -->
+            <article
+              class="company-card"
+              data-empresa="lithoplant"
+              tabindex="0"
+              role="button"
+              aria-label="Acessar dashboards da empresa Lithoplant"
+              onclick="selecionarEmpresa('lithoplant')"
+              onmousemove="atualizarGlow(event, this)"
+              onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selecionarEmpresa('lithoplant'); }"
+            >
+              <div class="company-top">
+                <div class="company-logo">
+                  <img src="../assets/imagem/logolitho.png" alt="Lithoplant" />
+                </div>
+                <div class="company-main">
+                  <p class="company-name">Lithoplant</p>
+                  <span class="company-tag">Unidade dedicada</span>
+                </div>
+              </div>
+              <p class="company-meta">
+                Foco em performance industrial, produtividade e eficiência da unidade.
+              </p>
+              <div class="company-footer">
+                <button
+                  type="button"
+                  class="btn-access"
+                  onclick="event.stopPropagation(); selecionarEmpresa('lithoplant');"
+                >
+                  <span>Acessar</span>
+                  <span class="btn-access-glow"></span>
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- CARD AVISOS -->
+        <section class="card panel-notices" aria-label="Avisos e novidades">
+          <header class="notices-header">
+            <div class="notices-title-block">
+              <h2 class="notices-title">Avisos & novidades</h2>
+              <p class="notices-sub">Atualizações recentes nos dashboards.</p>
+            </div>
+            <span class="notices-badge">Últimos 7 dias</span>
+          </header>
+
+          <ul class="notice-list">
+            <li class="notice-item">
+              <div class="notice-top">
+                <p class="notice-title">Novo dashboard de Logística</p>
+                <span class="notice-tag">Logística</span>
+              </div>
+              <p class="notice-text">
+                Disponível painel com OTIF, SLA de transporte e entregas por região.
+              </p>
+              <div class="notice-meta">
+                <span>Linhagro</span>
+              </div>
+            </li>
+
+            <li class="notice-item">
+              <div class="notice-top">
+                <p class="notice-title">Regras de margem atualizadas</p>
+                <span class="notice-tag">Comercial</span>
+              </div>
+              <p class="notice-text">
+                Margem passa a considerar devoluções e bonificações na mesma competência do faturamento.
+              </p>
+              <div class="notice-meta">
+                <span>Todos os ambientes</span>
+              </div>
+            </li>
+
+            <li class="notice-item">
+              <div class="notice-top">
+                <p class="notice-title">Aba de produtividade Lithoplant</p>
+                <span class="notice-tag">Produção</span>
+              </div>
+              <p class="notice-text">
+                Nova visão com taxa de ocupação, produtividade por linha e índice de refugo diário.
+              </p>
+              <div class="notice-meta">
+                <span>Lithoplant</span>
+              </div>
+            </li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- GALERIA AVISO1 / AVISO2 -->
+      <section class="card-gallery" aria-label="Imagens rotativas de avisos">
+        <div class="notice-gallery-header">
+          <div class="notice-gallery-title">
+            <span class="dot-small"></span>
+            <span>Imagens de destaque dos avisos</span>
+          </div>
+          <div class="notice-gallery-controls">
+            <button class="gallery-btn" type="button" id="galleryPrev" aria-label="Imagem anterior">‹</button>
+            <span class="notice-gallery-counter" id="galleryCounter">1 / 2</span>
+            <button class="gallery-btn" type="button" id="galleryNext" aria-label="Próxima imagem">›</button>
+          </div>
+        </div>
+
+        <div class="notice-gallery-viewport">
+          <div class="notice-gallery-track" id="galleryTrack">
+            <div class="notice-gallery-item">
+              <img src="../assets/imagem/aviso1.png" alt="Aviso 1 - exemplo" />
+              <div class="notice-gallery-caption">
+                Campanha de frete e indicadores de logística atualizados.
+              </div>
+            </div>
+            <div class="notice-gallery-item">
+              <img src="../assets/imagem/aviso2.png" alt="Aviso 2 - exemplo" />
+              <div class="notice-gallery-caption">
+                Destaque de performance comercial da última safra.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
 </body>
 </html>

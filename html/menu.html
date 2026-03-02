@@ -2,690 +2,373 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Portal de Dashboards</title>
+  <title>Centro de Navegação - Dashboards</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Favicon -->
   <link rel="icon" href="../assets/imagem/favicon.png" type="image/png" />
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="../assets/css/global.css" />
-  <link rel="stylesheet" href="../assets/css/background.css" />
   <link rel="stylesheet" href="../assets/css/menu.css" />
-
-  <!-- JS global -->
   <script src="../assets/js/global.js" defer></script>
 
   <script defer>
-const EMPRESAS_CONFIG = {
-  linhagro: {
-    nome: "Linhagro",
-    tituloHeader: "Linhagro – Painel de controle",
-    tituloMobile: "Dashboards Linhagro",
-    logo: "../assets/imagem/logolinhagro.png",
-    calendarioPath: "calendario.html",
-    // ADMIN sempre pode; esta lista libera também usuários específicos.
-    emailsCalendario: [
-      "joaogabriel.reis@linhagro.com.br",
-      "g.comercial@linhagro.com.br"
-    ],
-    hubBadges: ["Atividades", "Comercial", "Operacional", "Financeiro"],
-    hubDescricao:
-      "Escolha abaixo qual painel deseja abrir. Cada card abre um dashboard em tela cheia.",
-    tabDashDesc: "Indicadores operacionais e comerciais.",
-    tabCalDesc: "Pendências e vencimentos Linhagro.",
-    tabOrgDesc: "Estrutura da equipe Linhagro."
-  },
-  lithoplant: {
-    nome: "Lithoplant",
-    tituloHeader: "Lithoplant – Painel de controle",
-    tituloMobile: "Dashboards Lithoplant",
-    logo: "../assets/imagem/logolitho.png",
-    calendarioPath: "calendario.html",
-    // null => só ADMIN; se quiser liberar pessoas específicas, preencha o array.
-    emailsCalendario: null,
-    hubBadges: ["DualForce", "Carteira", "Vendedores"],
-    hubDescricao:
-      "Escolha abaixo qual painel deseja abrir. Cada card abre um dashboard em tela cheia.",
-    tabDashDesc: "Indicadores da operação Lithoplant.",
-    tabCalDesc: "Pendências e vencimentos Lithoplant.",
-    tabOrgDesc: "Estrutura da equipe Lithoplant."
-  }
-};
+    const EMPRESAS_CONFIG = {
+      linhagro: {
+        nome: "Linhagro",
+        calendarioPath: "calendario.html",
+        hubDescricao: "Escolha abaixo qual painel deseja abrir. Cada card abre um dashboard em tela cheia."
+      },
+      lithoplant: {
+        nome: "Lithoplant",
+        calendarioPath: "calendario.html",
+        hubBadges: ["DualForce", "Carteira", "Vendedores", "Estoque"],
+        hubDescricao: "Escolha abaixo qual painel deseja abrir. Cada card abre um dashboard em tela cheia."
+      }
+    };
 
-const DASHBOARDS = [
-  // LINHAGRO
+    const DASHBOARDS = [
   {
     id: "linha-atividades",
     empresa: "linhagro",
-    titulo: "Atividades",
-    descricaoCurta: "Projeto Atividades – A2W.",
-    descricaoLonga:
-      "Dashboard principal com vendas, carteira, metas e indicadores operacionais por consultor, linha e região.",
+    titulo: "Atividades - A2W",
+    descricaoCurta: "Vendas, carteira, metas e indicadores de performance.",
+    descricaoLonga: "Visão principal por consultor, linha, região e margem.",
     iconEmoji: "📊",
-    iconImg: "../assets/imagem/logolinhagro.png",
     url: "dashboards/linhagro/atividades.html",
-    frequencia: "Atualização: a cada 30 minutos",
-    tiposPermitidos: ["ADMIN", "LINHA_ONLY"]
+    frequencia: "Atualização: a cada 30 minutos"
   },
-
-  // LITHOPLANT
-
-  // DualForce – admins + Wesley
+  {
+    id: "linha-financeiro",
+    empresa: "linhagro",
+    titulo: "Financeiro – Linhagro",
+    descricaoCurta: "Receitas, despesas, DRE e fluxo de caixa.",
+    descricaoLonga: "Painel financeiro com visão por centro de custo, período e indicador de resultado.",
+    iconEmoji: "💰",
+    url: "dashboards/linhagro/financeiro.html",
+    frequencia: "Atualização: diária"
+  },
+  {
+    id: "linha-estoque",
+    empresa: "linhagro",
+    titulo: "Estoque – Linhagro",
+    descricaoCurta: "Saldo, giro, cobertura e alertas de ruptura.",
+    descricaoLonga: "Painel de estoque consolidado por produto, família e região.",
+    iconEmoji: "📦",
+    url: "dashboards/linhagro/estoque.html",
+    frequencia: "Atualização: diária"
+  },
+  {
+    id: "linha-powerbi-geral",
+    empresa: "linhagro",
+    titulo: "Power BI – Linhagro (Geral)",
+    descricaoCurta: "Visão consolidada dos indicadores da Linhagro.",
+    descricaoLonga: "Dashboard geral com visão integrada de indicadores financeiros, comerciais e operacionais.",
+    iconEmoji: "📈",
+    url: "dashboards/linhagro/powerbi-linhagro.html",
+    frequencia: "Atualização: a cada 30 minutos"
+  },
   {
     id: "litho-dualforce",
     empresa: "lithoplant",
     titulo: "DualForce Lithoplant",
     descricaoCurta: "Projeto DualForce – visão consolidada.",
-    descricaoLonga:
-      "Dashboard principal com vendas, carteira, metas e indicadores operacionais por consultor, linha e região.",
+    descricaoLonga: "Dashboard principal com vendas, carteira, metas e indicadores operacionais.",
     iconEmoji: "📊",
-    iconImg: "../assets/imagem/logolitho.png",
     url: "dashboards/lithoplant/dualforce.html",
-    frequencia: "Atualização: a cada 30 minutos",
-    tiposPermitidos: ["ADMIN"],
-    usuariosPermitidos: [
-      "g.comercial@lithoplant.com.br"
-    ]
+    frequencia: "Atualização: a cada 30 minutos"
+  },
+  {
+    id: "litho-estoque",
+    empresa: "lithoplant",
+    titulo: "Estoque – Lithoplant",
+    descricaoCurta: "Visão industrial de estoque e insumos.",
+    descricaoLonga: "Análises de nível de estoque, consumo e reposição da unidade.",
+    iconEmoji: "📦",
+    url: "dashboards/lithoplant/estoque.html",
+    frequencia: "Atualização: diária"
   },
   {
     id: "litho-gracielli",
     empresa: "lithoplant",
-    titulo: "Dashboard – Gracielli",
-    descricaoCurta: "Painel individual da vendedora Gracielli.",
-    descricaoLonga:
-      "KPIs pessoais de vendas, carteira e metas da região Centro-Sul.",
+    titulo: "Dashboard VIP – Gracielli",
+    descricaoCurta: "Painel individual para acompanhamento estratégico.",
+    descricaoLonga: "Visão dedicada de indicadores selecionados para a gestão da Gracielli na Lithoplant.",
     iconEmoji: "⭐",
-    iconImg: "../assets/imagem/logolitho.png",
-    url: "dashboards/lithoplant/vendedor-gracielli.html",
-    frequencia: "Atualização: diária",
-    usuariosPermitidos: ["ctvcentrosul@lithoplant.com.br"]
+    url: "dashboards/lithoplant/vip-gracielli.html",
+    frequencia: "Atualização: a cada 30 minutos"
   },
   {
-    id: "litho-joaopaulo",
+    id: "litho-joao-paulo",
     empresa: "lithoplant",
-    titulo: "Dashboard – João Paulo",
-    descricaoCurta: "Painel individual do vendedor João Paulo.",
-    descricaoLonga:
-      "KPIs pessoais de vendas, carteira e metas do João Paulo.",
+    titulo: "Dashboard VIP – João Paulo",
+    descricaoCurta: "Painel individual para acompanhamento estratégico.",
+    descricaoLonga: "Visão dedicada de indicadores selecionados para o acompanhamento do João Paulo na Lithoplant.",
     iconEmoji: "⭐",
-    iconImg: "../assets/imagem/logolitho.png",
-    url: "dashboards/lithoplant/vendedor-joaopaulo.html",
-    frequencia: "Atualização: diária",
-    usuariosPermitidos: ["joaopaulo.damascena@lithoplant.com.br"]
+    url: "dashboards/lithoplant/vip-joaopaulo.html",
+    frequencia: "Atualização: a cada 30 minutos"
   },
   {
-    id: "litho-paulomodesto",
+    id: "litho-paulo-modesto",
     empresa: "lithoplant",
-    titulo: "Dashboard – Paulo Modesto",
-    descricaoCurta: "Painel individual do vendedor Paulo Modesto.",
-    descricaoLonga:
-      "KPIs pessoais de vendas, carteira e metas da região Sul Bahia.",
+    titulo: "Dashboard VIP – Paulo Modesto",
+    descricaoCurta: "Painel individual para acompanhamento estratégico.",
+    descricaoLonga: "Visão dedicada de indicadores selecionados para o acompanhamento do Paulo Modesto na Lithoplant.",
     iconEmoji: "⭐",
-    iconImg: "../assets/imagem/logolitho.png",
-    url: "dashboards/lithoplant/vendedor-paulomodesto.html",
-    frequencia: "Atualização: diária",
-    usuariosPermitidos: ["ctvsulbahia@lithoplant.com.br"]
+    url: "dashboards/lithoplant/vip-paulomodesto.html",
+    frequencia: "Atualização: a cada 30 minutos"
   },
   {
-    id: "litho-raphaelbrandao",
+    id: "litho-raphael-brandao",
     empresa: "lithoplant",
-    titulo: "Dashboard – Raphael Brandão",
-    descricaoCurta: "Painel individual do vendedor Raphael Brandão.",
-    descricaoLonga:
-      "KPIs pessoais de vendas, carteira e metas do Raphael Brandão.",
+    titulo: "Dashboard VIP – Raphael Brandão",
+    descricaoCurta: "Painel individual para acompanhamento estratégico.",
+    descricaoLonga: "Visão dedicada de indicadores selecionados para o acompanhamento do Raphael Brandão na Lithoplant.",
     iconEmoji: "⭐",
-    iconImg: "../assets/imagem/logolitho.png",
-    url: "dashboards/lithoplant/vendedor-raphaelbrandao.html",
-    frequencia: "Atualização: diária",
-    usuariosPermitidos: ["raphael.brandao@lithoplant.com.br"]
+    url: "dashboards/lithoplant/vip-raphaelbrandao.html",
+    frequencia: "Atualização: a cada 30 minutos"
   }
-];
+    ];
 
-let dashboardsFiltrados = [];
+    let dashboardsFiltrados = [];
 
-function carregarMenu() {
-  const user = getUsuarioAtual();
-  if (!user) {
-    window.location.href = "../index.html";
-    return;
-  }
+    function carregarMenu() {
+      const user = getUsuarioAtual();
+      if (!user) {
+        window.location.href = "../index.html";
+        return;
+      }
 
-  const empresa = window.sessionStorage
-    ? sessionStorage.getItem("empresaSelecionada")
-    : null;
+      const empresa = window.sessionStorage ? sessionStorage.getItem("empresaSelecionada") : null;
+      if (!empresa || !user.empresas || !user.empresas.includes(empresa)) {
+        window.location.href = "./select-company.html";
+        return;
+      }
 
-  if (!empresa || !user.empresas || !user.empresas.includes(empresa)) {
-    window.location.href = "./select-company.html";
-    return;
-  }
+      const cfg = EMPRESAS_CONFIG[empresa];
+      if (!cfg) {
+        window.location.href = "../index.html";
+        return;
+      }
 
-  const cfg = EMPRESAS_CONFIG[empresa];
-  if (!cfg) {
-    window.location.href = "../index.html";
-    return;
-  }
+      preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
 
-  preencherHeaderUsuario(user, "saudacao", "userName");
+      const hubSubtitle = document.getElementById("hubSubtitle");
+      if (hubSubtitle) hubSubtitle.textContent = cfg.hubDescricao;
 
-  const saudMobile = document.getElementById("saudacaoMobile");
-  if (saudMobile && user && user.nome) {
-    saudMobile.textContent = "Olá, " + user.nome;
-  }
+      const hubBadgesWrap = document.getElementById("hubBadges");
+      if (hubBadgesWrap) {
+        hubBadgesWrap.innerHTML = "";
+        (cfg.hubBadges || []).forEach(txt => {
+          const span = document.createElement("span");
+          span.className = "badge";
+          span.textContent = txt;
+          hubBadgesWrap.appendChild(span);
+        });
+      }
 
-  const logoImg = document.getElementById("logoEmpresa");
-  const logoImgMob = document.getElementById("logoEmpresaMobile");
-  if (logoImg) logoImg.src = cfg.logo;
-  if (logoImgMob) logoImgMob.src = cfg.logo;
+      dashboardsFiltrados = DASHBOARDS.filter(d => d.empresa === empresa);
+      atualizarGridDashboards(empresa);
 
-  const headerTitle = document.getElementById("headerTitle");
-  if (headerTitle) headerTitle.textContent = cfg.tituloHeader;
-
-  const headerSub = document.getElementById("headerSub");
-  if (headerSub)
-    headerSub.textContent = "Bem-vindo ao painel de controle " + cfg.nome + ".";
-
-  const mobileTitle = document.getElementById("mobileTitle");
-  if (mobileTitle) mobileTitle.textContent = cfg.tituloMobile;
-
-  const mobileSub = document.getElementById("mobileSub");
-  if (mobileSub && user && user.nome)
-    mobileSub.textContent = "Olá, " + user.nome;
-
-  const hubBadgesWrap = document.getElementById("hubBadges");
-  if (hubBadgesWrap) {
-    hubBadgesWrap.innerHTML = "";
-    (cfg.hubBadges || []).forEach(txt => {
-      const span = document.createElement("span");
-      span.className = "hub-badge";
-      span.textContent = txt;
-      hubBadgesWrap.appendChild(span);
-    });
-  }
-
-  const hubSubtitle = document.getElementById("hubSubtitle");
-  if (hubSubtitle) hubSubtitle.textContent = cfg.hubDescricao;
-
-  const tabDashDesc = document.getElementById("tabDashDesc");
-  const tabDashDescMobile = document.getElementById("tabDashDescMobile");
-  if (tabDashDesc) tabDashDesc.textContent = cfg.tabDashDesc;
-  if (tabDashDescMobile) tabDashDescMobile.textContent = cfg.tabDashDesc;
-
-  const tabCalDesc = document.getElementById("tabCalDesc");
-  if (tabCalDesc) tabCalDesc.textContent = cfg.tabCalDesc;
-
-  const tabOrgDesc = document.getElementById("tabOrgDesc");
-  if (tabOrgDesc) tabOrgDesc.textContent = cfg.tabOrgDesc;
-
-  gerarParticulasSelector(".particles-container", 22);
-
-  configurarCalendario(empresa, user, cfg);
-
-  dashboardsFiltrados = DASHBOARDS.filter(d => d.empresa === empresa);
-  atualizarGridDashboards(user, empresa);
-}
-
-// ADMIN + e-mails específicos
-function configurarCalendario(empresa, user, cfg) {
-  const btnCal = document.getElementById("btnCalendario");
-  const btnCalMobile = document.getElementById("btnCalendarioMobile");
-  if (!btnCal && !btnCalMobile) return;
-
-  const emailUser = (user.email || "").toLowerCase();
-  const tipoUser = (user.tipo || "").toUpperCase(); // ex.: "ADMIN"
-
-  let podeCalendario = false;
-
-  // ADMIN sempre pode
-  if (tipoUser === "ADMIN") {
-    podeCalendario = true;
-  }
-
-  // Se houver lista de e-mails, libera também para quem estiver nela
-  if (!podeCalendario && Array.isArray(cfg.emailsCalendario)) {
-    podeCalendario = cfg.emailsCalendario
-      .map(e => (e || "").toLowerCase())
-      .includes(emailUser);
-  }
-
-  const display = podeCalendario ? "flex" : "none";
-
-  if (btnCal) btnCal.style.display = display;
-  if (btnCalMobile) btnCalMobile.style.display = display;
-
-  if (!podeCalendario) {
-    if (btnCal) btnCal.onclick = null;
-    if (btnCalMobile) btnCalMobile.onclick = null;
-    return;
-  }
-
-  const goCal = () => {
-    window.location.href = cfg.calendarioPath;
-  };
-  if (btnCal) btnCal.onclick = goCal;
-  if (btnCalMobile) btnCalMobile.onclick = goCal;
-}
-
-function atualizarGridDashboards(user, empresa) {
-  montarHubGenerico({
-    gridId: "hubGrid",
-    dashboards: dashboardsFiltrados,
-    user,
-    empresaObrigatoria: empresa
-  });
-}
-
-function filtrarDashboardsPorTexto(termo) {
-  const valor = (termo || "").trim().toLowerCase();
-  const empresa = window.sessionStorage
-    ? sessionStorage.getItem("empresaSelecionada")
-    : null;
-  if (!empresa) return;
-
-  const base = DASHBOARDS.filter(d => d.empresa === empresa);
-
-  if (!valor) {
-    dashboardsFiltrados = [...base];
-  } else {
-    dashboardsFiltrados = base.filter(d => {
-      const texto =
-        (d.titulo || "") +
-        " " +
-        (d.descricaoCurta || "") +
-        " " +
-        (d.descricaoLonga || "");
-      return texto.toLowerCase().includes(valor);
-    });
-  }
-
-  const user = getUsuarioAtual();
-  if (!user) return;
-  atualizarGridDashboards(user, empresa);
-}
-
-function selecionarAba(botao, tabId) {
-  document.querySelectorAll("#sidebarTabsDesktop .sidebar-tab").forEach(b => {
-    if (b.dataset.tab) {
-      b.classList.toggle("active", b === botao || b.dataset.tab === tabId);
+      const app = document.getElementById("app");
+      const btnToggle = document.getElementById("btnToggleSidebar");
+      if (app && btnToggle) {
+        btnToggle.addEventListener("click", () => {
+          app.classList.toggle("sidebar-collapsed");
+        });
+      }
     }
-  });
 
-  document.querySelectorAll("#sidebarTabsMobile .sidebar-tab").forEach(b => {
-    if (b.dataset.tab) {
-      b.classList.toggle("active", b === botao || b.dataset.tab === tabId);
+    function atualizarGridDashboards(empresa) {
+      const grid = document.getElementById("dashboardGrid");
+      if (!grid) return;
+
+      const base = dashboardsFiltrados;
+      grid.innerHTML = "";
+
+      base.forEach(d => {
+        const card = document.createElement("article");
+        card.className = "dash-card";
+        card.onclick = () => window.location.href = d.url;
+
+        card.innerHTML = `
+          <div class="dash-card-top">
+            <div class="dash-card-icon">${d.iconEmoji || "📊"}</div>
+            <div class="dash-card-main">
+              <p class="dash-card-title">${d.titulo}</p>
+              <span class="dash-card-tag">
+                ${empresa === "linhagro" ? "Linhagro" : "Lithoplant"}
+              </span>
+            </div>
+          </div>
+          <p class="dash-card-text">${d.descricaoCurta || ""}</p>
+          <p class="dash-card-text">${d.descricaoLonga || ""}</p>
+          <div class="dash-card-footer">
+            <span>${d.frequencia || ""}</span>
+            <button
+              type="button"
+              class="btn-open"
+              onclick="event.stopPropagation(); window.location.href='${d.url}'"
+            >
+              Abrir
+            </button>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
     }
-  });
 
-  document.querySelectorAll(".tab-content").forEach(sec => {
-    sec.classList.toggle("active", sec.id === tabId);
-  });
+    function filtrarDashboardsPorTexto(texto) {
+      const termo = (texto || "").toLowerCase();
+      const empresa = window.sessionStorage ? sessionStorage.getItem("empresaSelecionada") : null;
+      if (!empresa) return;
 
-  const wrapBusca = document.getElementById("sidebarSearchWrap");
-  const wrapBuscaMobile = document.getElementById("sidebarSearchWrapMobile");
-  const mostrarBusca = tabId === "tab-dashboards";
+      const base = DASHBOARDS.filter(d => d.empresa === empresa);
 
-  if (wrapBusca) {
-    wrapBusca.style.display = mostrarBusca ? "block" : "none";
-  }
-  if (wrapBuscaMobile) {
-    wrapBuscaMobile.style.display = mostrarBusca ? "block" : "none";
-  }
+      if (!termo) {
+        dashboardsFiltrados = [...base];
+      } else {
+        dashboardsFiltrados = base.filter(d => {
+          const t = (d.titulo || "") + " " + (d.descricaoCurta || "") + " " + (d.descricaoLonga || "");
+          return t.toLowerCase().includes(termo);
+        });
+      }
 
-  if (window.innerWidth <= 768) {
-    toggleFullNav(false);
-  }
-}
+      atualizarGridDashboards(empresa);
+    }
 
-function toggleFullNav(show) {
-  const root = document.body;
-  const fullNav = document.getElementById("fullNav");
-  if (!fullNav) return;
+    function ativarItemSidebar(chave) {
+      document.querySelectorAll(".sidebar-item").forEach(item => {
+        item.classList.toggle("sidebar-item-active", item.dataset.key === chave);
+      });
 
-  const open =
-    typeof show === "boolean" ? show : !root.classList.contains("fullnav-open");
+      const empresa = window.sessionStorage ? sessionStorage.getItem("empresaSelecionada") : null;
+      if (!empresa) return;
 
-  root.classList.toggle("fullnav-open", open);
-  fullNav.setAttribute("aria-hidden", open ? "false" : "true");
-}
+      const cfg = EMPRESAS_CONFIG[empresa];
 
-function toggleHeaderMenu() {
-  const dropdown = document.getElementById("headerMenuDropdown");
-  if (!dropdown) return;
-  const isOpen = dropdown.classList.contains("open");
-  dropdown.classList.toggle("open", !isOpen);
+      if (chave === "dashboards") {
+        dashboardsFiltrados = DASHBOARDS.filter(d => d.empresa === empresa);
+        atualizarGridDashboards(empresa);
+      } else if (chave === "calendario") {
+        window.location.href = cfg.calendarioPath;
+      } else if (chave === "organograma") {
+        window.location.href = "./org-linhagro.html";
+      }
+    }
 
-  const btn = document.querySelector(".header-menu-button");
-  if (btn) {
-    btn.setAttribute("aria-expanded", !isOpen ? "true" : "false");
-  }
-}
+    function trocarEmpresa() {
+      if (window.sessionStorage) {
+        sessionStorage.removeItem("empresaSelecionada");
+      }
+      window.location.href = "./select-company.html";
+    }
 
-document.addEventListener("click", (e) => {
-  const dropdown = document.getElementById("headerMenuDropdown");
-  const wrapper = document.querySelector(".header-menu-wrapper");
-  if (!dropdown || !wrapper) return;
-  if (!wrapper.contains(e.target)) {
-    dropdown.classList.remove("open");
-    const btn = document.querySelector(".header-menu-button");
-    if (btn) btn.setAttribute("aria-expanded", "false");
-  }
-});
+    function voltarLogin() {
+      deslogar();
+    }
 
-function trocarEmpresa() {
-  if (window.sessionStorage) {
-    sessionStorage.removeItem("empresaSelecionada");
-  }
-  window.location.href = "./select-company.html";
-}
+    window.addEventListener("DOMContentLoaded", carregarMenu);
   </script>
 </head>
-<body class="login-page layout-has-sidebar" onload="carregarMenu()">
-  <!-- Fundo padrão -->
-  <div class="bg-container" aria-hidden="true">
+
+<body>
+  <div class="bg-container">
     <div class="animated-bg"></div>
+    <div class="grid-bg"></"></div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
     <div class="particles-container"></div>
+
     <div class="wave-container">
       <div class="wave"></div>
       <div class="wave"></div>
       <div class="wave"></div>
     </div>
-    <div class="glow-orb orb-1"></div>
-    <div class="glow-orb orb-2"></div>
-    <div class="grid-bg"></div>
   </div>
 
-  <!-- Header -->
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="header-left">
-        <div class="header-logo-pill">
-          <div class="header-logo">
-            <img id="logoEmpresa" src="../assets/imagem/logolinhagro.png" alt="Empresa" />
-          </div>
-          <div class="header-text">
-            <p class="header-title" id="headerTitle">Painel de controle</p>
-            <p class="header-subtitle" id="headerSub">
-              Carregando usuário...
-            </p>
-          </div>
+  <button
+    class="sidebar-toggle"
+    type="button"
+    id="btnToggleSidebar"
+    aria-label="Alternar menu lateral"
+  >
+    <span>☰</span>
+  </button>
+
+  <div class="app" id="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">LG</div>
+        <div class="sidebar-title-block">
+          <span class="sidebar-title" id="saudacaoSidebar">Centro de navegação</span>
+          <span class="sidebar-sub" id="userNameSidebar">Dashboards corporativos</span>
         </div>
       </div>
 
-      <div class="header-actions">
-        <!-- Desktop -->
-        <div class="header-actions-desktop">
-          <span class="header-pill">Ambiente produção</span>
-          <div class="user-chip" id="userChip">
-            <span class="status-dot"></span>
-            <span id="userName">Usuário</span>
-          </div>
-          <button
-            type="button"
-            class="btn-icon"
-            title="Trocar empresa"
-            onclick="trocarEmpresa()"
+      <div class="sidebar-section">
+        <p class="sidebar-section-title">Navegação</p>
+        <ul class="sidebar-nav">
+          <li class="sidebar-item" data-key="voltar" onclick="trocarEmpresa()">
+            <span class="icon">⬅</span>
+            <span class="label">Voltar à seleção</span>
+          </li>
+          <li
+            class="sidebar-item sidebar-item-active"
+            data-key="dashboards"
+            onclick="ativarItemSidebar('dashboards')"
           >
-            ⇄
-          </button>
-          <button
-            type="button"
-            class="btn-exit"
-            title="Sair"
-            onclick="deslogar()"
-          >
-            <span class="btn-exit-icon">⟵</span>
-            <span class="btn-exit-text">Sair</span>
-          </button>
-        </div>
-
-        <!-- Mobile -->
-        <div class="header-actions-mobile">
-          <button
-            type="button"
-            class="header-menu-open"
-            onclick="toggleFullNav(true)"
-          >
-            Centro de navegação
-          </button>
-
-          <div class="header-mobile-center">
-            <div class="header-logo header-logo-mobile">
-              <img id="logoEmpresaMobile" src="../assets/imagem/logolinhagro.png" alt="Empresa" />
-            </div>
-            <div class="header-mobile-texts">
-              <p class="header-mobile-title" id="mobileTitle">Dashboards</p>
-              <p class="header-mobile-sub" id="mobileSub">Bem-vindo</p>
-            </div>
-          </div>
-
-          <div class="header-menu-wrapper">
-            <button
-              type="button"
-              class="header-menu-button"
-              aria-haspopup="true"
-              aria-expanded="false"
-              onclick="toggleHeaderMenu()"
-            >
-              ⋮
-            </button>
-            <div class="header-menu-dropdown" id="headerMenuDropdown">
-              <button
-                type="button"
-                class="header-menu-item"
-                onclick="trocarEmpresa()"
-              >
-                Trocar empresa
-              </button>
-              <button
-                type="button"
-                class="header-menu-item"
-                onclick="deslogar()"
-              >
-                Sair
-              </button>
-            </div>
-          </div>
-        </div>
+            <span class="icon">📊</span>
+            <span class="label">Dashboards</span>
+          </li>
+          <li class="sidebar-item" data-key="calendario" onclick="ativarItemSidebar('calendario')">
+            <span class="icon">📅</span>
+            <span class="label">Calendário</span>
+          </li>
+          <li class="sidebar-item" data-key="organograma" onclick="ativarItemSidebar('organograma')">
+            <span class="icon">👥</span>
+            <span class="label">Organograma</span>
+          </li>
+        </ul>
       </div>
-    </div>
-  </header>
 
-  <!-- Layout principal -->
-  <div class="layout-root">
-    <!-- Sidebar -->
-    <aside class="layout-sidebar" id="layoutSidebar">
-      <div class="sidebar-card" aria-label="Menu lateral">
-        <div class="sidebar-header">
-          <h2 class="sidebar-title">Centro de navegação</h2>
-          <p class="sidebar-hint">
-            Selecione uma área abaixo. Em Dashboards, use a busca para filtrar os cards.
-          </p>
-        </div>
-
-        <div class="sidebar-tabs" id="sidebarTabsDesktop">
-          <button
-            type="button"
-            class="sidebar-tab active"
-            data-tab="tab-dashboards"
-            onclick="selecionarAba(this,'tab-dashboards')"
-          >
-            <div class="sidebar-tab-icon">📊</div>
-            <div class="sidebar-tab-texts">
-              <span class="sidebar-tab-label">Dashboards</span>
-              <span class="sidebar-tab-desc" id="tabDashDesc">
-                Indicadores operacionais e comerciais.
-              </span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            class="sidebar-tab"
-            id="btnCalendario"
-          >
-            <div class="sidebar-tab-icon">📅</div>
-            <div class="sidebar-tab-texts">
-              <span class="sidebar-tab-label">Calendário</span>
-              <span class="sidebar-tab-desc" id="tabCalDesc">
-                Pendências e vencimentos.
-              </span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            class="sidebar-tab"
-            data-tab="tab-organograma"
-            onclick="selecionarAba(this,'tab-organograma')"
-          >
-            <div class="sidebar-tab-icon">👥</div>
-            <div class="sidebar-tab-texts">
-              <span class="sidebar-tab-label">Organograma</span>
-              <span class="sidebar-tab-desc" id="tabOrgDesc">
-                Estrutura da equipe.
-              </span>
-            </div>
-          </button>
-        </div>
-
-        <div class="sidebar-divider"></div>
-
-        <div id="sidebarSearchWrap" class="sidebar-search">
-          <input
-            type="text"
-            id="sidebarSearch"
-            placeholder="Buscar dashboards (ex: financeiro)..."
-            oninput="filtrarDashboardsPorTexto(this.value)"
-          />
-          <span class="sidebar-search-icon">🔍</span>
-        </div>
-
-        <div class="sidebar-footer">
-          Use o menu lateral como um cabeçalho vertical: escolha a área, filtre e abra os painéis em tela cheia.
-        </div>
+      <div class="sidebar-footer">
+        <button class="Btn sidebar-logout-btn" type="button" onclick="voltarLogin()">
+          <div class="sign">
+            <svg viewBox="0 0 512 512">
+              <path
+                d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"
+              ></path>
+            </svg>
+          </div>
+          <div class="text">Sair</div>
+        </button>
       </div>
     </aside>
 
-    <!-- Conteúdo principal -->
-    <main class="layout-main">
-      <section id="tab-dashboards" class="tab-content active">
-        <article class="hub-panel" aria-label="Seleção de dashboards">
-          <div class="hub-header">
-            <div>
-              <h1 class="hub-title">
-                Dashboards de <span class="gradient-text">performance</span>
-              </h1>
-              <p class="hub-subtitle" id="hubSubtitle">
-                Escolha abaixo qual painel deseja abrir. Cada card abre um dashboard em tela cheia.
-              </p>
-            </div>
-            <div class="hub-badges" id="hubBadges"></div>
-          </div>
+    <main class="main">
+      <header class="main-header">
+        <span class="main-kicker">Ambientes disponíveis</span>
+        <h1 class="main-title">
+          Selecione o <span>dashboard</span> que deseja abrir.
+        </h1>
+        <p class="main-sub" id="hubSubtitle">
+          Use a barra lateral para navegar entre áreas e a busca abaixo para filtrar os cartões.
+        </p>
 
-          <div id="hubGrid" class="hub-grid">
-            <!-- cards via JS -->
-          </div>
-        </article>
-      </section>
-
-      <section id="tab-organograma" class="tab-content">
-        <article class="hub-panel" aria-label="Organograma">
-          <div class="hub-header">
-            <div>
-              <h1 class="hub-title">
-                Estrutura de <span class="gradient-text">organização</span>
-              </h1>
-              <p class="hub-subtitle">
-                Visualize o organograma, equipes e funções. Essa área pode abrir uma tela ou dashboard dedicado.
-              </p>
-            </div>
-          </div>
-
-          <div class="org-body">
-            <p>
-              Aqui você pode apontar para uma página estática com a imagem do organograma
-              (<code>organograma.html</code> por empresa) ou incorporar um dashboard de pessoas e funções via iframe.
-            </p>
-            <p>
-              Se quiser que a aba já redirecione, basta trocar o clique da aba Organograma para
-              <code>window.location.href = 'dashboards/organograma-EMPRESA.html'</code>.
-            </p>
-          </div>
-        </article>
-      </section>
-    </main>
-  </div>
-
-  <!-- Navegação full-screen no mobile -->
-  <div class="fullnav-backdrop" id="fullNav" aria-hidden="true">
-    <div class="fullnav-panel">
-      <div class="fullnav-header">
-        <span>Centro de navegação</span>
-        <button type="button" class="fullnav-close" onclick="toggleFullNav(false)">✕</button>
-      </div>
-
-      <div class="fullnav-body">
-        <div class="sidebar-tabs" id="sidebarTabsMobile">
-          <button
-            type="button"
-            class="sidebar-tab active"
-            data-tab="tab-dashboards"
-            onclick="selecionarAba(this,'tab-dashboards')"
-          >
-            <div class="sidebar-tab-icon">📊</div>
-            <div class="sidebar-tab-texts">
-              <span class="sidebar-tab-label">Dashboards</span>
-              <span class="sidebar-tab-desc" id="tabDashDescMobile">
-                Indicadores operacionais e comerciais.
-              </span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            class="sidebar-tab"
-            id="btnCalendarioMobile"
-          >
-            <div class="sidebar-tab-icon">📅</div>
-            <div class="sidebar-tab-texts">
-              <span class="sidebar-tab-label">Calendário</span>
-              <span class="sidebar-tab-desc">
-                Pendências e vencimentos.
-              </span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            class="sidebar-tab"
-            data-tab="tab-organograma"
-            onclick="selecionarAba(this,'tab-organograma')"
-          >
-            <div class="sidebar-tab-icon">👥</div>
-            <div class="sidebar-tab-texts">
-              <span class="sidebar-tab-label">Organograma</span>
-              <span class="sidebar-tab-desc">
-                Estrutura da equipe.
-              </span>
-            </div>
-          </button>
-        </div>
-
-        <div id="sidebarSearchWrapMobile" class="sidebar-search">
+        <div class="main-search">
           <input
             type="text"
-            id="sidebarSearchMobile"
-            placeholder="Buscar dashboards..."
+            id="searchInput"
+            placeholder="Buscar dashboards (ex: carteira, logística, estoque)..."
             oninput="filtrarDashboardsPorTexto(this.value)"
           />
-          <span class="sidebar-search-icon">🔍</span>
+          <span class="main-search-icon">🔍</span>
         </div>
+      </header>
 
-        <div class="sidebar-footer">
-          Use este painel para escolher a área e abrir os dashboards em tela cheia.
-        </div>
-      </div>
-    </div>
+      <div class="main-badges" id="hubBadges"></div>
+
+      <section class="dashboard-grid" id="dashboardGrid" aria-label="Lista de dashboards">
+      </section>
+    </main>
   </div>
 </body>
 </html>

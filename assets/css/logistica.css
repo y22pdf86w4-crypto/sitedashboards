@@ -28,14 +28,7 @@ body.logistica-page {
   overflow: hidden;
 }
 
-/* header fixo no topo */
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-}
-
-/* ROOT: ocupa o espaço abaixo do header */
+/* ROOT: ocupa o espaço dentro do main */
 .logistica-root {
   position: relative;
   z-index: 1;
@@ -71,7 +64,7 @@ body.logistica-page {
   overflow: hidden;
 }
 
-/* GRID PRINCIPAL – sidebar + resizer + mapa */
+/* GRID PRINCIPAL – sidebar logística + resizer + mapa */
 .logistica-grid {
   flex: 1;
   min-height: 0;
@@ -96,7 +89,7 @@ body.logistica-page {
 }
 
 /* ==========================================================
-   SIDEBAR
+   SIDEBAR LOGÍSTICA (INTERNA AO CARD)
    ========================================================== */
 
 #sidebar-wrapper {
@@ -105,7 +98,8 @@ body.logistica-page {
   display: flex;
 }
 
-#sidebar {
+/* coluna interna de filtros/clientes */
+#sidebar-logistica {
   display: flex;
   flex-direction: column;
   padding: 10px 10px 8px;
@@ -132,7 +126,7 @@ body.logistica-page {
   gap: 8px;
   min-height: 0;
   max-height: 100%;
-  overflow-y: auto;
+  overflow-y: visible;
   padding-right: 4px;
   scrollbar-width: thin;
   scrollbar-color: rgba(55, 65, 81, 0.8) transparent;
@@ -159,20 +153,18 @@ body.logistica-page {
   );
 }
 
-/* Blocos da sidebar */
-.sidebar-section {
+/* Blocos da sidebar interna */
+/* Blocos da sidebar interna (antes estava com verde) */
+#sidebar-logistica .sidebar-section {
   border-radius: 12px;
   padding: 8px 10px;
-  background: radial-gradient(
-      circle at 0 0,
-      rgba(15, 118, 110, 0.35),
-      transparent 60%
-    );
-  border: 1px solid rgba(15, 118, 110, 0.45);
+  background: rgba(15, 23, 42, 0.96);              /* neutro */
+  border: 1px solid rgba(31, 41, 55, 0.9);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.85);
   margin-bottom: 4px;
   flex-shrink: 0;
 }
+
 
 .sidebar-section:last-child {
   margin-bottom: 0;
@@ -229,7 +221,7 @@ body.logistica-page {
   box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.45);
 }
 
-/* NOVO: select na mesma pegada dos inputs */
+/* select */
 .field-group select {
   width: 100%;
   border-radius: 10px;
@@ -253,7 +245,7 @@ body.logistica-page {
   box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.45);
 }
 
-/* Botões antigos (mantidos para compatibilidade) */
+/* Botões antigos */
 .toolbar-row {
   display: flex;
   gap: 6px;
@@ -327,7 +319,7 @@ body.logistica-page {
   transform: none;
 }
 
-/* Botões novos – estilo Uiverse */
+/* Botões novos – estilo Uiverse (para os botões internos, não o logout) */
 
 .uni-btn {
   position: relative;
@@ -466,7 +458,7 @@ body.logistica-page {
   margin-bottom: 6px;
 }
 
-/* Lista de clientes */
+/* Lista de clientes – área fixa com scroll */
 .clientes-lista {
   flex: 0 0 auto;
   min-height: 0;
@@ -534,7 +526,7 @@ body.logistica-page {
   border-color: rgba(59, 130, 246, 0.9);
 }
 
-/* NOVO: clientes sem localização */
+/* clientes sem localização */
 .cliente-sem-localizacao {
   border-left: 3px solid #f97316;
   background: linear-gradient(
@@ -549,9 +541,8 @@ body.logistica-page {
   color: #fed7aa;
 }
 
-/* wrapper do checkbox do cliente (usa neon também) */
+/* checkbox cliente (visual vem do wrapper) */
 .cliente-checkbox {
-  /* input fica invisível, estilo vem do .checkbox-wrapper */
 }
 
 /* textos do cliente */
@@ -611,7 +602,7 @@ body.logistica-page {
 #map-container {
   position: relative;
   border-radius: 18px;
-  overflow: hidden; /* importante para o painel não vazar */
+  overflow: hidden;
   background: rgba(15, 23, 42, 0.95);
   border: 1px solid rgba(30, 64, 175, 0.4);
   box-shadow:
@@ -633,7 +624,7 @@ body.logistica-page {
   top: 12px;
   right: 12px;
   width: 320px;
-  max-height: calc(100% - 24px); /* respeita altura do container */
+  max-height: calc(100% - 24px);
   display: flex;
   flex-direction: column;
   border-radius: 16px;
@@ -646,7 +637,7 @@ body.logistica-page {
   overflow: hidden;
 }
 
-/* Cabeçalho arrastável */
+/* Cabeçalho */
 .rota-header {
   display: flex;
   align-items: center;
@@ -693,7 +684,7 @@ body.logistica-page {
   border-color: rgba(16, 185, 129, 0.85);
 }
 
-/* Corpo do painel – scroll interno quando ficar grande */
+/* Corpo do painel */
 .rota-body {
   padding: 8px 10px 10px;
   display: flex;
@@ -817,7 +808,7 @@ body.logistica-page {
   margin-top: 2px;
 }
 
-/* Handle (⋮⋮) */
+/* Handle */
 .rota-item-handle {
   width: 18px;
   height: 18px;
@@ -912,7 +903,7 @@ body.logistica-page {
   color: #e5e7eb;
 }
 
-/* Flags neon (preferências) */
+/* Flags neon */
 .rota-section-flags {
   margin-top: 6px;
   display: flex;
@@ -920,7 +911,7 @@ body.logistica-page {
   gap: 4px;
 }
 
-/* Wrapper geral do checkbox neon */
+/* Wrapper checkbox neon */
 .checkbox-wrapper {
   --checkbox-size: 20px;
   --checkbox-color: #22c55e;
@@ -1082,10 +1073,10 @@ body.logistica-page {
 }
 
 .checkbox-wrapper.checkbox-sm .label {
-  display: none; /* sem texto na lista */
+  display: none;
 }
 
-/* Clientes: texto/ícone brancos, glow neutro */
+/* Clientes: texto/ícone brancos */
 .checkbox-wrapper.checkbox-cliente .checkmark svg {
   color: #e5e7eb;
 }
@@ -1148,29 +1139,143 @@ body.logistica-page {
   color: #111827;
 }
 
-/* ===== PIN DA MINHA LOCALIZAÇÃO (HTML + CSS) ===== */
-.pin-minha-localizacao { 
-  position: relative; 
-  width: 26px; 
-  height: 26px; 
-  background: #ff5b6b; 
-  border-radius: 50%; 
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.4); 
-} 
+/* PIN MINHA LOCALIZAÇÃO */
+.pin-minha-localizacao {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  background: #ff5b6b;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.4);
+}
 
-/* círculo interno */ 
-.pin-minha-localizacao::before { 
-  content: ""; 
-  position: absolute; 
-  top: 50%; 
-  left: 50%; 
-  width: 14px; 
-  height: 14px; 
-  background: #e3324d; 
-  border-radius: 50%; 
-  transform: translate(-50%, -50%); 
-} 
+.pin-minha-localizacao::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  background: #e3324d;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
 
+/* ==========================================================
+   FOOTER DA SIDEBAR PRINCIPAL – LOGOUT UIVERSE FIXO
+   ========================================================== */
+
+/* Contêiner do footer fixo dentro da sidebar */
+.sidebar-footer-logistica {
+  position: fixed;
+  left: 0;
+  bottom: 16px;           /* distância da borda inferior da tela */
+  width: var(--sidebar-width);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;   /* evita interceptar clique fora do botão */
+  z-index: 40;
+}
+
+/* Ajuste quando a sidebar estiver colapsada */
+.app.sidebar-collapsed .sidebar-footer-logistica {
+  width: var(--sidebar-width-collapsed);
+}
+
+/* From Uiverse.io by kennyotsu-monochromia – adaptado pro tema dark */
+
+.sidebar-footer-logistica .Btn {
+  --black: #000000;
+  --ch-black: #020617;
+  --eer-black: #020617;
+  --night-rider: #e5fdf7;
+  --white: #ffffff;
+  --af-white: rgba(15, 23, 42, 0.98);
+  --ch-white: #e1e1e1;
+
+  pointer-events: auto;   /* botão continua clicável */
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 46px;
+  height: 42px;
+  border: 1px solid #064e3b;
+  border-radius: 999px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition-duration: 0.3s;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.9);
+  background: radial-gradient(circle at 0 0, rgba(16, 185, 129, 0.5), #020617);
+}
+
+/* ícone */
+.sidebar-footer-logistica .sign {
+  width: 100%;
+  transition-duration: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-footer-logistica .sign svg {
+  width: 17px;
+}
+
+.sidebar-footer-logistica .sign svg path {
+  fill: var(--night-rider);
+}
+
+/* texto */
+.sidebar-footer-logistica .text {
+  position: absolute;
+  right: 0%;
+  width: 0%;
+  opacity: 0;
+  color: var(--night-rider);
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition-duration: 0.3s;
+}
+
+/* hover effect – abre o botão, mostra texto */
+.sidebar-footer-logistica .Btn:hover {
+  width: 130px;
+  border-radius: 999px;
+  border-color: #f97316;
+  transition-duration: 0.3s;
+  box-shadow: 0 12px 28px rgba(248, 113, 113, 0.55);
+  transform: translateY(-1px);
+}
+
+.sidebar-footer-logistica .Btn:hover .sign {
+  width: 30%;
+  transition-duration: 0.3s;
+  padding-left: 16px;
+}
+
+.sidebar-footer-logistica .Btn:hover .text {
+  opacity: 1;
+  width: 70%;
+  transition-duration: 0.3s;
+  padding-right: 10px;
+}
+
+/* click */
+.sidebar-footer-logistica .Btn:active {
+  transform: translate(2px, 2px);
+}
+
+/* comportamento em sidebar colapsada: vira só o ícone */
+.app.sidebar-collapsed .sidebar-footer-logistica .Btn {
+  width: 42px;
+  padding: 0;
+  justify-content: center;
+}
+
+.app.sidebar-collapsed .sidebar-footer-logistica .Btn .text {
+  display: none;
+}
 
 /* ==========================================================
    RESPONSIVO

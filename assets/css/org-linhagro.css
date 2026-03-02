@@ -30,7 +30,7 @@ body {
   overflow-x: hidden;
 }
 
-/* FUNDO ANIMADO */
+/* Fundo animado (igual menu/select) */
 
 .bg-container {
   position: fixed;
@@ -192,7 +192,7 @@ body {
   grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr);
 }
 
-/* SIDEBAR */
+/* SIDEBAR (igual menu) */
 
 .sidebar {
   background: radial-gradient(circle at top, rgba(15, 23, 42, 0.96), #020617);
@@ -327,14 +327,12 @@ body {
   margin-top: auto;
   padding-inline: 0.2rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  align-items: center;
+  justify-content: center;
   position: relative;
   z-index: 11;
 }
 
-/* Estados colapsados */
+/* Estado colapsado */
 
 .app.sidebar-collapsed .sidebar {
   padding-inline: 0.4rem;
@@ -363,7 +361,7 @@ body {
   display: none;
 }
 
-/* BTN TOGGLE */
+/* BOTÃO TOGGLE */
 
 .sidebar-toggle {
   position: fixed;
@@ -404,7 +402,7 @@ body {
   transform: rotate(180deg);
 }
 
-/* MAIN */
+/* MAIN / ORGANOGRAMA (imagem) */
 
 .main {
   padding: 1.6rem 1.8rem 1.8rem;
@@ -414,7 +412,7 @@ body {
   min-width: 0;
 }
 
-.main-header {
+.org-header {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -447,175 +445,45 @@ body {
   max-width: 40rem;
 }
 
-.main-search {
-  margin-top: 0.7rem;
-  max-width: 360px;
-  position: relative;
+/* Wrapper da imagem do organograma – sem fundo, sem card */
+
+.org-image-wrapper {
+  margin-top: 0.8rem;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
 }
 
-.main-search input {
+/* container direto da imagem, também transparente */
+.org-image-card {
   width: 100%;
-  border-radius: 999px;
-  border: 1px solid #0f172a;
-  background: rgba(15, 23, 42, 0.96);
-  color: var(--text-main);
-  font-size: 0.8rem;
-  padding: 0.5rem 2.1rem 0.5rem 0.85rem;
-  outline: none;
+  max-width: 1200px;
+  max-height: calc(100vh - 220px);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
 }
 
-.main-search input::placeholder {
-  color: var(--text-soft);
+/* só a imagem, sobre o background da página */
+.org-image-card img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 220px);
+  height: auto;
+  object-fit: contain;
+  border-radius: 16px; /* arredonda as bordas da imagem */
 }
 
-.main-search-icon {
-  position: absolute;
-  right: 0.7rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.85rem;
-  color: var(--text-soft);
-}
 
-/* GRID + CARDS */
-
-.dashboard-grid {
-  margin-top: 1rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 0.9rem;
-  align-content: flex-start;
-}
-
-.dash-card {
-  position: relative;
-  border-radius: 14px;
-  border: 1px solid #0f172a;
-  padding: 0.85rem 0.9rem 0.8rem;
-  background: radial-gradient(circle at top left, rgba(15, 118, 110, 0.28), #020617);
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  overflow: hidden;
-  transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease,
-    background 0.18s ease;
-}
-
-.dash-card:hover {
-  border-color: #22c55e;
-  box-shadow:
-    0 16px 38px rgba(0, 0, 0, 0.9),
-    0 0 0 1px rgba(16, 185, 129, 0.9);
-  transform: translateY(-3px);
-  background: #020617;
-}
-
-.dash-card-top {
-  display: flex;
-  gap: 0.6rem;
-  align-items: center;
-}
-
-.dash-card-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #020617;
-  border: 1px solid #22c55e;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 1.1rem;
-}
-
-.dash-card-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 0;
-}
-
-.dash-card-title {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.dash-card-tag {
-  font-size: 0.75rem;
-  color: var(--text-soft);
-}
-
-.dash-card-text {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--text-soft);
-}
-
-.dash-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.6rem;
-  margin-top: 0.25rem;
-  font-size: 0.74rem;
-  color: #6b7280;
-}
-
-.btn-open {
-  border-radius: 999px;
-  border: 1px solid #22c55e;
-  background: #22c55e;
-  color: #022c22;
-  font-size: 0.78rem;
-  padding: 0.28rem 0.8rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.btn-open:hover {
-  background: #16a34a;
-  border-color: #16a34a;
-  transform: translateY(-1px);
-  box-shadow: 0 12px 26px rgba(34, 197, 94, 0.6);
-}
-
-/* RESPONSIVO */
-
-@media (max-width: 960px) {
-  .main {
-    padding: 1.3rem 1.4rem 1.6rem;
-  }
-}
-
-@media (max-width: 640px) {
-  .app {
-    grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * {
-    scroll-behavior: auto !important;
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-}
-
-/* BOTÃO SAIR - MESMO ESTILO DO SELECT-COMPANY */
+/* BOTÃO SAIR */
 
 .Btn {
   --black: #000000;
@@ -693,6 +561,35 @@ body {
   transform: translate(2px, 2px);
 }
 
-.sidebar-logout-btn {
-  /* se quiser algum ajuste adicional de margem, coloca aqui */
+/* RESPONSIVO */
+
+@media (max-width: 960px) {
+  .main {
+    padding: 1.3rem 1.4rem 1.6rem;
+  }
+
+  .org-image-card {
+    max-width: 1000px;
+    max-height: calc(100vh - 210px);
+  }
+}
+
+@media (max-width: 640px) {
+  .app {
+    grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr);
+  }
+
+  .org-image-card {
+    max-width: 100%;
+    max-height: calc(100vh - 200px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

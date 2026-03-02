@@ -1183,7 +1183,7 @@ function renderizarCalendario() {
     );
     despesasDoDia = ordenarDespesas(despesasDoDia, hojeISO);
 
-    const maxMostrar = 2;
+    const maxMostrar = 4;
     const qtd = despesasDoDia.length;
     const mostrar = despesasDoDia.slice(0, maxMostrar);
 

@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Dashboard – Gracielli</title>
+  <title>Dashboard – Estoque</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <link rel="icon" href="../../assets/imagem/favicon.png" type="image/png" />
@@ -429,7 +429,7 @@
     }
   </style>
 </head>
-<body onload="validarAcessoDashboardVip('lithoplant',['ctvcentrosul@lithoplant.com.br'])">
+<body onload="validarAcessoDashboardEmpresa && validarAcessoDashboardEmpresa('estoque')">
   <button
     class="sidebar-toggle"
     type="button"
@@ -444,13 +444,13 @@
       <div class="sidebar-header">
         <div class="sidebar-logo">
           <img
-            src="../../assets/imagem/logolithoplant.png"
-            alt="Dashboard – Gracielli"
+            src="../../assets/imagem/logolinhagro.png"
+            alt="Dashboard – Estoque"
           />
         </div>
         <div class="sidebar-title-block">
-          <span class="sidebar-title">Dashboard VIP</span>
-          <span class="sidebar-sub">Gracielli – Lithoplant</span>
+          <span class="sidebar-title">Dashboard de Estoque</span>
+          <span class="sidebar-sub">Controle de produtos</span>
         </div>
       </div>
 
@@ -467,12 +467,20 @@
           </li>
 
           <li
-            class="sidebar-item sidebar-item-active"
+            class="sidebar-item"
             data-key="dashboards"
             onclick="window.location.href='../../menu.html'"
           >
             <span class="icon">📊</span>
             <span class="label">Dashboards</span>
+          </li>
+
+          <li
+            class="sidebar-item sidebar-item-active"
+            data-key="estoque"
+          >
+            <span class="icon">📦</span>
+            <span class="label">Estoque</span>
           </li>
 
           <li
@@ -487,7 +495,7 @@
           <li
             class="sidebar-item"
             data-key="organograma"
-            onclick="window.location.href='../../org-lithoplant.html'"
+            onclick="window.location.href='../../org-linhagro.html'"
           >
             <span class="icon">👥</span>
             <span class="label">Organograma</span>
@@ -509,20 +517,20 @@
 
     <main class="main">
       <header class="dash-header">
-        <span class="dash-kicker">Dashboard VIP</span>
+        <span class="dash-kicker">Gestão de estoque</span>
         <h1 class="dash-title">
-          Dashboard <span>Gracielli</span>
+          Dashboard <span>Estoque</span>
         </h1>
         <p class="dash-sub">
-          Visão dedicada de indicadores selecionados para acompanhamento estratégico.
+          Acompanhamento de níveis de estoque, giros, reposição e rupturas em tempo real.
         </p>
       </header>
 
       <section class="dash-frame-wrapper">
         <iframe
           id="frameDash"
-          title="Dashboard – Gracielli"
-          src="https://app.powerbi.com/view?r=eyJrIjoiMmY2OTZhZjgtNzQwOS00NDMyLTgwNDYtNTk0ZmJiMWY3OTRkIiwidCI6IjhhZWI1NjZjLTZlNGQtNDJiZi04MTA5LWY5OWExYjBkNGQyNCJ9&pageName=30b3eb14f6604bf7e406"
+          title="Dashboard – Estoque"
+          src="https://app.powerbi.com/view?r=SUA_URL_DO_POWERBI_AQUI"
           allowfullscreen="true">
         </iframe>
       </section>

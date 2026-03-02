@@ -28,11 +28,11 @@
     href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"
   />
 </head>
-<body class="login-page logistica-page">
+<body class="logistica-page">
   <!-- Fundo animado -->
   <div class="bg-container" aria-hidden="true">
     <div class="animated-bg"></div>
-    <div class="particles-container"></"></div>
+    <div class="particles-container"></div>
     <div class="wave-container">
       <div class="wave"></div>
       <div class="wave"></div>
@@ -43,391 +43,386 @@
     <div class="grid-bg"></div>
   </div>
 
-  <!-- Header igual ao calendário -->
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="header-left">
-        <div class="header-logo-pill">
-          <div class="header-logo">
-            <img id="logoEmpresa" src="../assets/imagem/logolinhagro.png" alt="Empresa" />
-          </div>
-          <div class="header-text">
-            <p class="header-title" id="headerTitle">Painel de logística</p>
-            <p class="header-subtitle" id="headerSub">
-              Planejamento de rotas e visitas a clientes.
-            </p>
-          </div>
+  <!-- Botão ☰ para colapsar sidebar -->
+  <button
+    class="sidebar-toggle"
+    type="button"
+    id="btnToggleSidebar"
+    aria-label="Alternar menu lateral"
+  >
+    <span>☰</span>
+  </button>
+
+  <div class="app" id="app">
+    <!-- SIDEBAR VERTICAL -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">LG</div>
+        <div class="sidebar-title-block">
+          <span class="sidebar-title" id="saudacaoSidebar">Logística</span>
+          <span class="sidebar-sub" id="userNameSidebar">Rotas e visitas</span>
         </div>
       </div>
 
-      <div class="header-actions">
-        <div class="header-actions-desktop">
-          <span class="header-pill">Ambiente produção</span>
-          <div class="user-chip" id="userChip">
-            <span class="status-dot"></span>
-            <span id="userName">Usuário</span>
-          </div>
-          <button
-            type="button"
-            class="btn-icon"
-            title="Voltar ao menu"
+      <div class="sidebar-section">
+        <p class="sidebar-section-title">Navegação</p>
+        <ul class="sidebar-nav">
+          <li
+            class="sidebar-item sidebar-item-active"
+            data-key="logistica"
+          >
+            <span class="icon">⛟</span>
+            <span class="label">Painel de Logística</span>
+          </li>
+          <li
+            class="sidebar-item"
+            data-key="voltar-menu"
             onclick="window.location.href='./menu.html'"
           >
-            🏠
-          </button>
-          <button
-            type="button"
-            class="btn-exit"
-            title="Sair"
-            onclick="deslogar()"
-          >
-            <span class="btn-exit-icon">⟵</span>
-            <span class="btn-exit-text">Sair</span>
-          </button>
-        </div>
-
-        <!-- Mobile -->
-        <div class="header-actions-mobile">
-          <button
-            type="button"
-            class="header-menu-open"
-            onclick="window.location.href='./menu.html'"
-          >
-            ← Menu
-          </button>
-          <div class="header-menu-wrapper">
-            <button
-              type="button"
-              class="header-menu-button"
-              aria-haspopup="true"
-              aria-expanded="false"
-              onclick="deslogar()"
-            >
-              Sair
-            </button>
-          </div>
-        </div>
+            <span class="icon">⬅</span>
+            <span class="label">Voltar para o menu</span>
+          </li>
+        </ul>
       </div>
-    </div>
-  </header>
 
-  <!-- Conteúdo principal da logística -->
-  <main class="logistica-root">
-    <section class="logistica-shell">
-      <section class="logistica-grid" id="logistica-app">
-        <!-- SIDEBAR (wrapper + scroll interno) -->
-        <div id="sidebar-wrapper">
-          <div id="sidebar">
-            <div class="sidebar-scroll">
-              <!-- Clientes / fontes de dados -->
-              <div class="sidebar-section">
-                <h2>Clientes</h2>
-
-                <!-- NOVO: origem dos pontos -->
-                <div class="field-group">
-                  <label for="tipoOrigem">Origem dos pontos:</label>
-                  <select id="tipoOrigem">
-                    <option value="pedidos" selected>Pedidos pendentes</option>
-                    <option value="clientes">Clientes</option>
-                    <option value="carteira">Carteira por vendedor</option>
-                  </select>
-                </div>
-
-                <!-- NOVO: lista de vendedores (só aparece em carteira) -->
-                <div class="field-group" id="grupoVendedores" style="display:none;">
-                  <label for="selectVendedor">Vendedor:</label>
-                  <select id="selectVendedor">
-                    <option value="">Selecione um vendedor...</option>
-                  </select>
-                </div>
-
-                <div class="field-group">
-                  <label for="filtroNome">Buscar por código, nome ou endereço:</label>
-                  <input
-                    type="text"
-                    id="filtroNome"
-                    placeholder="Ex: 1016, SILVA, ZONA RURAL..."
-                    autocomplete="off"
-                  />
-                </div>
-
-                <div class="counters">
-                  <span class="pill" id="contadorClientes">0 clientes</span>
-                  <span class="pill" id="contadorSelecionados">0 selecionados</span>
-                </div>
-
-                <div class="toolbar-row">
-                  <button
-                    id="btnSelecionarTodos"
-                    type="button"
-                    class="uni-btn uni-btn-ghost uni-btn-sm"
-                  >
-                    Selecionar 20 primeiros
-                    <svg
-                      class="uni-btn-icon"
-                      viewBox="0 0 16 19"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
-                      ></path>
-                    </svg>
-                  </button>
-
-                  <button
-                    id="btnLimparSelecao"
-                    type="button"
-                    class="uni-btn uni-btn-ghost uni-btn-sm"
-                  >
-                    Limpar seleção
-                    <svg
-                      class="uni-btn-icon"
-                      viewBox="0 0 16 19"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
-                      ></path>
-                    </svg>
-                  </button>
-                </div>
-
-                <div class="resumo-selecionados" id="resumoSelecionados">
-                  Nenhum cliente selecionado.
-                </div>
-
-                <div class="clientes-lista" id="listaClientes"></div>
-              </div>
-
-              <!-- Link Google Maps -->
-              <div class="sidebar-section">
-                <h2>Link Google Maps</h2>
-                <button
-                  id="btnGerarLinkMapsSidebar"
-                  type="button"
-                  class="uni-btn uni-btn-secondary uni-btn-full"
-                  disabled
-                >
-                  Gerar link
-                  <svg
-                    class="uni-btn-icon"
-                    viewBox="0 0 16 19"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
-                    ></path>
-                  </svg>
-                </button>
-                <div id="linkMaps" class="link-output">
-                  Nenhum link gerado ainda.
-                </div>
-              </div>
-
-              <!-- Alertas -->
-              <div class="sidebar-section">
-                <h2>Alertas da rota</h2>
-                <div id="alertasRotaSidebar" class="alertas-rota">
-                  Nenhuma rota analisada ainda.
-                </div>
-              </div>
-            </div>
+      <!-- Footer fixo com botão Logout Uiverse -->
+      <div class="sidebar-footer sidebar-footer-logistica">
+        <button class="Btn" type="button" onclick="voltarLogin()">
+          <div class="sign">
+            <svg viewBox="0 0 512 512">
+              <path
+                d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"
+              ></path>
+            </svg>
           </div>
-        </div>
+          <div class="text">Logout</div>
+        </button>
+      </div>
+    </aside>
 
-        <!-- RESIZER ENTRE SIDEBAR E MAPA -->
-        <div id="sidebar-resizer"></div>
+    <!-- MAIN: conteúdo da Logística -->
+    <main class="main">
+      <header class="main-header">
+        <span class="main-kicker">Painel de Logística</span>
+      </header>
 
-        <!-- MAPA + PAINEL DE ROTA -->
-        <div id="map-container">
-          <div id="map"></div>
+      <section class="logistica-root">
+        <section class="logistica-shell">
+          <section class="logistica-grid" id="logistica-app">
+            <!-- SIDEBAR DE LOGÍSTICA (clientes/filtros) -->
+            <div id="sidebar-wrapper">
+              <div id="sidebar-logistica">
+                <div class="sidebar-scroll">
+                  <!-- Clientes / fontes de dados -->
+                  <div class="sidebar-section">
+                    <h2>Clientes</h2>
 
-          <div id="rota-panel" class="rota-panel">
-            <div id="rota-panel-header" class="rota-header">
-              <div class="rota-header-main">
-                <span class="rota-title">Pontos da rota</span>
-                <span class="rota-subtitle">Arraste para alterar a ordem</span>
-              </div>
-              <button
-                id="rotaPanelMinimize"
-                class="rota-header-btn"
-                title="Minimizar / expandir"
-              >−</button>
-            </div>
+                    <div class="field-group">
+                      <label for="tipoOrigem">Origem dos pontos:</label>
+                      <select id="tipoOrigem">
+                        <option value="pedidos" selected>Pedidos pendentes</option>
+                        <option value="clientes">Clientes</option>
+                        <option value="carteira">Carteira por vendedor</option>
+                      </select>
+                    </div>
 
-            <div class="rota-body">
-              <!-- Origem -->
-              <div class="rota-section rota-section-origem">
-                <div class="rota-section-label">Origem</div>
-                <div class="rota-origem-chip">
-                  <span class="rota-origem-icon">📍</span>
-                  <span class="rota-origem-text">Ponto inicial (arraste o pin vermelho)</span>
-                </div>
-              </div>
+                    <div class="field-group" id="grupoVendedores" style="display:none;">
+                      <label for="selectVendedor">Vendedor:</label>
+                      <select id="selectVendedor">
+                        <option value="">Selecione um vendedor...</option>
+                      </select>
+                    </div>
 
-              <!-- Paradas -->
-              <div class="rota-section rota-section-pontos">
-                <div class="rota-section-label">Paradas</div>
+                    <div class="field-group">
+                      <label for="filtroNome">Buscar por código, nome ou endereço:</label>
+                      <input
+                        type="text"
+                        id="filtroNome"
+                        placeholder="Ex: 1016, SILVA, ZONA RURAL..."
+                        autocomplete="off"
+                      />
+                    </div>
 
-                <div class="rota-lista-wrapper">
-                  <ul id="rotaListaPontos" class="rota-lista" aria-label="Lista de pontos da rota">
-                    <!-- itens via JS -->
-                  </ul>
-                </div>
+                    <div class="counters">
+                      <span class="pill" id="contadorClientes">0 clientes</span>
+                      <span class="pill" id="contadorSelecionados">0 selecionados</span>
+                    </div>
 
-                <div class="rota-add">
-                  <input
-                    type="text"
-                    id="novoPontoInput"
-                    placeholder="Adicionar parada (endereço ou lat,lng)"
-                  />
-                  <button
-                    id="btnAdicionarPonto"
-                    type="button"
-                    class="uni-btn uni-btn-primary uni-btn-sm"
-                  >
-                    Adicionar
-                    <svg
-                      class="uni-btn-icon"
-                      viewBox="0 0 16 19"
-                      xmlns="http://www.w3.org/2000/svg"
+                    <div class="toolbar-row">
+                      <button
+                        id="btnSelecionarTodos"
+                        type="button"
+                        class="uni-btn uni-btn-ghost uni-btn-sm"
+                      >
+                        Selecionar 20 primeiros
+                        <svg
+                          class="uni-btn-icon"
+                          viewBox="0 0 16 19"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
+                          ></path>
+                        </svg>
+                      </button>
+
+                      <button
+                        id="btnLimparSelecao"
+                        type="button"
+                        class="uni-btn uni-btn-ghost uni-btn-sm"
+                      >
+                        Limpar seleção
+                        <svg
+                          class="uni-btn-icon"
+                          viewBox="0 0 16 19"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
+                          ></path>
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div class="resumo-selecionados" id="resumoSelecionados">
+                      Nenhum cliente selecionado.
+                    </div>
+
+                    <div class="clientes-lista" id="listaClientes"></div>
+                  </div>
+
+                  <!-- Link Google Maps -->
+                  <div class="sidebar-section">
+                    <h2>Link Google Maps</h2>
+                    <button
+                      id="btnGerarLinkMapsSidebar"
+                      type="button"
+                      class="uni-btn uni-btn-secondary uni-btn-full"
+                      disabled
                     >
-                      <path
-                        d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
-                      ></path>
-                    </svg>
-                  </button>
-                </div>
-
-                <!-- Flags neon -->
-                <div class="rota-section rota-section-flags">
-                  <div class="rota-section-label">Preferências</div>
-
-                  <label class="checkbox-wrapper">
-                    <input type="checkbox" id="chkEvitarPedagios" />
-                    <div class="checkmark">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      Gerar link
+                      <svg
+                        class="uni-btn-icon"
+                        viewBox="0 0 16 19"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
                         <path
-                          d="M20 6L9 17L4 12"
-                          stroke-width="3"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
                         ></path>
                       </svg>
+                    </button>
+                    <div id="linkMaps" class="link-output">
+                      Nenhum link gerado ainda.
                     </div>
-                    <span class="label">Evitar pedágios (Google Maps)</span>
-                  </label>
+                  </div>
 
-                  <label class="checkbox-wrapper">
-                    <input type="checkbox" id="chkEvitarPontes" />
-                    <div class="checkmark">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path
-                          d="M20 6L9 17L4 12"
-                          stroke-width="3"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        ></path>
-                      </svg>
+                  <!-- Alertas -->
+                  <div class="sidebar-section">
+                    <h2>Alertas da rota</h2>
+                    <div id="alertasRotaSidebar" class="alertas-rota">
+                      Nenhuma rota analisada ainda.
                     </div>
-                    <span class="label">Evitar pontes / perigos (futuro)</span>
-                  </label>
-
-                  <label class="checkbox-wrapper">
-                    <input type="checkbox" id="chkVerTransito" />
-                    <div class="checkmark">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path
-                          d="M20 6L9 17L4 12"
-                          stroke-width="3"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        ></path>
-                      </svg>
-                    </div>
-                    <span class="label">Ver trânsito (TomTom)</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- Destino -->
-              <div class="rota-section rota-section-destino">
-                <div class="rota-section-label">Destino</div>
-                <input
-                  type="text"
-                  id="destinoCampoPainel"
-                  class="rota-destino-input"
-                  placeholder="Lat,lng ou vazio p/ última parada"
-                />
-              </div>
-
-              <!-- Ações -->
-              <div class="rota-section rota-section-acoes">
-                <button
-                  id="btnOtimizarRota"
-                  type="button"
-                  class="uni-btn uni-btn-secondary uni-btn-full"
-                >
-                  Otimizar ordem das paradas
-                  <svg
-                    class="uni-btn-icon"
-                    viewBox="0 0 16 19"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
-                    ></path>
-                  </svg>
-                </button>
-
-                <button
-                  id="btnGerarRota"
-                  type="button"
-                  class="uni-btn uni-btn-primary uni-btn-full"
-                >
-                  Atualizar rota
-                  <svg
-                    class="uni-btn-icon"
-                    viewBox="0 0 16 19"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
-                    ></path>
-                  </svg>
-                </button>
-
-                <button
-                  id="btnGerarLinkMaps"
-                  type="button"
-                  class="uni-btn uni-btn-secondary uni-btn-full"
-                  disabled
-                >
-                  Abrir no Google Maps
-                  <svg
-                    class="uni-btn-icon"
-                    viewBox="0 0 16 19"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
-                    ></path>
-                  </svg>
-                </button>
-              </div>
-
-              <!-- Resumo / alertas -->
-              <div class="rota-section rota-section-resumo">
-                <div class="rota-resumo" id="alertasRota">
-                  Nenhuma rota analisada ainda.
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+
+            <!-- RESIZER -->
+            <div id="sidebar-resizer"></div>
+
+            <!-- MAPA + PAINEL DE ROTA -->
+            <div id="map-container">
+              <div id="map"></div>
+
+              <div id="rota-panel" class="rota-panel">
+                <div id="rota-panel-header" class="rota-header">
+                  <div class="rota-header-main">
+                    <span class="rota-title">Pontos da rota</span>
+                    <span class="rota-subtitle">Arraste para alterar a ordem</span>
+                  </div>
+                  <button
+                    id="rotaPanelMinimize"
+                    class="rota-header-btn"
+                    title="Minimizar / expandir"
+                  >−</button>
+                </div>
+
+                <div class="rota-body">
+                  <!-- Origem -->
+                  <div class="rota-section rota-section-origem">
+                    <div class="rota-section-label">Origem</div>
+                    <div class="rota-origem-chip">
+                      <span class="rota-origem-icon">📍</span>
+                      <span class="rota-origem-text">
+                        Ponto inicial (arraste o pin vermelho)
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Paradas -->
+                  <div class="rota-section rota-section-pontos">
+                    <div class="rota-section-label">Paradas</div>
+
+                    <div class="rota-lista-wrapper">
+                      <ul id="rotaListaPontos" class="rota-lista" aria-label="Lista de pontos da rota">
+                        <!-- itens via JS -->
+                      </ul>
+                    </div>
+
+                    <div class="rota-add">
+                      <input
+                        type="text"
+                        id="novoPontoInput"
+                        placeholder="Adicionar parada (endereço ou lat,lng)"
+                      />
+                      <button
+                        id="btnAdicionarPonto"
+                        type="button"
+                        class="uni-btn uni-btn-primary uni-btn-sm"
+                      >
+                        Adicionar
+                        <svg
+                          class="uni-btn-icon"
+                          viewBox="0 0 16 19"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
+                          ></path>
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div class="rota-section rota-section-flags">
+                      <div class="rota-section-label">Preferências</div>
+
+                      <label class="checkbox-wrapper">
+                        <input type="checkbox" id="chkEvitarPedagios" />
+                        <div class="checkmark">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path
+                              d="M20 6L9 17L4 12"
+                              stroke-width="3"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            ></path>
+                          </svg>
+                        </div>
+                        <span class="label">Evitar pedágios (Google Maps)</span>
+                      </label>
+
+                      <label class="checkbox-wrapper">
+                        <input type="checkbox" id="chkEvitarPontes" />
+                        <div class="checkmark">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path
+                              d="M20 6L9 17L4 12"
+                              stroke-width="3"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            ></path>
+                          </svg>
+                        </div>
+                        <span class="label">Evitar pontes / perigos (futuro)</span>
+                      </label>
+
+                      <label class="checkbox-wrapper">
+                        <input type="checkbox" id="chkVerTransito" />
+                        <div class="checkmark">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path
+                              d="M20 6L9 17L4 12"
+                              stroke-width="3"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            ></path>
+                          </svg>
+                        </div>
+                        <span class="label">Ver trânsito (TomTom)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Destino -->
+                  <div class="rota-section rota-section-destino">
+                    <div class="rota-section-label">Destino</div>
+                    <input
+                      type="text"
+                      id="destinoCampoPainel"
+                      class="rota-destino-input"
+                      placeholder="Lat,lng ou vazio p/ última parada"
+                    />
+                  </div>
+
+                  <!-- Ações -->
+                  <div class="rota-section rota-section-acoes">
+                    <button
+                      id="btnOtimizarRota"
+                      type="button"
+                      class="uni-btn uni-btn-secondary uni-btn-full"
+                    >
+                      Otimizar ordem das paradas
+                      <svg
+                        class="uni-btn-icon"
+                        viewBox="0 0 16 19"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
+                        ></path>
+                      </svg>
+                    </button>
+
+                    <button
+                      id="btnGerarRota"
+                      type="button"
+                      class="uni-btn uni-btn-primary uni-btn-full"
+                    >
+                      Atualizar rota
+                      <svg
+                        class="uni-btn-icon"
+                        viewBox="0 0 16 19"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
+                        ></path>
+                      </svg>
+                    </button>
+
+                    <button
+                      id="btnGerarLinkMaps"
+                      type="button"
+                      class="uni-btn uni-btn-secondary uni-btn-full"
+                      disabled
+                    >
+                      Abrir no Google Maps
+                      <svg
+                        class="uni-btn-icon"
+                        viewBox="0 0 16 19"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
+                        ></path>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Resumo -->
+                  <div class="rota-section rota-section-resumo">
+                    <div class="rota-resumo" id="alertasRota">
+                      Nenhuma rota analisada ainda.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
       </section>
-    </section>
-  </main>
+    </main>
+  </div>
 
   <!-- Toast de cópia de link -->
   <div id="toast-copiar-link" class="toast-copiar-link" style="display:none;">
@@ -446,7 +441,24 @@
   <!-- JS globais -->
   <script src="../assets/js/global.js"></script>
 
-  <!-- JS da logística (com cache busting) -->
+  <!-- JS da logística -->
   <script src="../assets/js/logistica.js?v=7"></script>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const app = document.getElementById("app");
+      const btnToggle = document.getElementById("btnToggleSidebar");
+      if (app && btnToggle) {
+        btnToggle.addEventListener("click", () => {
+          app.classList.toggle("sidebar-collapsed");
+        });
+      }
+
+      const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+      if (user && typeof preencherHeaderUsuario === "function") {
+        preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
+      }
+    });
+  </script>
 </body>
 </html>
