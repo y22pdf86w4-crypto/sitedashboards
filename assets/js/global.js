@@ -30,6 +30,13 @@ const USERS = [
     empresas: ["linhagro", "lithoplant"],
     nome: "João Gabriel Reis",
   },
+    {
+    email: "neusa.terci@linhagro.com.br",
+    senha: "admin",
+    tipo: "ADMIN",
+    empresas: ["linhagro", "lithoplant"],
+    nome: "Neusa Terci",
+  },
   // Gestores comerciais (RBAC por empresa)
   {
     email: "g.comercial@lithoplant.com.br",
