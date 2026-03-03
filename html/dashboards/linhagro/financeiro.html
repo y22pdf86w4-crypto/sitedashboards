@@ -4,27 +4,22 @@
   <meta charset="utf-8" />
   <title>Power BI – Linhagro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <link rel="icon" href="../../assets/imagem/favicon.png" type="image/png" />
-
   <style>
     :root {
       --sidebar-width: 260px;
       --sidebar-width-collapsed: 80px;
-
       --primary: #0f766e;
       --accent: #10b981;
       --accent2: #5eead4;
-
       --border-soft: #0f172a;
       --text-main: #e5fdf7;
       --text-soft: #9ca3af;
-
       --radius-lg: 18px;
       --transition-fast: 0.22s ease;
 
-      /* para esconder a barra branca inferior do Power BI */
-      --bar-extra: 400px;
+      /* quanto escondemos da parte de baixo do Power BI */
+      --pbi-bar-extra: 70px;
     }
 
     * {
@@ -33,7 +28,8 @@
       padding: 0;
     }
 
-    html, body {
+    html,
+    body {
       height: 100%;
     }
 
@@ -58,7 +54,6 @@
     }
 
     /* LAYOUT PRINCIPAL */
-
     .app {
       position: relative;
       z-index: 1;
@@ -73,7 +68,6 @@
     }
 
     /* SIDEBAR */
-
     .sidebar {
       background: radial-gradient(circle at top, rgba(15, 23, 42, 0.96), #020617);
       border-right: 1px solid var(--border-soft);
@@ -106,9 +100,7 @@
       font-weight: 700;
       color: #ecfdf5;
       flex-shrink: 0;
-      box-shadow:
-        0 0 0 1px #022c22,
-        0 0 22px rgba(34, 197, 94, 0.9);
+      box-shadow: 0 0 0 1px #022c22, 0 0 22px rgba(34, 197, 94, 0.9);
       overflow: hidden;
     }
 
@@ -211,8 +203,6 @@
       justify-content: center;
     }
 
-    /* Estado colapsado */
-
     .app.sidebar-collapsed .sidebar {
       padding-inline: 0.4rem;
     }
@@ -237,7 +227,6 @@
     }
 
     /* BOTÃO TOGGLE */
-
     .sidebar-toggle {
       position: fixed;
       top: 1rem;
@@ -278,7 +267,6 @@
     }
 
     /* MAIN COM IFRAME */
-
     .main {
       position: relative;
       min-height: 100vh;
@@ -293,6 +281,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
+      flex: 0 0 auto;
     }
 
     .dash-kicker {
@@ -322,9 +311,62 @@
       max-width: 40rem;
     }
 
+    /* HEADER DO CARD COM BOTÃO FULLSCREEN */
+    .dash-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.9rem 0.45rem;
+      border-bottom: 1px solid #020617;
+      background: linear-gradient(to right, #020617, #020817);
+      z-index: 2;
+      flex: 0 0 auto;
+    }
+
+    .dash-card-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #9ca3af;
+    }
+
+    .btn-fullscreen {
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.96);
+      color: #e5e7eb;
+      border-radius: 999px;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.72rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      cursor: pointer;
+      transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast),
+        transform 0.12s ease,
+        box-shadow 0.16s ease;
+    }
+
+    .btn-fullscreen span.icon {
+      font-size: 0.85rem;
+    }
+
+    .btn-fullscreen:hover {
+      background: #020617;
+      border-color: #22c55e;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.7);
+      transform: translateY(-0.5px);
+    }
+
+    .btn-fullscreen:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    /* CARD DO IFRAME: ocupa o resto da main */
     .dash-frame-wrapper {
       position: relative;
-      flex: 1;
       margin: 0.7rem 1.4rem 1.4rem;
       border-radius: var(--radius-lg);
       border: 1px solid var(--border-soft);
@@ -332,24 +374,37 @@
       box-shadow:
         0 18px 50px rgba(0, 0, 0, 0.9),
         0 0 0 1px rgba(15, 23, 42, 0.9);
-      overflow: hidden; /* corta a parte extra do iframe */
+
+      display: flex;
+      flex-direction: column;
+
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
     }
 
-.dash-frame-wrapper iframe {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: calc(-1 * var(--bar-extra));
-  height: calc(100% + var(--bar-extra));
-  width: 100%;           /* aqui 100% */
-  border: 0;
-  display: block;
-}
+    .dash-frame-content {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+    }
 
+    /* IFRAME: topo fixo, afunda só embaixo para esconder a barra branca */
+    .dash-frame-content iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: calc(100% + var(--pbi-bar-extra));
+      border: 0;
+      display: block;
+      clip: auto !important;
+
+      top: 0;
+      bottom: calc(-1 * var(--pbi-bar-extra));
+    }
 
     /* BOTÃO SAIR */
-
     .Btn {
       --black: #000000;
       --ch-black: #141414;
@@ -358,7 +413,6 @@
       --white: #ffffff;
       --af-white: #020617;
       --ch-white: #0b1120;
-
       display: flex;
       align-items: center;
       justify-content: flex-start;
@@ -423,11 +477,10 @@
     }
 
     .Btn:active {
-      transform: translate(2px, 2px);
+      transform: translateY(2px);
     }
 
     /* RESPONSIVO */
-
     @media (max-width: 960px) {
       .dash-header {
         padding: 1.1rem 1rem 0.6rem;
@@ -460,10 +513,7 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">
-          <img
-            src="../../assets/imagem/logolinhagro.png"
-            alt="Empresa"
-          />
+          <img src="../../assets/imagem/logolinhagro.png" alt="Empresa" />
         </div>
         <div class="sidebar-title-block">
           <span class="sidebar-title">Dashboards Power BI</span>
@@ -474,7 +524,6 @@
       <div class="sidebar-section">
         <p class="sidebar-section-title">Navegação</p>
         <ul class="sidebar-nav">
-          <!-- Voltar ao menu -->
           <li
             class="sidebar-item"
             data-key="menu"
@@ -483,8 +532,6 @@
             <span class="icon">⬅</span>
             <span class="label">Voltar à seleção</span>
           </li>
-
-          <!-- Dashboards (ativo) -->
           <li
             class="sidebar-item sidebar-item-active"
             data-key="dashboards"
@@ -493,8 +540,6 @@
             <span class="icon">📊</span>
             <span class="label">Dashboards</span>
           </li>
-
-          <!-- Calendário -->
           <li
             class="sidebar-item"
             data-key="calendario"
@@ -503,8 +548,6 @@
             <span class="icon">📅</span>
             <span class="label">Calendário</span>
           </li>
-
-          <!-- Organograma -->
           <li
             class="sidebar-item"
             data-key="organograma"
@@ -520,7 +563,9 @@
         <button class="Btn" type="button" onclick="deslogar && deslogar()">
           <div class="sign">
             <svg viewBox="0 0 512 512">
-              <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
+              <path
+                d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"
+              ></path>
             </svg>
           </div>
           <div class="text">Sair</div>
@@ -540,34 +585,83 @@
         </p>
       </header>
 
-      <section class="dash-frame-wrapper">
-        <iframe
-          id="frameDash"
-          title="_DASH LINHAGRO"
-          src="https://app.powerbi.com/view?r=eyJrIjoiNWQzZDhkNjYtZjVlOS00OGI5LWFiNWQtMTA5ZGFkODhjOTY0IiwidCI6IjhhZWI1NjZjLTZlNGQtNDJiZi04MTA5LWY5OWExYjBkNGQyNCJ9&pageName=30b3eb14f6604bf7e406"
-          allowfullscreen="true">
-        </iframe>
+      <section class="dash-frame-wrapper" id="dashWrapper">
+        <div class="dash-card-header">
+          <span class="dash-card-title">Dashboard Linhagro</span>
+          <button type="button" class="btn-fullscreen" id="btnFullscreen">
+            <span class="icon">⤢</span>
+            <span class="label">Tela cheia</span>
+          </button>
+        </div>
+
+        <div class="dash-frame-content">
+          <iframe
+            id="frameDash"
+            title="_DASH LINHAGRO"
+            src="https://app.powerbi.com/view?r=eyJrIjoiNWQzZDhkNjYtZjVlOS00OGI5LWFiNWQtMTA5ZGFkODhjOTY0IiwidCI6IjhhZWI1NjZjLTZlNGQtNDJiZi04MTA5LWY5OWExYjBkNGQyNCJ9&pageName=30b3eb14f6604bf7e406&pageView=FitToWidth"
+            allowfullscreen="true"
+          ></iframe>
+        </div>
       </section>
     </main>
   </div>
 
   <script src="../../assets/js/global.js"></script>
   <script>
-    // se quiser validar acesso como antes
     window.addEventListener("load", function () {
       if (typeof validarAcessoDashboardEmpresa === "function") {
-        validarAcessoDashboardEmpresa('linhagro');
+        validarAcessoDashboardEmpresa("linhagro");
       }
     });
 
-    // toggle da sidebar
     window.addEventListener("DOMContentLoaded", () => {
       const app = document.getElementById("app");
       const btnToggle = document.getElementById("btnToggleSidebar");
+
       if (app && btnToggle) {
         btnToggle.addEventListener("click", () => {
           app.classList.toggle("sidebar-collapsed");
         });
+      }
+
+      // FULLSCREEN DO CARD
+      const dashWrapper = document.getElementById("dashWrapper");
+      const btnFullscreen = document.getElementById("btnFullscreen");
+
+      function toggleFullscreen() {
+        const doc = document;
+        const isFullscreen =
+          doc.fullscreenElement ||
+          doc.webkitFullscreenElement ||
+          doc.mozFullScreenElement ||
+          doc.msFullscreenElement;
+
+        if (!isFullscreen) {
+          const el = dashWrapper;
+          if (el.requestFullscreen) {
+            el.requestFullscreen();
+          } else if (el.webkitRequestFullscreen) {
+            el.webkitRequestFullscreen();
+          } else if (el.mozRequestFullScreen) {
+            el.mozRequestFullScreen();
+          } else if (el.msRequestFullscreen) {
+            el.msRequestFullscreen();
+          }
+        } else {
+          if (doc.exitFullscreen) {
+            doc.exitFullscreen();
+          } else if (doc.webkitExitFullscreen) {
+            doc.webkitExitFullscreen();
+          } else if (doc.mozCancelFullScreen) {
+            doc.mozCancelFullScreen();
+          } else if (doc.msExitFullscreen) {
+            doc.msExitFullscreen();
+          }
+        }
+      }
+
+      if (dashWrapper && btnFullscreen) {
+        btnFullscreen.addEventListener("click", toggleFullscreen);
       }
     });
   </script>
