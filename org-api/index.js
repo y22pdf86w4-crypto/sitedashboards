@@ -274,16 +274,16 @@ app.get('/api/v1/logistica/clientes', async (req, res) => {
 
     const sqlBase = `
       SELECT DISTINCT
-        p.ParceiroCodigo        AS codigo,
-        p.ParceiroNome          AS nome,
-        p.ParceiroLogradouro    AS logradouro,
+        p.ParceiroCodigo         AS codigo,
+        p.ParceiroNome           AS nome,
+        p.ParceiroLogradouro     AS logradouro,
         ISNULL(p.ParceiroEnderecoNumero, 0) AS numero,
-        p.ParceiroBairro        AS bairro,
-        p.ParceiroCidade        AS cidade,
-        p.ParceiroUFSigla       AS uf,
-        p.ParceiroCEP           AS cep,
-        p.ParceiroLatitude      AS lat,
-        p.ParceiroLongitude     AS lng
+        p.ParceiroBairro         AS bairro,
+        p.ParceiroCidade         AS cidade,
+        p.ParceiroUFSigla        AS uf,
+        p.ParceiroCEP            AS cep,
+        p.ParceiroLatitude       AS lat,
+        p.ParceiroLongitude      AS lng
       FROM dbo.dimParceiroSkw p
       INNER JOIN dbo.fatVendas f
         ON f.ParceiroCodigo = p.ParceiroCodigo
@@ -426,14 +426,14 @@ app.get('/api/v1/carteira', async (req, res) => {
           c.CODEMP        AS codemp,
           c.DTLIM         AS dtlim,
           c.LIMCRED       AS limcred,
-          p.ParceiroLogradouro             AS logradouro,
-          ISNULL(p.ParceiroEnderecoNumero, 0) AS numero,
-          p.ParceiroBairro                 AS bairro,
-          p.ParceiroCidade                 AS cidade,
-          p.ParceiroUFSigla                AS uf,
-          p.ParceiroCEP                    AS cep,
-          p.ParceiroLatitude               AS lat,
-          p.ParceiroLongitude              AS lng,
+          p.ParceiroLogradouro                 AS logradouro,
+          ISNULL(p.ParceiroEnderecoNumero, 0)  AS numero,
+          p.ParceiroBairro                     AS bairro,
+          p.ParceiroCidade                     AS cidade,
+          p.ParceiroUFSigla                    AS uf,
+          p.ParceiroCEP                        AS cep,
+          p.ParceiroLatitude                   AS lat,
+          p.ParceiroLongitude                  AS lng,
           ROW_NUMBER() OVER (
             PARTITION BY c.CODVEND, c.CODPARC
             ORDER BY c.DTLIM DESC, c.CODEMP DESC
@@ -519,14 +519,14 @@ app.get('/api/v1/pedidos-pendentes', async (req, res) => {
         pped.CODTIPOPER,
         pped.CODTIPVENDA,
         pped.PENDENTE,
-        par.ParceiroLogradouro             AS logradouro,
-        ISNULL(par.ParceiroEnderecoNumero, 0) AS numero,
-        par.ParceiroBairro                 AS bairro,
-        par.ParceiroCidade                 AS cidade,
-        par.ParceiroUFSigla                AS uf,
-        par.ParceiroCEP                    AS cep,
-        par.ParceiroLatitude               AS lat,
-        par.ParceiroLongitude              AS lng
+        par.ParceiroLogradouro                 AS logradouro,
+        ISNULL(par.ParceiroEnderecoNumero, 0)  AS numero,
+        par.ParceiroBairro                     AS bairro,
+        par.ParceiroCidade                     AS cidade,
+        par.ParceiroUFSigla                    AS uf,
+        par.ParceiroCEP                        AS cep,
+        par.ParceiroLatitude                   AS lat,
+        par.ParceiroLongitude                  AS lng
       FROM dbo.fatVendasPendentes pped
       LEFT JOIN dbo.dimParceiroSkw par
              ON par.ParceiroCodigo = pped.CODPARC
@@ -1209,7 +1209,6 @@ app.get('/api/v1/despesas-financeiro', async (req, res) => {
     } else if (empresa === 'lithoplant') {
       sqlBusca += ' AND CODEMP IN (80, 81)';
     } else {
-      // se quiser deixar sem filtro quando não passar empresa:
       sqlBusca += ' AND (CODEMP BETWEEN 30 AND 39 OR CODEMP IN (80,81))';
     }
 
@@ -1226,6 +1225,332 @@ app.get('/api/v1/despesas-financeiro', async (req, res) => {
   }
 });
 
+/* ================== ESTOQUE (EMPRESA / PRODUTO / GRUPO) ================== */
+
+app.get('/api/v1/estoque', async (req, res) => {
+  try {
+    const codEmp  = req.query.codemp ? parseInt(req.query.codemp, 10) : null;
+    const codProd = req.query.codprod ? parseInt(req.query.codprod, 10) : null;
+    const grupo   = req.query.grupo ? req.query.grupo.toString().trim() : '';
+
+    let sqlBase = `
+      SELECT
+        e.CODEMP,
+        emp.NOMEFANTASIA      AS NomeEmpresa,
+        e.CODPROD,
+        p.DESCRPROD           AS NomeProduto,
+        p.CODGRUPOPROD,
+        p.nomeGrupoProduto    AS NomeGrupoProduto,
+        SUM(e.ESTOQUE)        AS ESTOQUE,
+        SUM(e.RESERVADO)      AS RESERVADO,
+        SUM(e.ESTOQUE) - SUM(e.RESERVADO) AS EstoqueDisponivel
+      FROM dbo.dimEstoqueSkw   e
+      JOIN dbo.dimProdutosSKW  p ON p.CODPROD = e.CODPROD
+      JOIN dbo.dimEmpresasBI   emp ON emp.CODEMP = e.CODEMP
+      WHERE 1 = 1
+        AND e.CODLOCAL = 1000000
+        AND e.CODEMP <> 80
+    `;
+
+    const params = [];
+
+    if (codEmp && !Number.isNaN(codEmp)) {
+      sqlBase += ' AND e.CODEMP = @codemp';
+      params.push({ name: 'codemp', value: codEmp });
+    }
+
+    if (codProd && !Number.isNaN(codProd)) {
+      sqlBase += ' AND e.CODPROD = @codprod';
+      params.push({ name: 'codprod', value: codProd });
+    }
+
+    if (grupo) {
+      sqlBase += `
+        AND (
+              p.CODGRUPOPROD = @grupoCodigo
+           OR p.nomeGrupoProduto LIKE @grupoNome
+        )
+      `;
+      params.push({ name: 'grupoCodigo', value: grupo });
+      params.push({ name: 'grupoNome',   value: '%' + grupo + '%' });
+    }
+
+    sqlBase += `
+      GROUP BY
+        e.CODEMP,
+        emp.NOMEFANTASIA,
+        e.CODPROD,
+        p.DESCRPROD,
+        p.CODGRUPOPROD,
+        p.nomeGrupoProduto
+      ORDER BY
+        emp.NOMEFANTASIA,
+        p.nomeGrupoProduto,
+        p.DESCRPROD;
+    `;
+
+    const result = await runQuery(sqlBase, request => {
+      params.forEach(p => request.input(p.name, p.value));
+    });
+
+    res.json({ estoque: result.recordset });
+  } catch (e) {
+    console.error('Erro GET /api/v1/estoque:', e);
+    res.status(500).json({
+      error: 'Erro ao buscar estoque',
+      detail: e.message
+    });
+  }
+});
+
+/* ================== GAMIFICAÇÃO ================== */
+
+app.get('/api/v1/gamificacao', async (req, res) => {
+  try {
+    const { inicio, fim, vendedorId } = req.query;
+
+    if (!inicio || !fim) {
+      return res.status(400).json({
+        error: 'Parâmetros "inicio" e "fim" são obrigatórios (YYYY-MM-DD).'
+      });
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(inicio) || !/^\d{4}-\d{2}-\d{2}$/.test(fim)) {
+      return res.status(400).json({
+        error: 'Parâmetros "inicio" e "fim" devem estar no formato YYYY-MM-DD.'
+      });
+    }
+
+    const idVendedorInt = vendedorId ? parseInt(vendedorId, 10) : null;
+    if (vendedorId && (Number.isNaN(idVendedorInt) || idVendedorInt <= 0)) {
+      return res.status(400).json({
+        error: 'Parâmetro "vendedorId", se informado, deve ser numérico e > 0.'
+      });
+    }
+
+    const sqlGamificacao = `
+      DECLARE @dtInicioParam DATE = @dtInicio;
+      DECLARE @dtFimParam    DATE = @dtFim;
+      DECLARE @idVendedorParam INT = @idVendedor;
+
+      WITH Feriados AS (
+          SELECT CAST('2026-01-01' AS date) AS dtFeriado
+          UNION ALL SELECT CAST('2026-02-17' AS date)
+          UNION ALL SELECT CAST('2026-04-03' AS date)
+          UNION ALL SELECT CAST('2026-04-21' AS date)
+          UNION ALL SELECT CAST('2026-05-01' AS date)
+          UNION ALL SELECT CAST('2026-06-04' AS date)
+          UNION ALL SELECT CAST('2026-09-07' AS date)
+          UNION ALL SELECT CAST('2026-10-12' AS date)
+          UNION ALL SELECT CAST('2026-11-02' AS date)
+          UNION ALL SELECT CAST('2026-11-15' AS date)
+          UNION ALL SELECT CAST('2026-12-25' AS date)
+      ),
+      Dias AS (
+          SELECT @dtInicioParam AS dtDia
+          UNION ALL
+          SELECT DATEADD(DAY, 1, dtDia)
+          FROM Dias
+          WHERE DATEADD(DAY, 1, dtDia) <= @dtFimParam
+      ),
+      DiasUteis AS (
+          SELECT d.dtDia
+          FROM Dias d
+          LEFT JOIN Feriados f ON f.dtFeriado = d.dtDia
+          WHERE DATENAME(WEEKDAY, d.dtDia) NOT IN ('Saturday', 'Sunday')
+            AND f.dtFeriado IS NULL
+      ),
+      Vendedores AS (
+          SELECT DISTINCT idVendedor, nmVendedor
+          FROM dbo.fatAtividadesResumida
+          WHERE dtInicial >= @dtInicioParam
+            AND dtInicial < DATEADD(DAY, 1, @dtFimParam)
+            AND (@idVendedorParam IS NULL OR idVendedor = @idVendedorParam)
+      ),
+      DiasSemRota AS (
+          SELECT
+              v.idVendedor,
+              v.nmVendedor,
+              COUNT(DISTINCT du.dtDia) AS diasSemRota
+          FROM Vendedores v
+          CROSS JOIN DiasUteis du
+          LEFT JOIN dbo.fatAtividadesResumida a
+              ON a.idVendedor = v.idVendedor
+             AND CAST(a.dtInicial AS date) = du.dtDia
+          WHERE a.idAtividade IS NULL
+          GROUP BY v.idVendedor, v.nmVendedor
+      ),
+      AtividadesRuins AS (
+          SELECT
+              s.idVendedor,
+              s.nmVendedor,
+              s.idAtividade,
+              s.dtInicial,
+              s.nmAssunto,
+              CASE 
+                  WHEN LTRIM(RTRIM(ISNULL(d.nmDiagnostico, ''))) = '' THEN 'Sem Diagnóstico'
+                  ELSE NULL
+              END AS problemaD,
+              CASE 
+                  WHEN LTRIM(RTRIM(ISNULL(d.nmImagem, ''))) = '' THEN 'Sem Imagem'
+                  ELSE NULL
+              END AS problemaI
+          FROM dbo.fatAtividadesApiA2WFreeSimples s
+          LEFT JOIN dbo.fatAtividadesApiA2WFreeDiagnostico d 
+              ON d.idAtividade = s.idAtividade
+          WHERE s.idTipoAtividade = 730
+            AND s.dtInicial >= @dtInicioParam
+            AND s.dtInicial < DATEADD(DAY, 1, @dtFimParam)
+            AND (
+                LTRIM(RTRIM(ISNULL(d.nmDiagnostico, ''))) = ''
+                OR LTRIM(RTRIM(ISNULL(d.nmImagem, ''))) = ''
+            )
+      ),
+      ContagemAtivRuins AS (
+          SELECT
+              idVendedor,
+              nmVendedor,
+              COUNT(*) AS qtdeAtividadesRuins,
+              COUNT(DISTINCT CAST(dtInicial AS date)) AS diasComAtivRuim
+          FROM AtividadesRuins
+          GROUP BY idVendedor, nmVendedor
+      ),
+      AtividadesPendentes AS (
+          SELECT
+              a.idVendedor,
+              a.nmVendedor,
+              a.idAtividade,
+              a.dtInicial,
+              a.nmCliente,
+              a.tipoAtividade
+          FROM dbo.fatAtividadesResumida a
+          WHERE a.idStatus = 1
+            AND a.dtInicial >= @dtInicioParam
+            AND a.dtInicial < DATEADD(DAY, 1, @dtFimParam)
+      ),
+      ContagemPendentes AS (
+          SELECT
+              idVendedor,
+              nmVendedor,
+              COUNT(*) AS qtdeAtividadesPendentes,
+              COUNT(DISTINCT CAST(dtInicial AS date)) AS diasComPendencia
+          FROM AtividadesPendentes
+          GROUP BY idVendedor, nmVendedor
+      ),
+      DiasUteisTotal AS (
+          SELECT COUNT(*) AS totalDiasUteis FROM DiasUteis
+      ),
+      Pontuacao AS (
+          SELECT
+              v.idVendedor,
+              v.nmVendedor,
+              ISNULL(sr.diasSemRota, 0)           AS diasSemRota,
+              ISNULL(ar.qtdeAtividadesRuins, 0)   AS qtdeAtividadesRuins,
+              ISNULL(ar.diasComAtivRuim, 0)       AS diasComAtivRuim,
+              ISNULL(ap.qtdeAtividadesPendentes, 0) AS qtdeAtividadesPendentes,
+              ISNULL(ap.diasComPendencia, 0)      AS diasComPendencia,
+              (ISNULL(sr.diasSemRota, 0) * 5)     AS pontosPerdidos_SemRota,
+              ISNULL(ar.diasComAtivRuim, 0)       AS pontosPerdidos_AtivRuins,
+              ISNULL(ap.diasComPendencia, 0)      AS pontosPerdidos_Pendentes
+          FROM Vendedores v
+          LEFT JOIN DiasSemRota sr       ON sr.idVendedor = v.idVendedor
+          LEFT JOIN ContagemAtivRuins ar ON ar.idVendedor = v.idVendedor
+          LEFT JOIN ContagemPendentes ap ON ap.idVendedor = v.idVendedor
+      )
+      SELECT
+          @dtInicioParam AS periodoInicio,
+          @dtFimParam    AS periodoFim,
+          (SELECT totalDiasUteis FROM DiasUteisTotal) AS diasUteisNoPeriodo,
+
+          p.idVendedor,
+          p.nmVendedor,
+
+          p.diasSemRota,
+          p.pontosPerdidos_SemRota,
+
+          p.qtdeAtividadesRuins,
+          p.diasComAtivRuim,
+          p.pontosPerdidos_AtivRuins,
+
+          p.qtdeAtividadesPendentes,
+          p.diasComPendencia,
+          p.pontosPerdidos_Pendentes,
+
+          (p.pontosPerdidos_SemRota +
+           p.pontosPerdidos_AtivRuins +
+           p.pontosPerdidos_Pendentes) AS totalPontosPerdidos,
+
+          CASE 
+              WHEN (100 - (p.pontosPerdidos_SemRota +
+                          p.pontosPerdidos_AtivRuins +
+                          p.pontosPerdidos_Pendentes)) < 0
+              THEN 0
+              ELSE 100 - (p.pontosPerdidos_SemRota +
+                          p.pontosPerdidos_AtivRuins +
+                          p.pontosPerdidos_Pendentes)
+          END AS pontuacaoFinal,
+
+          CASE 
+              WHEN CASE 
+                      WHEN (100 - (p.pontosPerdidos_SemRota +
+                                  p.pontosPerdidos_AtivRuins +
+                                  p.pontosPerdidos_Pendentes)) < 0
+                      THEN 0
+                      ELSE 100 - (p.pontosPerdidos_SemRota +
+                                  p.pontosPerdidos_AtivRuins +
+                                  p.pontosPerdidos_Pendentes)
+                  END >= 90 THEN 'Excelente'
+              WHEN CASE 
+                      WHEN (100 - (p.pontosPerdidos_SemRota +
+                                  p.pontosPerdidos_AtivRuins +
+                                  p.pontosPerdidos_Pendentes)) < 0
+                      THEN 0
+                      ELSE 100 - (p.pontosPerdidos_SemRota +
+                                  p.pontosPerdidos_AtivRuins +
+                                  p.pontosPerdidos_Pendentes)
+                  END >= 75 THEN 'Bom'
+              WHEN CASE 
+                      WHEN (100 - (p.pontosPerdidos_SemRota +
+                                  p.pontosPerdidos_AtivRuins +
+                                  p.pontosPerdidos_Pendentes)) < 0
+                      THEN 0
+                      ELSE 100 - (p.pontosPerdidos_SemRota +
+                                  p.pontosPerdidos_AtivRuins +
+                                  p.pontosPerdidos_Pendentes)
+                  END >= 50 THEN 'Regular'
+              ELSE 'Crítico'
+          END AS classificacao
+
+      FROM Pontuacao p
+      ORDER BY
+          pontuacaoFinal DESC,
+          p.nmVendedor
+      OPTION (MAXRECURSION 0);
+    `;
+
+    const result = await runQuery(sqlGamificacao, request => {
+      request
+        .input('dtInicio', sql.Date, inicio)
+        .input('dtFim', sql.Date, fim)
+        .input('idVendedor', sql.Int, idVendedorInt);
+    });
+
+    res.json({
+      inicio,
+      fim,
+      vendedorId: idVendedorInt || null,
+      gamificacao: result.recordset
+    });
+  } catch (e) {
+    console.error('Erro GET /api/v1/gamificacao:', e);
+    res.status(500).json({
+      error: 'Erro ao calcular gamificação',
+      detail: e.message
+    });
+  }
+});
+
+/* ================== START ================== */
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log('API rodando na porta ' + port));
