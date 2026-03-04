@@ -951,5 +951,5 @@ body::before {
 /* Ajuste específico de largura para campos de código (até ~6 caracteres) */
 .filter-field input#fVendedor,
 .filter-field input#fCliente {
-  max-width: 10px; /* ajuste fino: 90–120px conforme gosto */
+  max-width: 90px; /* ajuste fino: 90–120px conforme gosto */
 }
