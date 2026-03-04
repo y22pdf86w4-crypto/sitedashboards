@@ -948,8 +948,9 @@ body::before {
   background: rgba(15, 23, 42, 0.96);
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.9);
 }
-/* Ajuste específico de largura para campos de código (até ~6 caracteres) */
+/* Campos de código bem compactos (vendedor / cliente) */
 .filter-field input#fVendedor,
 .filter-field input#fCliente {
-  max-width: 90px; /* ajuste fino: 90–120px conforme gosto */
+  max-width: 70px;   /* mais estreito */
+  width: 70px;       /* força essa largura */
 }
