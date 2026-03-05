@@ -22,9 +22,29 @@
   />
 
   <!-- CSS externo -->
+  <link rel="stylesheet" href="../../../assets/css/background.css" />
   <link rel="stylesheet" href="../../../assets/css/inadimplencia.css" />
 </head>
 <body>
+  <!-- FUNDO ANIMADO COMPARTILHADO -->
+  <div class="bg-container">
+    <div class="animated-bg"></div>
+    <div class="grid-bg"></div>
+
+    <div class="particles-container">
+      <!-- as partículas podem ser geradas via JS, se quiser -->
+    </div>
+
+    <div class="wave-container">
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+    </div>
+
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+  </div>
+
   <button
     class="sidebar-toggle"
     type="button"
@@ -109,23 +129,33 @@
     <!-- MAIN -->
     <main class="main">
       <header class="dash-header">
-        <span class="dash-kicker">Gestão financeira</span>
-        <h1 class="dash-title">
-          Dashboard <span>Inadimplência</span>
-        </h1>
-        <p class="dash-sub">
-          Visão da inadimplência por região, vendedor e concentração geográfica
-          de clientes inadimplentes.
-        </p>
+        <div class="dash-header-left">
+          <span class="dash-kicker">Gestão financeira</span>
+          <h1 class="dash-title">
+            Dashboard <span>Inadimplência</span>
+          </h1>
+          <p class="dash-sub">
+            Visão da inadimplência por região, vendedor e concentração geográfica
+            de clientes inadimplentes.
+          </p>
+        </div>
+
+        <div class="dash-header-right">
+          <button
+            type="button"
+            class="btn-toggle-filters"
+            id="btnToggleFilters"
+          >
+            <span class="icon">🔎</span>
+            <span class="label">Filtros</span>
+          </button>
+        </div>
       </header>
 
-      <!-- NOVA BARRA DE FILTROS HORIZONTAL -->
-      <section class="filters-shell">
+      <!-- CARD DE FILTROS (OCULTO POR PADRÃO) -->
+      <section class="filters-shell" id="filtersShell">
         <div class="filters-shell-header">
-          <span class="filters-title">Filtros</span>
-          <span class="filters-subtitle">
-            Data, região, vendedor e cliente alinhados horizontalmente
-          </span>
+          <span class="filters-title">Filtros avançados</span>
         </div>
 
         <div class="filters-row">
@@ -194,6 +224,15 @@
             <span class="filter-group-label">Vendedor</span>
             <div class="filter-fields">
               <div class="filter-field">
+                <label for="fVendedorNome">Nome</label>
+                <input
+                  id="fVendedorNome"
+                  type="text"
+                  placeholder="parte do nome"
+                />
+              </div>
+
+              <div class="filter-field">
                 <label for="fVendedor">Código</label>
                 <input
                   id="fVendedor"
@@ -201,15 +240,6 @@
                   min="0"
                   step="1"
                   placeholder="ex: 163"
-                />
-              </div>
-
-              <div class="filter-field">
-                <label for="fVendedorNome">Nome</label>
-                <input
-                  id="fVendedorNome"
-                  type="text"
-                  placeholder="parte do nome"
                 />
               </div>
             </div>
@@ -220,6 +250,15 @@
             <span class="filter-group-label">Cliente</span>
             <div class="filter-fields">
               <div class="filter-field">
+                <label for="fClienteNome">Nome</label>
+                <input
+                  id="fClienteNome"
+                  type="text"
+                  placeholder="digite o nome"
+                />
+              </div>
+
+              <div class="filter-field">
                 <label for="fCliente">Código</label>
                 <input
                   id="fCliente"
@@ -227,15 +266,6 @@
                   min="0"
                   step="1"
                   placeholder="CODPARC"
-                />
-              </div>
-
-              <div class="filter-field">
-                <label for="fClienteNome">Nome</label>
-                <input
-                  id="fClienteNome"
-                  type="text"
-                  placeholder="digite o nome"
                 />
               </div>
             </div>
@@ -346,5 +376,23 @@
 
   <!-- JS externo -->
   <script src="../../../assets/js/inadimplencia.js"></script>
+
+  <script>
+    // Toggle painel de filtros
+    document.addEventListener("DOMContentLoaded", function () {
+      const btn = document.getElementById("btnToggleFilters");
+      const shell = document.getElementById("filtersShell");
+
+      if (btn && shell) {
+        btn.addEventListener("click", () => {
+          shell.classList.toggle("filters-open");
+          // ajusta mapa quando abrir/fechar filtros
+          if (window.leafletMap) {
+            setTimeout(() => leafletMap.invalidateSize(), 250);
+          }
+        });
+      }
+    });
+  </script>
 </body>
 </html>

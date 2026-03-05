@@ -48,6 +48,13 @@ function debounce(fn, delay) {
 window.addEventListener("DOMContentLoaded", () => {
   console.log("[INIT] DOMContentLoaded");
 
+  if (typeof gerarParticulasSelector === "function") {
+  const particlesContainer = document.querySelector(".particles-container");
+  if (particlesContainer && particlesContainer.children.length === 0) {
+    gerarParticulasSelector(".particles-container", 22);
+  }
+}
+
   // default: ano atual, se vazio
   const fAno = document.getElementById("fAno");
   if (fAno && !fAno.value) {
