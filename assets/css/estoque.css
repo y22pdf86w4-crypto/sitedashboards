@@ -283,6 +283,12 @@ body::before {
   font-size: 0.8rem;
 }
 
+.filter-pill-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .filter-pill label {
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -297,6 +303,19 @@ body::before {
   color: #e5e7eb;
   font-size: 0.8rem;
   min-width: 180px;
+}
+
+.filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  color: #e5e7eb;
+}
+
+.filter-toggle input {
+  width: 14px;
+  height: 14px;
 }
 
 .btn-refresh,
@@ -499,6 +518,7 @@ td.num {
   color: #9ca3af;
 }
 
+/* botão sair */
 .Btn {
   display: flex;
   align-items: center;
@@ -543,6 +563,138 @@ td.num {
 .Btn:hover .sign { width: 30%; padding-left: 14px; }
 .Btn:hover .text { opacity: 1; width: 70%; padding-right: 10px; }
 .Btn:active { transform: translate(2px, 2px); }
+
+/* ========= Olhinho de preço ========= */
+
+.preco-eye-cell {
+  text-align: center;
+}
+
+.btn-preco-eye {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.9);
+  background: radial-gradient(circle at 30% 0, rgba(148, 163, 184, 0.4), #020617);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  color: #e5e7eb;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.9);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.btn-preco-eye::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(56, 189, 248, 0.0);
+  box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.0);
+  transition: all 0.3s ease;
+}
+
+.btn-preco-eye:hover {
+  transform: translateY(-1px) scale(1.05);
+  border-color: rgba(56, 189, 248, 0.9);
+  background: radial-gradient(circle at 30% 0, rgba(56, 189, 248, 0.6), #020617);
+  box-shadow:
+    0 12px 26px rgba(15, 23, 42, 0.95),
+    0 0 20px rgba(56, 189, 248, 0.55);
+}
+
+.btn-preco-eye:hover::before {
+  box-shadow: 0 0 12px 2px rgba(56, 189, 248, 0.6);
+}
+
+.btn-preco-eye:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.8);
+}
+
+/* ========= Popup de senha ========= */
+
+.preco-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.preco-modal {
+  width: 320px;
+  max-width: 90vw;
+  border-radius: 16px;
+  background: #020617;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.9);
+  padding: 1rem 1.1rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.preco-modal h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.preco-modal p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.preco-modal input {
+  margin-top: 0.4rem;
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  background: rgba(15, 23, 42, 0.95);
+  padding: 0.35rem 0.7rem;
+  font-size: 0.82rem;
+  color: #e5e7eb;
+  outline: none;
+}
+
+.preco-modal-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.preco-modal-actions button {
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.8);
+  background: rgba(15, 23, 42, 0.95);
+  color: #e5e7eb;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.preco-modal-actions button:last-child {
+  border-color: rgba(16, 185, 129, 0.9);
+  background: radial-gradient(circle at top left, rgba(16, 185, 129, 0.4), #022c22);
+}
+
+.preco-modal-erro {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: #fecaca;
+}
 
 @media (max-width: 960px) {
   .dash-header { padding: 1.1rem 1rem 0.6rem; }

@@ -1,11 +1,20 @@
 // assets/js/estoque.js
 
-const API_BASE = "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net";
+// API base única (estoque + preço já vem junto)
+const API_BASE =
+  "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net";
+
+// Senha para visualizar preço
+const PRECO_SENHA = "Lin@agro01";
+// Flag global: se true, não pede mais senha
+let precoSenhaValidada = false;
 
 let estoqueBruto = [];
 let itensFiltrados = [];
 
 window.addEventListener("DOMContentLoaded", () => {
+  console.log("[ESTOQUE] DOMContentLoaded");
+
   const app = document.getElementById("app");
   const btnToggle = document.getElementById("btnToggleSidebar");
   if (app && btnToggle) {
@@ -21,11 +30,27 @@ window.addEventListener("DOMContentLoaded", () => {
   if (btnBuscar) btnBuscar.addEventListener("click", carregarEstoque);
   if (btnLimpar) btnLimpar.addEventListener("click", limparFiltros);
 
-  document.getElementById("fEmpresaNome")?.addEventListener("input", aplicarFiltroLocal);
-  document.getElementById("fGrupoNome")?.addEventListener("input", aplicarFiltroLocal);
-  document.getElementById("fProdNome")?.addEventListener("input", aplicarFiltroLocal);
-  document.getElementById("fGrupoCod")?.addEventListener("input", aplicarFiltroLocal);
-  document.getElementById("fProdCod")?.addEventListener("input", aplicarFiltroLocal);
+  document
+    .getElementById("fEmpresaNome")
+    ?.addEventListener("input", aplicarFiltroLocal);
+  document
+    .getElementById("fGrupoNome")
+    ?.addEventListener("input", aplicarFiltroLocal);
+  document
+    .getElementById("fProdNome")
+    ?.addEventListener("input", aplicarFiltroLocal);
+  document
+    .getElementById("fGrupoCod")
+    ?.addEventListener("input", aplicarFiltroLocal);
+  document
+    .getElementById("fProdCod")
+    ?.addEventListener("input", aplicarFiltroLocal);
+
+  // se você criar um checkbox "ver somente com reservado", ligue aqui:
+  // document.getElementById("fSomenteReservado")?.addEventListener("change", aplicarFiltroLocal);
+
+  // Eventos do popup de senha
+  initPrecoModal();
 
   window.addEventListener("resize", ajustarAlturaTabela);
 
@@ -38,10 +63,15 @@ function limparFiltros() {
   document.getElementById("fGrupoNome").value = "";
   document.getElementById("fProdCod").value = "";
   document.getElementById("fProdNome").value = "";
+  // se tiver checkbox de reservado, pode resetar aqui:
+  // const chk = document.getElementById("fSomenteReservado");
+  // if (chk) chk.checked = false;
   carregarEstoque();
 }
 
 async function carregarEstoque() {
+  console.log("[ESTOQUE] carregarEstoque() chamado");
+
   const tbody = document.getElementById("tbodyEstoque");
   const cardEstoqueTotal = document.getElementById("cardEstoqueTotal");
   const cardReservadoTotal = document.getElementById("cardReservadoTotal");
@@ -52,17 +82,20 @@ async function carregarEstoque() {
   if (!tbody) return;
   tbody.innerHTML = `
     <tr>
-      <td colspan="8" class="empty-state">
+      <td colspan="10" class="empty-state">
         Carregando dados de estoque...
       </td>
     </tr>
   `;
   if (infoRegistros) infoRegistros.textContent = "Carregando...";
 
-  const grupoCodRaw = document.getElementById("fGrupoCod")?.value.trim() || "";
+  const grupoCodRaw =
+    document.getElementById("fGrupoCod")?.value.trim() || "";
   const grupoCod = grupoCodRaw ? grupoCodRaw : "";
-  const grupoNomeFiltro = document.getElementById("fGrupoNome")?.value.trim() || "";
-  const codprodRaw = document.getElementById("fProdCod")?.value.trim() || "";
+  const grupoNomeFiltro =
+    document.getElementById("fGrupoNome")?.value.trim() || "";
+  const codprodRaw =
+    document.getElementById("fProdCod")?.value.trim() || "";
   const codprod = codprodRaw ? parseInt(codprodRaw, 10) : null;
 
   const params = new URLSearchParams();
@@ -71,20 +104,27 @@ async function carregarEstoque() {
   if (codprod && !Number.isNaN(codprod)) params.set("codprod", String(codprod));
 
   const url =
-    API_BASE + "/api/v1/estoque" + (params.toString() ? "?" + params.toString() : "");
+    API_BASE +
+    "/api/v1/estoque" +
+    (params.toString() ? "?" + params.toString() : "");
+
+  console.log("[ESTOQUE] Fetch URL:", url);
 
   try {
     const resp = await fetch(url);
+    console.log("[ESTOQUE] HTTP status:", resp.status);
     if (!resp.ok) {
       throw new Error("HTTP " + resp.status);
     }
     const data = await resp.json();
+    console.log("[ESTOQUE] Dados recebidos:", data);
+
     estoqueBruto = data && Array.isArray(data.estoque) ? data.estoque : [];
 
     if (estoqueBruto.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="8" class="empty-state">
+          <td colspan="10" class="empty-state">
             Nenhum registro encontrado para os filtros atuais.
           </td>
         </tr>
@@ -93,7 +133,8 @@ async function carregarEstoque() {
       cardReservadoTotal.textContent = "0,00";
       cardDisponivelTotal.textContent = "0,00";
       cardQtdeGrupos.textContent = "0";
-      if (infoRegistros) infoRegistros.textContent = "Mostrando 0 de 0 registros";
+      if (infoRegistros)
+        infoRegistros.textContent = "Mostrando 0 de 0 registros";
       return;
     }
 
@@ -102,7 +143,7 @@ async function carregarEstoque() {
     console.error("Erro ao carregar estoque:", e);
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" class="empty-state">
+        <td colspan="10" class="empty-state">
           Erro ao carregar dados de estoque (API). Tente novamente mais tarde.
         </td>
       </tr>
@@ -116,6 +157,8 @@ async function carregarEstoque() {
 }
 
 function aplicarFiltroLocal() {
+  console.log("[ESTOQUE] aplicarFiltroLocal() chamado");
+
   const tbody = document.getElementById("tbodyEstoque");
   const cardEstoqueTotal = document.getElementById("cardEstoqueTotal");
   const cardReservadoTotal = document.getElementById("cardReservadoTotal");
@@ -125,20 +168,34 @@ function aplicarFiltroLocal() {
 
   if (!tbody) return;
 
-  const nomeEmpresaFiltro = (document.getElementById("fEmpresaNome")?.value || "").toLowerCase();
-  const nomeProdFiltro    = (document.getElementById("fProdNome")?.value || "").toLowerCase();
-  const nomeGrupoFiltro   = (document.getElementById("fGrupoNome")?.value || "").toLowerCase();
-  const grupoCodFiltroRaw = (document.getElementById("fGrupoCod")?.value || "").trim();
-  const prodCodFiltroRaw  = (document.getElementById("fProdCod")?.value || "").trim();
+  const nomeEmpresaFiltro = (
+    document.getElementById("fEmpresaNome")?.value || ""
+  ).toLowerCase();
+  const nomeProdFiltro = (
+    document.getElementById("fProdNome")?.value || ""
+  ).toLowerCase();
+  const nomeGrupoFiltro = (
+    document.getElementById("fGrupoNome")?.value || ""
+  ).toLowerCase();
+  const grupoCodFiltroRaw =
+    (document.getElementById("fGrupoCod")?.value || "").trim();
+  const prodCodFiltroRaw =
+    (document.getElementById("fProdCod")?.value || "").trim();
 
   const grupoCodFiltro = grupoCodFiltroRaw ? grupoCodFiltroRaw : null;
-  const prodCodFiltro  = prodCodFiltroRaw  ? prodCodFiltroRaw  : null;
+  const prodCodFiltro = prodCodFiltroRaw ? prodCodFiltroRaw : null;
+
+  // checkbox opcional: ver somente itens com reservado > 0
+  // const somenteReservado = !!document.getElementById("fSomenteReservado")?.checked;
+  const somenteReservado = false; // ajuste pra true/false via checkbox depois
 
   let itens = estoqueBruto.slice();
 
   if (nomeEmpresaFiltro) {
     itens = itens.filter(r => {
-      const nomeEmpBruto = String(r.NomeEmpresa ?? r.nomeEmpresa ?? "");
+      const nomeEmpBruto = String(
+        r.NomeEmpresa ?? r.nomeEmpresa ?? ""
+      );
       const base = nomeEmpBruto.split("-")[0].trim();
       return base.toLowerCase().includes(nomeEmpresaFiltro);
     });
@@ -146,7 +203,9 @@ function aplicarFiltroLocal() {
 
   if (nomeGrupoFiltro) {
     itens = itens.filter(r => {
-      const grp = String(r.NomeGrupoProduto ?? r.nomeGrupoProduto ?? "").toLowerCase();
+      const grp = String(
+        r.NomeGrupoProduto ?? r.nomeGrupoProduto ?? ""
+      ).toLowerCase();
       return grp.includes(nomeGrupoFiltro);
     });
   }
@@ -154,7 +213,9 @@ function aplicarFiltroLocal() {
   if (grupoCodFiltro) {
     itens = itens.filter(r => {
       const codGrupo = String(
-        r.CODGRUPO ?? r.codgrupo ?? r.CODGRUPOPROD ?? r.codgrupoprod ?? ""
+        r.CODGRUPOPROD ??
+          r.codgrupoprod ??
+          ""
       ).trim();
       return codGrupo === grupoCodFiltro;
     });
@@ -162,7 +223,9 @@ function aplicarFiltroLocal() {
 
   if (nomeProdFiltro) {
     itens = itens.filter(r => {
-      const nome = String(r.NomeProduto ?? r.nomeProduto ?? "").toLowerCase();
+      const nome = String(
+        r.NomeProduto ?? r.nomeProduto ?? ""
+      ).toLowerCase();
       return nome.includes(nomeProdFiltro);
     });
   }
@@ -174,12 +237,19 @@ function aplicarFiltroLocal() {
     });
   }
 
+  if (somenteReservado) {
+    itens = itens.filter(r => {
+      const reservado = Number(r.RESERVADO ?? r.reservado ?? 0);
+      return reservado > 0;
+    });
+  }
+
   itensFiltrados = itens;
 
   if (itensFiltrados.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" class="empty-state">
+        <td colspan="10" class="empty-state">
           Nenhum registro após aplicar os filtros.
         </td>
       </tr>
@@ -188,7 +258,8 @@ function aplicarFiltroLocal() {
     cardReservadoTotal.textContent = "0,00";
     cardDisponivelTotal.textContent = "0,00";
     cardQtdeGrupos.textContent = "0";
-    if (infoRegistros) infoRegistros.textContent = "Mostrando 0 de 0 registros";
+    if (infoRegistros)
+      infoRegistros.textContent = "Mostrando 0 de 0 registros";
     return;
   }
 
@@ -202,7 +273,8 @@ function aplicarFiltroLocal() {
     const reservado = Number(r.RESERVADO ?? r.reservado ?? 0);
     totalEstoque += estoque;
     totalReservado += reservado;
-    const grupoNomeFull = r.NomeGrupoProduto ?? r.nomeGrupoProduto ?? "";
+    const grupoNomeFull =
+      r.NomeGrupoProduto ?? r.nomeGrupoProduto ?? "";
     if (grupoNomeFull) gruposSet.add(grupoNomeFull);
   }
 
@@ -210,18 +282,24 @@ function aplicarFiltroLocal() {
     const estoque = Number(r.ESTOQUE ?? r.estoque ?? 0);
     const reservado = Number(r.RESERVADO ?? r.reservado ?? 0);
     const disponivel = Number(
-      r.EstoqueDisponivel ?? r.estoquedisponivel ?? estoque - reservado
+      r.EstoqueDisponivel ??
+        r.estoquedisponivel ??
+        estoque - reservado
     );
 
-    const grupoNome = r.NomeGrupoProduto ?? r.nomeGrupoProduto ?? "";
+    const grupoNome =
+      r.NomeGrupoProduto ?? r.nomeGrupoProduto ?? "";
 
     const nomeEmpresaBruto = r.NomeEmpresa ?? r.nomeEmpresa ?? "";
     let nomeEmpresaBase = nomeEmpresaBruto.split("-")[0].trim();
-    nomeEmpresaBase = nomeEmpresaBase.replace(/\s+FILIAL\s+\d+$/i, "").trim();
+    nomeEmpresaBase = nomeEmpresaBase
+      .replace(/\s+FILIAL\s+\d+$/i, "")
+      .trim();
     const nomeEmpresa = nomeEmpresaBase;
 
     const codProd = r.CODPROD ?? r.codprod ?? "";
-    const nomeProdutoBruto = r.NomeProduto ?? r.nomeProduto ?? "";
+    const nomeProdutoBruto =
+      r.NomeProduto ?? r.nomeProduto ?? "";
     let nomeProdutoLimpo = nomeProdutoBruto.substring(0, 30);
     if (nomeProdutoBruto.length > 30) {
       nomeProdutoLimpo = nomeProdutoLimpo.trimEnd() + "…";
@@ -230,18 +308,47 @@ function aplicarFiltroLocal() {
     const statusClass = getStatusClass(estoque, reservado);
     const statusLabel = getStatusLabel(estoque, reservado);
 
+    const precoVenda = Number(r.PrecoVenda ?? r.precoVenda ?? 0);
+    const precoFormatado = precoVenda
+      ? precoVenda.toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
+      : "***,**";
+
     html += `
-      <tr>
+      <tr data-codprod="${escapeHtml(String(codProd))}">
         <td>${r.CODEMP ?? r.codemp ?? ""}</td>
-        <td><span class="badge-empresa">${escapeHtml(nomeEmpresa)}</span></td>
+        <td><span class="badge-empresa">${escapeHtml(
+          nomeEmpresa
+        )}</span></td>
         <td>${escapeHtml(grupoNome)}</td>
-        <td title="${escapeHtml(codProd + " - " + nomeProdutoBruto)}">
+        <td title="${escapeHtml(
+          codProd + " - " + nomeProdutoBruto
+        )}">
           ${escapeHtml(codProd + " - " + nomeProdutoLimpo)}
         </td>
         <td class="num">${formatNumber(estoque)}</td>
         <td class="num">${formatNumber(reservado)}</td>
         <td class="num">${formatNumber(disponivel)}</td>
         <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
+        <!-- Preço (vem da API, mas começa mascarado) -->
+        <td class="num preco-cell"
+            data-preco-loaded="${precoVenda ? "true" : "false"}"
+            data-preco-real="${precoVenda ? precoFormatado : ""}"
+            data-preco-mascarado="true">
+          ***,**
+        </td>
+        <!-- Olhinho -->
+        <td class="preco-eye-cell">
+          <button
+            type="button"
+            class="btn-preco-eye"
+            title="Ver preço (senha necessária)"
+          >
+            👁
+          </button>
+        </td>
       </tr>
     `;
   }
@@ -249,9 +356,16 @@ function aplicarFiltroLocal() {
   tbody.innerHTML = html;
   ajustarAlturaTabela();
 
+  // Liga eventos dos olhinhos
+  tbody.querySelectorAll(".btn-preco-eye").forEach(btn => {
+    btn.addEventListener("click", onClickVerPreco);
+  });
+
   cardEstoqueTotal.textContent = formatNumber(totalEstoque);
   cardReservadoTotal.textContent = formatNumber(totalReservado);
-  cardDisponivelTotal.textContent = formatNumber(totalEstoque - totalReservado);
+  cardDisponivelTotal.textContent = formatNumber(
+    totalEstoque - totalReservado
+  );
   cardQtdeGrupos.textContent = String(gruposSet.size);
   if (infoRegistros) {
     infoRegistros.textContent =
@@ -261,8 +375,8 @@ function aplicarFiltroLocal() {
 
 /**
  * Usa altura da janela:
- * - até 800px ~ 10 linhas (notebook / tela menor)
- * - acima de 800px ~ 15 linhas (monitor maior)
+ * - até 800px ~ 10 linhas
+ * - acima de 800px ~ 15 linhas
  */
 function ajustarAlturaTabela() {
   const wrapper = document.querySelector(".table-wrapper");
@@ -276,13 +390,14 @@ function ajustarAlturaTabela() {
   const header = wrapper.querySelector("thead");
   const headerHeight = header ? header.offsetHeight : 0;
 
-  const altura = window.innerHeight || document.documentElement.clientHeight;
+  const altura =
+    window.innerHeight || document.documentElement.clientHeight;
 
   let linhasVisiveis;
   if (altura <= 800) {
-    linhasVisiveis = 10; // tela pequena: 9–11 linhas
+    linhasVisiveis = 10;
   } else {
-    linhasVisiveis = 15; // tela grande: preenche o espaço
+    linhasVisiveis = 15;
   }
 
   const maxHeight = headerHeight + rowHeight * linhasVisiveis;
@@ -291,7 +406,10 @@ function ajustarAlturaTabela() {
 
 function formatNumber(v) {
   const n = Number(v || 0);
-  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 }
 
 function getStatusClass(estoque, reservado) {
@@ -315,4 +433,112 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+/* ======== POPUP DE SENHA PARA PREÇO ======== */
+
+function initPrecoModal() {
+  const modal = document.getElementById("precoSenhaModal");
+  const input = document.getElementById("precoSenhaInput");
+  const btnCancelar = document.getElementById("precoSenhaCancelar");
+  const btnConfirmar = document.getElementById("precoSenhaConfirmar");
+  const erroEl = document.getElementById("precoSenhaErro");
+
+  if (!modal || !input || !btnCancelar || !btnConfirmar || !erroEl) {
+    console.warn("[PRECO] Elementos do modal de senha não encontrados.");
+    return;
+  }
+
+  btnCancelar.addEventListener("click", () => {
+    modal.style.display = "none";
+    input.value = "";
+    erroEl.textContent = "";
+  });
+
+  btnConfirmar.addEventListener("click", () => {
+    const senha = input.value;
+    if (senha === PRECO_SENHA) {
+      console.log("[PRECO] Senha correta. Liberando visualização de preços.");
+      precoSenhaValidada = true;
+      modal.style.display = "none";
+      input.value = "";
+      erroEl.textContent = "";
+    } else {
+      console.log("[PRECO] Senha incorreta.");
+      erroEl.textContent = "Senha inválida.";
+      precoSenhaValidada = false;
+    }
+  });
+
+  input.addEventListener("keydown", ev => {
+    if (ev.key === "Enter") {
+      btnConfirmar.click();
+    } else if (ev.key === "Escape") {
+      btnCancelar.click();
+    }
+  });
+}
+
+function abrirPrecoModal() {
+  const modal = document.getElementById("precoSenhaModal");
+  const input = document.getElementById("precoSenhaInput");
+  const erroEl = document.getElementById("precoSenhaErro");
+  if (!modal || !input || !erroEl) return;
+  erroEl.textContent = "";
+  input.value = "";
+  modal.style.display = "flex";
+  input.focus();
+}
+
+/* ======== OLHINHO / PREÇO COM SENHA ======== */
+
+function onClickVerPreco(event) {
+  const btn = event.currentTarget;
+  const tr = btn.closest("tr");
+  if (!tr) return;
+
+  const precoCell = tr.querySelector(".preco-cell");
+  if (!precoCell) return;
+
+  const jaCarregado =
+    precoCell.getAttribute("data-preco-loaded") === "true";
+  const mascarado =
+    precoCell.getAttribute("data-preco-mascarado") === "true";
+
+  console.log(
+    "[PRECO] Click olho - jaCarregado=",
+    jaCarregado,
+    "mascarado=",
+    mascarado,
+    "senhaValidada=",
+    precoSenhaValidada
+  );
+
+  // Se senha ainda não foi validada, abre modal e sai
+  if (!precoSenhaValidada) {
+    abrirPrecoModal();
+    return;
+  }
+
+  // Preço já veio da API; só alterna entre *** e valor real
+  if (jaCarregado) {
+    if (mascarado) {
+      // mostrar
+      const real = precoCell.getAttribute("data-preco-real") || "***,**";
+      precoCell.textContent = real;
+      precoCell.setAttribute("data-preco-mascarado", "false");
+      btn.textContent = "🙈";
+    } else {
+      // esconder
+      precoCell.textContent = "***,**";
+      precoCell.setAttribute("data-preco-mascarado", "true");
+      btn.textContent = "👁";
+    }
+  } else {
+    // não tem preço carregado (API não retornou PrecoVenda para esse item)
+    console.log("[PRECO] Nenhum preço retornado para esta linha.");
+    precoCell.textContent = "—";
+    precoCell.setAttribute("data-preco-loaded", "true");
+    precoCell.setAttribute("data-preco-mascarado", "false");
+  }
 }

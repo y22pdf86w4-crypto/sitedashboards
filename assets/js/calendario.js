@@ -246,7 +246,6 @@ function trocarEmpresa() {
   console.log("====== trocarEmpresa() CHAMADA ======");
   const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
   console.log("[TROCAR_EMPRESA] user atual:", user);
-
   if (!user || !Array.isArray(user.empresas) || user.empresas.length === 0) {
     alert("Nenhuma empresa disponível para este usuário.");
     console.warn("[TROCAR_EMPRESA] Usuário sem empresas.");
@@ -1236,7 +1235,7 @@ function classeStatus(despesa, hojeISO) {
   return "status-pendente";
 }
 
-// TOOLTIP COMPLETO (texto simples, ainda usado em outras partes se quiser)
+// TOOLTIP COMPLETO (texto simples)
 function tooltipDespesa(d) {
   if (!d.vencimento) return d.descricao || "";
 
@@ -1314,7 +1313,6 @@ function tooltipDespesa(d) {
       );
     }
   }
-
   return linhas.join("\n");
 }
 
@@ -1326,14 +1324,12 @@ function getTooltipHtml(d) {
   const dtVenc = d.vencimento.split("-").reverse().join("/");
   const partes = [];
 
-  // título + vencimento
   partes.push(
     `<div class="cal-tooltip-title">${(d.descricao || "Despesa")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")} – vencimento ${dtVenc}</div>`
   );
 
-  // situação
   if (d.status === "pago" && d.dataPagamento) {
     const dtPag = d.dataPagamento.split("-").reverse().join("/");
     partes.push(
@@ -1346,7 +1342,6 @@ function getTooltipHtml(d) {
     );
   }
 
-  // detalhes financeiros (Sankhya)
   if (d.origem === "sankhya" && d.logDetalhado && d.logDetalhado.financeiro) {
     const f = d.logDetalhado.financeiro;
     const linhas = [];
@@ -1461,6 +1456,13 @@ function abrirModalDia(dataISOdia, idFocar) {
   const container = document.getElementById("listaDiaContainer");
   const titulo = document.getElementById("tituloModalDia");
 
+  if (!modal || !container || !titulo) {
+    console.warn(
+      "[abrirModalDia] Elementos do modal do dia não encontrados. Verifique HTML."
+    );
+    return;
+  }
+
   titulo.textContent =
     "Despesas de " + dataISOdia.split("-").reverse().join("/");
 
@@ -1533,7 +1535,6 @@ function abrirModalDia(dataISOdia, idFocar) {
             })}`
           );
         }
-
         if (f.CODNAT) partes.push(`Cód. natureza financeira: ${f.CODNAT}`);
         if (f.CODCENCUS) partes.push(`Centro de custo: ${f.CODCENCUS}`);
         if (f.CODCTABCOINT)
@@ -2054,7 +2055,6 @@ function fecharModalResultadoEnvio() {
 function abrirModalSelecionarEnvio() {
   const ano = mesAtual.getFullYear();
   const mes = mesAtual.getMonth();
-
   const inicioISO = new Date(ano, mes, 1).toISOString().slice(0, 10);
   const fimISO = new Date(ano, mes + 1, 0).toISOString().slice(0, 10);
 

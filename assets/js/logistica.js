@@ -380,6 +380,44 @@ function normalizarLng(valor) {
   return n;
 }
 
+// ======== PARSE "lat,lng" (texto) ========
+
+function parseLatLngText(txt) {
+  if (!txt) return null;
+  const parts = txt.split(',');
+  if (parts.length !== 2) return null;
+  const lat = parts[0].trim();
+  const lng = parts[1].trim();
+  if (!lat || !lng) return null;
+  return { lat, lng };
+}
+
+// ======== GEOCODE BACKEND (Nominatim/Google) ========
+
+async function geocodeTexto(texto) {
+  const url = `${window.API_BASE}/geocode?q=${encodeURIComponent(texto)}`;
+
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      console.error('Erro HTTP no geocode:', resp.status);
+      return null;
+    }
+    const data = await resp.json();
+    if (data && data.lat != null && data.lng != null) {
+      return {
+        lat: data.lat,
+        lng: data.lng,
+        label: texto
+      };
+    }
+    return null;
+  } catch (e) {
+    console.error('Erro ao chamar geocode:', e);
+    return null;
+  }
+}
+
 // ======== LISTA / SELEÇÃO ========
 
 function atualizarResumoSelecionados() {
@@ -417,6 +455,15 @@ function marcarTodosVisiveis(marcar) {
 
   itens.forEach(cb => {
     const id = parseInt(cb.value, 10);
+    const wrapper = cb.closest('.cliente-item');
+    const semLoc = wrapper?.classList.contains('cliente-sem-localizacao');
+
+    if (semLoc) {
+      // nunca marcar clientes sem coordenadas
+      cb.checked = false;
+      idsSelecionados.delete(id);
+      return;
+    }
 
     if (marcar) {
       if (count >= limite) return;
@@ -467,13 +514,6 @@ function criarItemCliente(c) {
   checkWrap.appendChild(checkmark);
   checkWrap.appendChild(spanLabelVis);
 
-  checkbox.addEventListener('change', () => {
-    if (checkbox.checked) idsSelecionados.add(c.id);
-    else idsSelecionados.delete(c.id);
-    atualizarContadorSelecionados();
-    div.classList.toggle('selecionado', checkbox.checked);
-  });
-
   const textos = document.createElement('div');
   textos.className = 'cliente-textos';
 
@@ -496,12 +536,29 @@ function criarItemCliente(c) {
   spanAlerta.style.display = 'none';
   spanAlerta.textContent = '⚠ endereço não localizado';
 
+  // valida coordenadas
   const latValida = normalizarLat(c.lat) != null;
   const lngValida = normalizarLng(c.lng) != null;
-  if (!latValida || !lngValida) {
+  const semLocalizacao = !latValida || !lngValida;
+
+  if (semLocalizacao) {
     spanAlerta.style.display = 'inline-block';
     div.classList.add('cliente-sem-localizacao');
+    // impede seleção: desabilita checkbox visual e bloqueia click
+    checkbox.disabled = true;
+    checkWrap.classList.add('checkbox-desabilitado');
   }
+
+  checkbox.addEventListener('change', () => {
+    if (semLocalizacao) {
+      checkbox.checked = false;
+      return;
+    }
+    if (checkbox.checked) idsSelecionados.add(c.id);
+    else idsSelecionados.delete(c.id);
+    atualizarContadorSelecionados();
+    div.classList.toggle('selecionado', checkbox.checked);
+  });
 
   textos.appendChild(spanNome);
   textos.appendChild(spanBadge);
@@ -572,8 +629,10 @@ function renderClientesPagina() {
 
     if (idsSelecionados.has(c.id)) {
       const cb = div.querySelector('.cliente-checkbox');
-      if (cb) cb.checked = true;
-      div.classList.add('selecionado');
+      if (cb && !cb.disabled) cb.checked = true;
+      if (!div.classList.contains('cliente-sem-localizacao')) {
+        div.classList.add('selecionado');
+      }
     }
 
     frag.appendChild(div);
@@ -718,6 +777,7 @@ async function carregarClientesNormais() {
     console.error(e);
     listaClientesDiv.innerHTML =
       '<div style="padding:8px;font-size:12px;color:#fca5a5;">Erro ao carregar clientes.</div>';
+    cacheClientes = [];
   } finally {
     listaClientesDiv.classList.remove('loading');
   }
@@ -742,6 +802,7 @@ async function carregarVendedores() {
   } catch (e) {
     console.error(e);
     alert('Erro ao carregar vendedores. Veja console.');
+    cacheVendedores = [];
   }
 }
 
@@ -765,7 +826,6 @@ async function carregarCarteiraPorVendedor(codvend) {
 
     cacheCarteira = (data.carteira || []).map(c => {
       const endereco = montarEnderecoPadrao(c);
-
       return {
         id: c.codparc,
         codigo: c.codparc,
@@ -796,6 +856,7 @@ async function carregarCarteiraPorVendedor(codvend) {
     console.error(e);
     listaClientesDiv.innerHTML =
       '<div style="padding:8px;font-size:12px;color:#fca5a5;">Erro ao carregar carteira do vendedor.</div>';
+    cacheCarteira = [];
   } finally {
     listaClientesDiv.classList.remove('loading');
   }
@@ -825,16 +886,6 @@ function aplicarFiltroLocal() {
 }
 
 // ======== PONTOS / ROTA ========
-
-function parseLatLngText(txt) {
-  if (!txt) return null;
-  const parts = txt.split(',');
-  if (parts.length !== 2) return null;
-  const lat = parseFloat(parts[0].trim());
-  const lng = parseFloat(parts[1].trim());
-  if (isNaN(lat) || isNaN(lng)) return null;
-  return { lat, lng };
-}
 
 function getClientesSelecionados() {
   const base = getCacheAtual();
@@ -939,8 +990,10 @@ function configurarDragAndDropPainelRota() {
     if (!item) return;
     draggingEl = item;
     item.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', item.dataset.id || '');
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', item.dataset.id || '');
+    }
   });
 
   rotaListaDiv.addEventListener('dragover', e => {
@@ -978,7 +1031,7 @@ function configurarDragAndDropPainelRota() {
     draggingEl = null;
 
     renumerarPontosRota();
-    gerarRotaAuto(); // recalcula rota imediatamente
+    gerarRotaAuto();
   });
 
   rotaListaDiv.addEventListener('dragend', () => {
@@ -1052,7 +1105,6 @@ function removerPontoDaRota(ponto) {
 
 function getPontosNaOrdemPainel() {
   const pontos = [];
-
   rotaListaDiv.querySelectorAll('.rota-item').forEach(div => {
     const tipo = div.dataset.tipo;
     const id = div.dataset.id;
@@ -1080,7 +1132,7 @@ function getPontosNaOrdemPainel() {
   return pontos;
 }
 
-// ======== ROTA AUTO ========
+// ======== ROTA AUTO (ACEITA DESTINO POR ENDEREÇO) ========
 
 function limparRota() {
   if (routingControl) {
@@ -1092,7 +1144,7 @@ function limparRota() {
   setLinkMapsEnabled(false);
   linkMapsDiv.textContent = 'Nenhum link gerado ainda.';
   setAlertasTexto('Nenhuma rota analisada ainda.');
-  removerTodosMarkersDoMapa(); // NÃO remove o marcadorLocalizacao
+  removerTodosMarkersDoMapa();
 }
 
 async function gerarRotaAuto() {
@@ -1122,7 +1174,6 @@ async function gerarRotaAuto() {
     return;
   }
 
-  // reset apenas da rota, mantendo o pin
   if (routingControl) {
     map.removeControl(routingControl);
     routingControl = null;
@@ -1136,7 +1187,6 @@ async function gerarRotaAuto() {
 
   const waypoints = [];
 
-  // Origem sempre começa na coordenada fixa, mas permite arrastar depois
   if (!origemManual) {
     origemManual = { ...ORIGEM_FIXA };
   }
@@ -1167,19 +1217,29 @@ async function gerarRotaAuto() {
     waypoints.push(L.latLng(lat, lng));
   });
 
+  // DESTINO: aceita lat,lng ou endereço (se vazio, último ponto será destino)
   if (destinoStr) {
+    let destLat = null;
+    let destLng = null;
+
     const parsed = parseLatLngText(destinoStr);
-    if (!parsed) {
-      alert('Destino inválido. Use "lat,lng".');
+    if (parsed) {
+      destLat = normalizarLat(parsed.lat);
+      destLng = normalizarLng(parsed.lng);
+    } else {
+      const geo = await geocodeTexto(destinoStr);
+      if (geo) {
+        destLat = normalizarLat(geo.lat);
+        destLng = normalizarLng(geo.lng);
+      }
+    }
+
+    if (destLat == null || destLng == null) {
+      alert('Destino inválido (não foi possível localizar).');
       return;
     }
-    const lat = normalizarLat(parsed.lat);
-    const lng = normalizarLng(parsed.lng);
-    if (lat == null || lng == null) {
-      alert('Destino inválido.');
-      return;
-    }
-    waypoints.push(L.latLng(lat, lng));
+
+    waypoints.push(L.latLng(destLat, destLng));
   }
 
   if (waypoints.length < 2) {
@@ -1250,27 +1310,33 @@ async function gerarRotaAuto() {
   setLinkMapsEnabled(true);
 }
 
-// ======== PONTO MANUAL / MAP CLICK ========
+// ======== PONTO MANUAL / MAP CLICK (ACEITA ENDEREÇO) ========
 
 async function adicionarPontoManual() {
   const texto = novoPontoInput.value.trim();
   if (!texto) return;
 
-  const latlng = parseLatLngText(texto);
   let lat = null;
   let lng = null;
   let label = texto;
 
+  const latlng = parseLatLngText(texto);
   if (latlng) {
     lat = normalizarLat(latlng.lat);
     lng = normalizarLng(latlng.lng);
   } else {
-    alert('Formato inválido. Use "lat,lng" ou implemente geocode aqui.');
-    return;
+    const geo = await geocodeTexto(texto);
+    if (!geo) {
+      alert('Não foi possível localizar o endereço informado.');
+      return;
+    }
+    lat = normalizarLat(geo.lat);
+    lng = normalizarLng(geo.lng);
+    label = geo.label || texto;
   }
 
   if (lat == null || lng == null) {
-    alert('Coordenada inválida.');
+    alert('Coordenada inválida após geocodificação.');
     return;
   }
 
@@ -1327,7 +1393,6 @@ async function gerarLinkGoogleMaps() {
   const destParam = `destination=${encodeURIComponent(
     destination.lat + ',' + destination.lng
   )}`;
-
   let waypointsParam = '';
   if (intermediarios.length > 0) {
     const wps = intermediarios
@@ -1391,105 +1456,87 @@ function mostrarToastCopiarLink(mensagem) {
     }, 200);
   }, 2000);
 }
+// ======== PAINEL ROTA: MINIMIZAR + ARRASTAR ========
 
-// ======== OTIMIZAR ORDEM DAS PARADAS (heurística simples) ========
+function initRotaPanel() {
+  if (!rotaPanel || !rotaPanelHeader || !rotaPanelMinimize) return;
 
-function distanciaPontos(a, b) {
-  const dx = a.lat - b.lat;
-  const dy = a.lng - b.lng;
-  return Math.sqrt(dx * dx + dy * dy);
-}
+  // Mantém CSS inicial (top/right) dentro do #map-container
+  rotaPanel.style.position = 'absolute';
+  rotaPanel.style.zIndex = '500';
 
-function otimizarOrdemParadasVizinhoMaisProximo() {
-  const pontos = getPontosNaOrdemPainel();
-  if (!pontos.length) {
-    alert('Nenhuma parada para otimizar.');
-    return;
-  }
-
-  if (!origemManual) {
-    origemManual = { ...ORIGEM_FIXA };
-  }
-
-  const origem = { lat: origemManual.lat, lng: origemManual.lng };
-
-  const naoVisitados = pontos.map(p => ({ ...p }));
-  const caminho = [];
-
-  let atual = origem;
-
-  while (naoVisitados.length > 0) {
-    let melhorIdx = 0;
-    let melhorDist = Infinity;
-
-    naoVisitados.forEach((p, idx) => {
-      const d = distanciaPontos(atual, p);
-      if (d < melhorDist) {
-        melhorDist = d;
-        melhorIdx = idx;
-      }
-    });
-
-    const escolhido = naoVisitados.splice(melhorIdx, 1)[0];
-    caminho.push(escolhido);
-    atual = escolhido;
-  }
-
-  rotaListaDiv.innerHTML = '';
-  caminho.forEach((ponto, idx) => {
-    const li = document.createElement('li');
-    li.className = 'rota-item';
-    li.setAttribute('draggable', 'true');
-    li.dataset.tipo = ponto.tipo;
-    li.dataset.id = ponto.id;
-
-    const handle = document.createElement('div');
-    handle.className = 'rota-item-handle';
-    handle.innerHTML = '⋮⋮';
-
-    const num = document.createElement('div');
-    num.className = 'rota-item-num';
-    num.textContent = idx + 1;
-
-    const labelWrap = document.createElement('div');
-    labelWrap.className = 'rota-item-label';
-
-    const main = document.createElement('div');
-    main.className = 'rota-item-label-main';
-    main.textContent =
-      ponto.tipo === 'cliente'
-        ? ponto.label
-        : `[Manual] ${ponto.label}`;
-
-    const sub = document.createElement('div');
-    sub.className = 'rota-item-label-sub';
-    sub.textContent =
-      ponto.endereco ||
-      `${ponto.lat.toFixed(5)}, ${ponto.lng.toFixed(5)}`;
-
-    labelWrap.appendChild(main);
-    labelWrap.appendChild(sub);
-
-    const remover = document.createElement('button');
-    remover.className = 'rota-item-remove';
-    remover.type = 'button';
-    remover.textContent = '×';
-    remover.title = 'Remover ponto';
-    remover.addEventListener('click', e => {
-      e.stopPropagation();
-      removerPontoDaRota(ponto);
-    });
-
-    li.appendChild(handle);
-    li.appendChild(num);
-    li.appendChild(labelWrap);
-    li.appendChild(remover);
-
-    rotaListaDiv.appendChild(li);
+  // Minimizar / expandir
+  rotaPanelMinimize.addEventListener('click', () => {
+    rotaPanel.classList.toggle('rota-panel-minimized');
+    rotaPanelMinimize.textContent = rotaPanel.classList.contains(
+      'rota-panel-minimized'
+    )
+      ? '+'
+      : '−';
   });
 
-  configurarDragAndDropPainelRota();
-  gerarRotaAuto(); // recalcula rota na hora
+  const mapContainer = document.getElementById('map-container');
+  if (!mapContainer) return;
+
+  let isDragging = false;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  function onMouseDown(e) {
+    if (e.button !== 0) return;
+
+    isDragging = true;
+    rotaPanel.classList.add('rota-panel-dragging');
+
+    const panelRect = rotaPanel.getBoundingClientRect();
+    const containerRect = mapContainer.getBoundingClientRect();
+
+    // posição do painel RELATIVA ao container
+    const panelLeft = panelRect.left - containerRect.left;
+    const panelTop = panelRect.top - containerRect.top;
+
+    // diferença entre clique e canto do painel, dentro do container
+    offsetX = e.clientX - panelRect.left;
+    offsetY = e.clientY - panelRect.top;
+
+    // passa a usar left/top relativos ao container
+    rotaPanel.style.right = 'auto';
+    rotaPanel.style.bottom = 'auto';
+    rotaPanel.style.left = `${panelLeft}px`;
+    rotaPanel.style.top = `${panelTop}px`;
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+
+    e.preventDefault();
+  }
+
+  function onMouseMove(e) {
+    if (!isDragging) return;
+
+    const containerRect = mapContainer.getBoundingClientRect();
+
+    // posição do mouse dentro do container
+    const mouseXInContainer = e.clientX - containerRect.left;
+    const mouseYInContainer = e.clientY - containerRect.top;
+
+    const newLeft = mouseXInContainer - offsetX;
+    const newTop = mouseYInContainer - offsetY;
+
+    rotaPanel.style.left = `${newLeft}px`;
+    rotaPanel.style.top = `${newTop}px`;
+  }
+
+  function onMouseUp() {
+    if (!isDragging) return;
+    isDragging = false;
+    rotaPanel.classList.remove('rota-panel-dragging');
+
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  }
+
+  rotaPanelHeader.addEventListener('mousedown', onMouseDown);
 }
 
 // ======== INIT / EVENTOS ========
@@ -1570,11 +1617,10 @@ function initLogistica() {
     otimizarOrdemParadasVizinhoMaisProximo();
   });
 
-  rotaPanelMinimize.addEventListener('click', () => {
-    rotaPanel.classList.toggle('minimized');
-  });
-
   configurarInfiniteScrollClientes();
+
+  // inicia painel de rota (minimizar + arrastar)
+  initRotaPanel();
 
   carregarPedidosPendentes();
 }

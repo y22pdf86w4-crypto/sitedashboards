@@ -1,11 +1,10 @@
-// assets/js/inadimplencia.js
-
 const API_BASE =
   "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net";
 
 let leafletMap = null;
 let heatLayer = null;
 let debugMarkerLayer = null;
+let ultimoDashboardData = null;
 
 const pontoIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -16,7 +15,6 @@ const pontoIcon = L.icon({
 
 console.log("[INIT] Script inadimplencia.js carregado");
 
-// CSS crítico do mapa
 (function ensureMapCss() {
   const style = document.createElement("style");
   style.innerHTML = `
@@ -49,16 +47,16 @@ window.addEventListener("DOMContentLoaded", () => {
   console.log("[INIT] DOMContentLoaded");
 
   if (typeof gerarParticulasSelector === "function") {
-  const particlesContainer = document.querySelector(".particles-container");
-  if (particlesContainer && particlesContainer.children.length === 0) {
-    gerarParticulasSelector(".particles-container", 22);
+    const particlesContainer = document.querySelector(".particles-container");
+    if (particlesContainer && particlesContainer.children.length === 0) {
+      gerarParticulasSelector(".particles-container", 22);
+    }
   }
-}
 
-  // default: ano atual, se vazio
   const fAno = document.getElementById("fAno");
   if (fAno && !fAno.value) {
-    fAno.value = new Date().getFullYear();
+    const anoAtual = new Date().getFullYear();
+    fAno.value = anoAtual < 2020 ? 2020 : anoAtual;
   }
 
   const app = document.getElementById("app");
@@ -67,9 +65,7 @@ window.addEventListener("DOMContentLoaded", () => {
     btnToggle.addEventListener("click", () => {
       app.classList.toggle("sidebar-collapsed");
       if (leafletMap) {
-        setTimeout(() => {
-          leafletMap.invalidateSize();
-        }, 200);
+        setTimeout(() => leafletMap.invalidateSize(), 200);
       }
     });
   }
@@ -80,6 +76,7 @@ window.addEventListener("DOMContentLoaded", () => {
   if (btnAplicar) {
     btnAplicar.addEventListener("click", () => {
       console.log("[FILTRO] Botão Aplicar clicado");
+      if (!anoValidoOuVazio()) return;
       atualizarTudo();
     });
   }
@@ -92,7 +89,6 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // filtros que podem atualizar automaticamente (com validação de ano)
   const inputsAuto = [
     "fAno",
     "fMes",
@@ -102,9 +98,8 @@ window.addEventListener("DOMContentLoaded", () => {
     "fCliente"
   ];
   const debouncedAtualizar = debounce(() => {
-    // Só atualiza se ano estiver válido ou em branco (nesse caso backend usa padrão)
     if (!anoValidoOuVazio()) {
-      console.log("[FILTRO] Ano incompleto, não atualiza ainda");
+      console.log("[FILTRO] Ano inválido, não atualiza");
       return;
     }
     atualizarTudo();
@@ -123,7 +118,6 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // busca rápida por nome de cliente
   const fClienteNome = document.getElementById("fClienteNome");
   if (fClienteNome) {
     fClienteNome.addEventListener(
@@ -135,17 +129,66 @@ window.addEventListener("DOMContentLoaded", () => {
     );
   }
 
+  const cardClientesInadWrapper = document.getElementById(
+    "cardClientesInadWrapper"
+  );
+  if (cardClientesInadWrapper) {
+    cardClientesInadWrapper.addEventListener("click", () => {
+      if (!ultimoDashboardData) return;
+      abrirModalClientes({
+        origem: "card",
+        titulo: "Clientes inadimplentes",
+        clientes: ultimoDashboardData.clientes || []
+      });
+    });
+  }
+
+  inicializarModalClientes();
+
   atualizarTudo();
 });
+
+/* ========= TOAST DE ANO ========= */
+
+function mostrarToastAno(msg) {
+  const toast = document.getElementById("toastAno");
+  const span = document.getElementById("toastAnoMsg");
+  if (!toast || !span) return;
+  span.textContent = msg;
+  toast.classList.add("toast-ano-visible");
+  toast.setAttribute("aria-hidden", "false");
+  setTimeout(() => {
+    toast.classList.remove("toast-ano-visible");
+    toast.setAttribute("aria-hidden", "true");
+  }, 3500);
+}
+
+/* ========= VALIDAÇÃO DE ANO ========= */
 
 function anoValidoOuVazio() {
   const fAno = document.getElementById("fAno");
   if (!fAno) return true;
   const str = (fAno.value || "").trim();
-  if (!str) return true; // deixa backend usar default se quiser
-  if (str.length !== 4) return false;
+  if (!str) return true;
+  if (str.length !== 4) {
+    mostrarToastAno("Informe o ano com 4 dígitos (ex: 2024).");
+    return false;
+  }
   const n = Number(str);
-  return !Number.isNaN(n) && n >= 2000 && n <= 2100;
+  if (Number.isNaN(n)) {
+    mostrarToastAno("Ano inválido.");
+    return false;
+  }
+  if (n < 2020) {
+    mostrarToastAno("Só é permitido filtrar a partir do ano de 2020.");
+    fAno.value = "2020";
+    return false;
+  }
+  if (n > 2100) {
+    mostrarToastAno("Ano fora do intervalo permitido.");
+    return false;
+  }
+  return true;
 }
 
 function limparFiltros() {
@@ -153,7 +196,7 @@ function limparFiltros() {
 
   const anoAtual = new Date().getFullYear();
   const fAno = document.getElementById("fAno");
-  if (fAno) fAno.value = anoAtual; // sempre ano completo
+  if (fAno) fAno.value = anoAtual < 2020 ? 2020 : anoAtual;
 
   const fMes = document.getElementById("fMes");
   if (fMes) fMes.value = "";
@@ -170,10 +213,11 @@ function limparFiltros() {
   if (resCliente) resCliente.innerHTML = "";
 }
 
-// monta querystring com ano/mês separados
+/* ========= FILTROS / QUERYSTRING ========= */
+
 function getFiltrosQueryString(extra = {}) {
   const anoStr = (document.getElementById("fAno")?.value || "").trim();
-  const mesStr = (document.getElementById("fMes")?.value || "").trim(); // "01".."12" ou ""
+  const mesStr = (document.getElementById("fMes")?.value || "").trim();
   const regiao = document.getElementById("fRegiao").value || "";
   const vendedor = document.getElementById("fVendedor").value || "";
   const vendedorNome = document.getElementById("fVendedorNome").value || "";
@@ -181,12 +225,11 @@ function getFiltrosQueryString(extra = {}) {
 
   const params = new URLSearchParams();
 
-  // DATA: só gera se ano tiver 4 dígitos e estiver no range
   const anoNum = Number(anoStr);
   const anoOk =
     anoStr.length === 4 &&
     !Number.isNaN(anoNum) &&
-    anoNum >= 2000 &&
+    anoNum >= 2020 &&
     anoNum <= 2100;
 
   if (anoOk) {
@@ -214,10 +257,12 @@ function getFiltrosQueryString(extra = {}) {
     }
   });
 
-  const qs = params.toString(); // sem '?'.[web:43]
+  const qs = params.toString();
   console.log("[FILTRO] QueryString gerada:", qs);
   return qs ? "?" + qs : "";
 }
+
+/* ========= FORMATADORES ========= */
 
 function fmtValor(v) {
   if (v == null) return "–";
@@ -243,7 +288,8 @@ function truncarNomeVendedor(nome, max = 12) {
   return nome.length > max ? nome.slice(0, max) + "…" : nome;
 }
 
-/* ======================= DASHBOARD ======================= */
+/* ========= DASHBOARD ========= */
+
 async function carregarDashboard() {
   const qs = getFiltrosQueryString();
   const urlInad = `${API_BASE}/api/v1/inadimplencia/dashboard${qs}`;
@@ -276,6 +322,8 @@ async function carregarDashboard() {
   const dataInad = await respInad.json();
   const dataVend = await respVend.json();
 
+  ultimoDashboardData = dataInad || null;
+
   cardReceita.textContent = fmtValor(dataVend.valor_venda_total || 0);
   cardInad.textContent = fmtValor(dataInad.total_inadimplencia || 0);
   cardClientes.textContent = fmtInt(
@@ -286,7 +334,7 @@ async function carregarDashboard() {
   return dataInad;
 }
 
-/* ======================= MAPA / HEATMAP ======================= */
+/* ========= MAPA / HEATMAP ========= */
 
 async function initLeafletMap() {
   const mapDiv = document.getElementById("leafletMap");
@@ -387,7 +435,7 @@ function montarHeatmapAPartirClientes(clientes) {
   leafletMap.fitBounds(brasilBounds, { padding: [20, 20] });
 }
 
-/* ======================= RANKING ======================= */
+/* ========= RANKING ========= */
 
 function montarRankingAPartirClientes(clientes) {
   const tbody = document.getElementById("tbodyRanking");
@@ -460,12 +508,16 @@ function montarRankingAPartirClientes(clientes) {
     const nome = truncarNomeVendedor(nomeFull, 12);
     const valor = r.inadimplencia_valor || 0;
     const perc = r.inadimplencia_perc_rtv || 0;
-    const clientes = r.qtde_clientes_inad || 0;
+    const clientesQtd = r.qtde_clientes_inad || 0;
 
     html += `
       <tr ${index >= 12 ? 'data-extra="1"' : ""}>
         <td title="${nomeFull}">${nome}</td>
-        <td class="num">${fmtInt(clientes)}</td>
+        <td class="num ranking-clientes-cell" data-vendedor="${encodeURIComponent(
+          nomeFull
+        )}" style="cursor:pointer" title="Clique para ver os clientes">
+          ${fmtInt(clientesQtd)}
+        </td>
         <td class="num">${fmtValor(valor)}</td>
         <td class="num">${fmtPerc(perc)}</td>
       </tr>
@@ -473,9 +525,28 @@ function montarRankingAPartirClientes(clientes) {
   });
 
   tbody.innerHTML = html;
+
+  const cells = tbody.querySelectorAll(".ranking-clientes-cell");
+  cells.forEach(cell => {
+    cell.addEventListener("click", () => {
+      const vendedorNome = decodeURIComponent(
+        cell.getAttribute("data-vendedor") || ""
+      );
+      if (!ultimoDashboardData) return;
+      const todos = ultimoDashboardData.clientes || [];
+      const filtrados = todos.filter(
+        c => (c.nome_vendedor || "Sem Vendedor") === vendedorNome
+      );
+      abrirModalClientes({
+        origem: "ranking",
+        titulo: `Clientes de ${vendedorNome}`,
+        clientes: filtrados
+      });
+    });
+  });
 }
 
-/* ======================= BUSCA RÁPIDA DE CLIENTE ======================= */
+/* ========= BUSCA RÁPIDA DE CLIENTE ========= */
 
 async function buscarClientePorNome() {
   const termo = (document.getElementById("fClienteNome").value || "").trim();
@@ -527,7 +598,98 @@ async function buscarClientePorNome() {
   `;
 }
 
-/* ======================= ORQUESTRAÇÃO ======================= */
+/* ========= MODAL DE CLIENTES ========= */
+
+function inicializarModalClientes() {
+  const modal = document.getElementById("clientesModal");
+  const backdrop = document.getElementById("clientesModalBackdrop");
+  const btnClose = document.getElementById("clientesModalClose");
+  const btnCloseFooter = document.getElementById("clientesModalCloseFooter");
+
+  if (!modal) return;
+
+  const fechar = () => fecharModalClientes();
+
+  if (backdrop) {
+    backdrop.addEventListener("click", fechar);
+  }
+  if (btnClose) {
+    btnClose.addEventListener("click", fechar);
+  }
+  if (btnCloseFooter) {
+    btnCloseFooter.addEventListener("click", fechar);
+  }
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      fecharModalClientes();
+    }
+  });
+}
+
+function abrirModalClientes({ origem, titulo, clientes }) {
+  const modal = document.getElementById("clientesModal");
+  const tituloEl = document.getElementById("clientesModalTitulo");
+  const infoEl = document.getElementById("clientesModalInfo");
+  const tbody = document.getElementById("clientesModalTbody");
+
+  if (!modal || !tituloEl || !infoEl || !tbody) return;
+
+  tituloEl.textContent = titulo || "Clientes inadimplentes";
+
+  const lista = clientes || [];
+  const totalValor = lista.reduce(
+    (acc, c) => acc + Number(c.valor_inadimplencia || 0),
+    0
+  );
+
+  infoEl.innerHTML = `
+    <div><strong>Quantidade de clientes:</strong> ${fmtInt(lista.length)}</div>
+    <div><strong>Valor total inadimplente:</strong> ${fmtValor(totalValor)}</div>
+    <div><strong>Origem:</strong> ${
+      origem === "ranking" ? "Ranking de vendedores" : "Card geral"
+    }</div>
+  `;
+
+  if (!lista.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5">Nenhum cliente para exibir.</td>
+      </tr>
+    `;
+  } else {
+    let html = "";
+    lista.forEach(c => {
+      const regiao = c.regiao != null ? c.regiao : "–";
+      const nomeCliente = c.nome_cliente || "";
+      const nomeVendedor = c.nome_vendedor || "Sem vendedor";
+      const valor = fmtValor(c.valor_inadimplencia || 0);
+
+      html += `
+        <tr>
+          <td>${c.codparc != null ? c.codparc : ""}</td>
+          <td>${nomeCliente}</td>
+          <td>${nomeVendedor}</td>
+          <td>${regiao}</td>
+          <td>${valor}</td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
+  modal.setAttribute("aria-hidden", "false");
+  modal.classList.add("clientes-modal-open");
+}
+
+function fecharModalClientes() {
+  const modal = document.getElementById("clientesModal");
+  if (!modal) return;
+  modal.setAttribute("aria-hidden", "true");
+  modal.classList.remove("clientes-modal-open");
+}
+
+/* ========= ORQUESTRAÇÃO ========= */
 
 async function atualizarTudo() {
   console.log("========== [ATUALIZAR TUDO] ==========");

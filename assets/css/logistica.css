@@ -154,17 +154,15 @@ body.logistica-page {
 }
 
 /* Blocos da sidebar interna */
-/* Blocos da sidebar interna (antes estava com verde) */
 #sidebar-logistica .sidebar-section {
   border-radius: 12px;
   padding: 8px 10px;
-  background: rgba(15, 23, 42, 0.96);              /* neutro */
+  background: rgba(15, 23, 42, 0.96);
   border: 1px solid rgba(31, 41, 55, 0.9);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.85);
   margin-bottom: 4px;
   flex-shrink: 0;
 }
-
 
 .sidebar-section:last-child {
   margin-bottom: 0;
@@ -319,7 +317,7 @@ body.logistica-page {
   transform: none;
 }
 
-/* Botões novos – estilo Uiverse (para os botões internos, não o logout) */
+/* Botões novos – estilo Uiverse */
 
 .uni-btn {
   position: relative;
@@ -535,10 +533,17 @@ body.logistica-page {
       transparent 60%
     ),
     rgba(15, 23, 42, 0.95);
+  opacity: 0.7;
 }
 
 .cliente-sem-localizacao .nome {
   color: #fed7aa;
+}
+
+/* wrapper de checkbox desabilitado para clientes sem lat/lng */
+.checkbox-desabilitado {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* checkbox cliente (visual vem do wrapper) */
@@ -635,6 +640,21 @@ body.logistica-page {
     0 0 0 1px rgba(15, 23, 42, 0.8);
   z-index: 400;
   overflow: hidden;
+}
+
+/* estados do painel para JS novo */
+.rota-panel-minimized .rota-body {
+  display: none;
+}
+
+.rota-panel-minimized {
+  width: auto;
+  height: auto;
+}
+
+.rota-panel-dragging {
+  opacity: 0.95;
+  cursor: move;
 }
 
 /* Cabeçalho */
@@ -1018,7 +1038,8 @@ body.logistica-page {
 /* Label ao lado – padrão (flags, verde) */
 .checkbox-wrapper .label {
   margin-left: 10px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
   color: var(--checkbox-color);
   font-size: 12px;
   text-shadow: 0 0 6px var(--checkbox-shadow);
@@ -1169,11 +1190,11 @@ body.logistica-page {
 .sidebar-footer-logistica {
   position: fixed;
   left: 0;
-  bottom: 16px;           /* distância da borda inferior da tela */
+  bottom: 16px;
   width: var(--sidebar-width);
   display: flex;
   justify-content: center;
-  pointer-events: none;   /* evita interceptar clique fora do botão */
+  pointer-events: none;
   z-index: 40;
 }
 
@@ -1182,7 +1203,7 @@ body.logistica-page {
   width: var(--sidebar-width-collapsed);
 }
 
-/* From Uiverse.io by kennyotsu-monochromia – adaptado pro tema dark */
+/* From Uiverse.io – adaptado */
 
 .sidebar-footer-logistica .Btn {
   --black: #000000;
@@ -1193,7 +1214,7 @@ body.logistica-page {
   --af-white: rgba(15, 23, 42, 0.98);
   --ch-white: #e1e1e1;
 
-  pointer-events: auto;   /* botão continua clicável */
+  pointer-events: auto;
   display: flex;
   align-items: center;
   justify-content: flex-start;

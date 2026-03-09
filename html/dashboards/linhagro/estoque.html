@@ -151,6 +151,17 @@
           />
         </div>
 
+        <!-- placeholder: somente itens com reservado > 0 -->
+        <!--
+        <div class="filter-pill filter-pill-inline">
+          <label for="fSomenteReservado">Reservado</label>
+          <div class="filter-toggle">
+            <input type="checkbox" id="fSomenteReservado" />
+            <span>Somente com reservado</span>
+          </div>
+        </div>
+        -->
+
         <button class="btn-refresh" type="button" id="btnBuscar">
           <span class="icon">↻</span>
           <span>Atualizar</span>
@@ -205,11 +216,13 @@
                 <th>Reservado</th>
                 <th>Disponível</th>
                 <th>Status</th>
+                <th>Preço</th>
+                <th>Ver preço</th>
               </tr>
             </thead>
             <tbody id="tbodyEstoque">
               <tr>
-                <td colspan="8" class="empty-state">
+                <td colspan="10" class="empty-state">
                   Carregando dados de estoque...
                 </td>
               </tr>
@@ -218,6 +231,25 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- Popup de senha para ver preços -->
+  <div id="precoSenhaModal" class="preco-modal-backdrop" style="display:none;">
+    <div class="preco-modal">
+      <h2>Ver preços</h2>
+      <p>Digite a senha para visualizar os preços dos produtos.</p>
+      <input
+        type="password"
+        id="precoSenhaInput"
+        placeholder="Senha"
+        autocomplete="off"
+      />
+      <div class="preco-modal-actions">
+        <button type="button" id="precoSenhaCancelar">Cancelar</button>
+        <button type="button" id="precoSenhaConfirmar">Confirmar</button>
+      </div>
+      <p class="preco-modal-erro" id="precoSenhaErro"></p>
+    </div>
   </div>
 
   <!-- JS externo -->

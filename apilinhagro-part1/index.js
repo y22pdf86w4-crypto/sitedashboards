@@ -1594,7 +1594,7 @@ app.get('/api/v1/despesas-financeiro', async (req, res) => {
   }
 });
 
-/* ================== ESTOQUE (EMPRESA / PRODUTO / GRUPO) ================== */
+/* ================== ESTOQUE (EMPRESA / PRODUTO / GRUPO) + PREÇO ================== */
 
 app.get('/api/v1/estoque', async (req, res) => {
   try {
@@ -1603,19 +1603,36 @@ app.get('/api/v1/estoque', async (req, res) => {
     const grupo   = req.query.grupo ? req.query.grupo.toString().trim() : '';
 
     let sqlBase = `
+      WITH PrecoPorProduto AS (
+        SELECT
+          dp.CODIGO_PRODUTO           AS CODPROD,
+          MAX(dp.DATA_VIGENCIA)       AS DATA_VIGENCIA_MAX
+        FROM dbo.dimPrecoProdutoSkw dp
+        GROUP BY dp.CODIGO_PRODUTO
+      )
       SELECT
         e.CODEMP,
-        emp.NOMEFANTASIA      AS NomeEmpresa,
+        emp.NOMEFANTASIA             AS NomeEmpresa,
         e.CODPROD,
-        p.DESCRPROD           AS NomeProduto,
+        p.DESCRPROD                  AS NomeProduto,
         p.CODGRUPOPROD,
-        p.nomeGrupoProduto    AS NomeGrupoProduto,
-        SUM(e.ESTOQUE)        AS ESTOQUE,
-        SUM(e.RESERVADO)      AS RESERVADO,
-        SUM(e.ESTOQUE) - SUM(e.RESERVADO) AS EstoqueDisponivel
+        p.nomeGrupoProduto           AS NomeGrupoProduto,
+        SUM(e.ESTOQUE)               AS ESTOQUE,
+        SUM(e.RESERVADO)             AS RESERVADO,
+        SUM(e.ESTOQUE) - SUM(e.RESERVADO) AS EstoqueDisponivel,
+        -- preço (pega o registro da última vigência por produto)
+        pp.CODIGO_TABELA             AS CodigoTabelaPreco,
+        pp.DATA_VIGENCIA             AS DataVigenciaPreco,
+        pp.PRECO_VENDA               AS PrecoVenda
       FROM dbo.dimEstoqueSkw   e
-      JOIN dbo.dimProdutosSKW  p ON p.CODPROD = e.CODPROD
+      JOIN dbo.dimProdutosSKW  p   ON p.CODPROD  = e.CODPROD
       JOIN dbo.dimEmpresasBI   emp ON emp.CODEMP = e.CODEMP
+      -- join de preço
+      LEFT JOIN PrecoPorProduto ref
+        ON ref.CODPROD = e.CODPROD
+      LEFT JOIN dbo.dimPrecoProdutoSkw pp
+        ON pp.CODIGO_PRODUTO = e.CODPROD
+       AND pp.DATA_VIGENCIA  = ref.DATA_VIGENCIA_MAX
       WHERE 1 = 1
         AND e.CODLOCAL = 1000000
         AND e.CODEMP <> 80
@@ -1651,12 +1668,17 @@ app.get('/api/v1/estoque', async (req, res) => {
         e.CODPROD,
         p.DESCRPROD,
         p.CODGRUPOPROD,
-        p.nomeGrupoProduto
+        p.nomeGrupoProduto,
+        pp.CODIGO_TABELA,
+        pp.DATA_VIGENCIA,
+        pp.PRECO_VENDA
       ORDER BY
         emp.NOMEFANTASIA,
         p.nomeGrupoProduto,
         p.DESCRPROD;
     `;
+
+    console.log('[API] /api/v1/estoque SQL:\n', sqlBase);
 
     const result = await runQuery(sqlBase, request => {
       params.forEach(p => request.input(p.name, p.value));
@@ -1671,6 +1693,7 @@ app.get('/api/v1/estoque', async (req, res) => {
     });
   }
 });
+
 
 /* ================== GAMIFICAÇÃO ================== */
 
