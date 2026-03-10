@@ -445,6 +445,10 @@
   <script src="../assets/js/logistica.js?v=7"></script>
 
   <script>
+    function voltarLogin() {
+      deslogar();
+    }
+
     window.addEventListener("DOMContentLoaded", () => {
       const app = document.getElementById("app");
       const btnToggle = document.getElementById("btnToggleSidebar");
@@ -455,8 +459,28 @@
       }
 
       const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
-      if (user && typeof preencherHeaderUsuario === "function") {
+
+      // Proteção: apenas ADMIN ou LOG podem acessar
+      if (!user) {
+        window.location.href = "../index.html";
+        return;
+      }
+
+      const perfis = user.perfis || [];
+      const isAdmin = perfis.includes("ADMIN");
+      const isLog = perfis.includes("LOG");
+
+      if (!isAdmin && !isLog) {
+        window.location.href = "./menu.html";
+        return;
+      }
+
+      if (typeof preencherHeaderUsuario === "function") {
         preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
+      }
+
+      if (typeof initLogistica === "function") {
+        initLogistica();
       }
     });
   </script>

@@ -7,10 +7,30 @@
 
   <link rel="icon" href="../../../assets/imagem/favicon.png" type="image/png" />
 
-  <!-- CSS externo -->
+  <!-- CSS globais (mesmo padrão das outras telas) -->
+  <link rel="stylesheet" href="../../../assets/css/global.css" />
+  <link rel="stylesheet" href="../../../assets/css/background.css" />
+  <link rel="stylesheet" href="../../../assets/css/menu.css" />
+
+  <!-- CSS específico -->
   <link rel="stylesheet" href="../../../assets/css/estoque.css" />
 </head>
-<body>
+<body class="estoque-page">
+  <!-- Fundo animado (mesmo conceito da logística, se quiser pode reaproveitar classes) -->
+  <div class="bg-container" aria-hidden="true">
+    <div class="animated-bg"></div>
+    <div class="particles-container"></div>
+    <div class="wave-container">
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+    </div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- Botão ☰ para colapsar sidebar -->
   <button
     class="sidebar-toggle"
     type="button"
@@ -252,7 +272,10 @@
     </div>
   </div>
 
-  <!-- JS externo -->
+  <!-- JS globais (mesmos do calendário/logística) -->
+  <script src="../../../assets/js/global.js"></script>
+
+  <!-- JS específico do estoque -->
   <script src="../../../assets/js/estoque.js"></script>
 </body>
 </html>

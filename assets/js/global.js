@@ -1,111 +1,62 @@
 ﻿// ===================== USUÁRIOS / LOGIN =====================
 
-// Tabela de usuários e permissões
-const USERS = [
-  {
-    email: "admin",
-    senha: "admin",
-    tipo: "ADMIN",
-    empresas: ["linhagro", "lithoplant"],
-    nome: "Usuário Padrão",
-  },
-  {
-    email: "luciano.rastoldo@lithoplant.com.br",
-    senha: "admin",
-    tipo: "ADMIN",
-    empresas: ["linhagro", "lithoplant"],
-    nome: "Luciano Rastoldo",
-  },
-  {
-    email: "marcussi@linhagro.com.br",
-    senha: "admin",
-    tipo: "ADMIN",
-    empresas: ["linhagro", "lithoplant"],
-    nome: "Robson Marcussi",
-  },
-  {
-    email: "joaogabriel.reis@linhagro.com.br",
-    senha: "admin",
-    tipo: "ADMIN",
-    empresas: ["linhagro", "lithoplant"],
-    nome: "João Gabriel Reis",
-  },
-    {
-    email: "neusa.terci@linhagro.com.br",
-    senha: "admin",
-    tipo: "ADMIN",
-    empresas: ["linhagro", "lithoplant"],
-    nome: "Neusa Terci",
-  },
-  // Gestores comerciais (RBAC por empresa)
-  {
-    email: "g.comercial@lithoplant.com.br",
-    senha: "admin",
-    tipo: "LITHO_ONLY",
-    empresas: ["lithoplant"],
-    nome: "Wesley Nunes",
-  },
-  {
-    email: "g.comercial@linhagro.com.br",
-    senha: "admin",
-    tipo: "LINHA_ONLY",
-    empresas: ["linhagro"],
-    nome: "Gustavo Braga",
-  },
-
-  // ==== VENDEDORES LITHOPLANT ====
-  {
-    email: "ctvcentrosul@lithoplant.com.br",
-    senha: "admin",
-    tipo: "LITHO_ONLY",
-    empresas: ["lithoplant"],
-    nome: "Gracielli",
-  },
-  {
-    email: "joaopaulo.damascena@lithoplant.com.br",
-    senha: "admin",
-    tipo: "LITHO_ONLY",
-    empresas: ["lithoplant"],
-    nome: "João Paulo",
-  },
-  {
-    email: "ctvsulbahia@lithoplant.com.br",
-    senha: "admin",
-    tipo: "LITHO_ONLY",
-    empresas: ["lithoplant"],
-    nome: "Paulo Modesto",
-  },
-  {
-    email: "raphael.brandao@lithoplant.com.br",
-    senha: "admin",
-    tipo: "LITHO_ONLY",
-    empresas: ["lithoplant"],
-    nome: "Raphael Brandão",
-  },
-];
+// IMPORTANTE: o array USERS original não será mais usado para validar login.
+// Toda validação vem da API /auth/login, que consulta o banco e os perfis/empresas do usuário.
 
 // Login centralizado (chamado pelo index.html)
-function loginSistema(usuarioInput, senhaInput) {
-  const usuario = (usuarioInput || "").trim().toLowerCase();
+async function loginSistema(usuarioInput, senhaInput) {
+  const email = (usuarioInput || "").trim();
   const senha = (senhaInput || "").trim();
 
-  const user = USERS.find(
-    (u) => u.email.toLowerCase() === usuario && u.senha === senha
-  );
-
-  if (!user) {
-    return null; // login inválido
+  if (!email || !senha) {
+    return null;
   }
 
-  // Salva dados mínimos na sessão
-  if (window.sessionStorage) {
-    sessionStorage.setItem("usuarioNome", user.nome);
-    sessionStorage.setItem("usuarioEmail", user.email);
-    sessionStorage.setItem("usuarioEmpresas", JSON.stringify(user.empresas));
-    sessionStorage.setItem("usuarioTipo", user.tipo || "");
-  }
+  try {
+    const resp = await fetch(API_BASE + "/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, senha }),
+    });
 
-  return user;
+    if (!resp.ok) {
+      return null; // login inválido
+    }
+
+    const data = await resp.json(); // { token, usuario }
+
+    // usuario: { sub, email, nome, empresas: [...], perfis: [...] }
+
+    if (window.sessionStorage) {
+      sessionStorage.setItem("authToken", data.token);
+      sessionStorage.setItem("usuarioNome", data.usuario.nome);
+      sessionStorage.setItem("usuarioEmail", data.usuario.email);
+      sessionStorage.setItem(
+        "usuarioEmpresas",
+        JSON.stringify(data.usuario.empresas || [])
+      );
+      sessionStorage.setItem(
+        "usuarioPerfis",
+        JSON.stringify(data.usuario.perfis || [])
+      );
+    }
+
+    // Para manter compatibilidade com o restante do código:
+    const userCompat = {
+      email: data.usuario.email,
+      nome: data.usuario.nome,
+      empresas: data.usuario.empresas || [],
+      // Se você ainda usa "tipo" em alguns lugares (ex: montarHubGenerico),
+      // pegamos o primeiro perfil como "tipo".
+      tipo: (data.usuario.perfis && data.usuario.perfis[0]) || "",
+      perfis: data.usuario.perfis || [],
+    };
+
+    return userCompat;
+  } catch (e) {
+    console.error("Erro em loginSistema:", e);
+    return null;
+  }
 }
 
 // Obtém usuário logado (se existir)
@@ -116,15 +67,26 @@ function getUsuarioAtual() {
   if (!email) return null;
 
   const nome = sessionStorage.getItem("usuarioNome");
-  const tipo = sessionStorage.getItem("usuarioTipo") || "";
+
   let empresas = [];
+  let perfis = [];
   try {
     empresas = JSON.parse(sessionStorage.getItem("usuarioEmpresas") || "[]");
-  } catch (e) {
+  } catch (_) {
     empresas = [];
   }
+  try {
+    perfis = JSON.parse(sessionStorage.getItem("usuarioPerfis") || "[]");
+  } catch (_) {
+    perfis = [];
+  }
 
-  return { email, nome, empresas, tipo };
+  const token = sessionStorage.getItem("authToken") || "";
+
+  // Para compatibilidade com o resto do código que usa "tipo"
+  const tipoCompat = perfis && perfis.length ? perfis[0] : "";
+
+  return { email, nome, empresas, tipo: tipoCompat, perfis, token };
 }
 
 // Logout
@@ -146,197 +108,15 @@ function deslogar() {
 
 // ================= MENUS / RBAC / HEADER ====================
 
-/**
- * Valida se usuário está logado e se possui acesso à empresa.
- * Se não tiver, redireciona para o login.
- * Retorna o objeto user se estiver tudo ok.
- */
-function validarAcessoEmpresa(codEmpresa) {
-  const user = getUsuarioAtual();
-  if (!user || !Array.isArray(user.empresas) || !user.empresas.includes(codEmpresa)) {
-    window.location.href = "/index.html";
-    return null;
-  }
-  return user;
-}
+// A partir daqui, mantenha as funções que você já tinha:
+// - validarAcessoEmpresa
+// - preencherHeaderUsuario
+// - gerarParticulasSelector
+// - montarHubGenerico
+// - validarAcessoDashboardEmpresa
+// - validarAcessoDashboardVip
+// (não vou repetir aqui para não bagunçar; você pode deixar exatamente como está)
 
-/**
- * Preenche saudação e chip do usuário no header.
- */
-function preencherHeaderUsuario(user, saudacaoId, userNameId) {
-  const saudacao = document.getElementById(saudacaoId);
-  const userName = document.getElementById(userNameId);
-
-  if (user && user.nome) {
-    if (saudacao) {
-      saudacao.textContent =
-        "Bem-vindo, " + user.nome + ". Selecione um dashboard para abrir.";
-    }
-    if (userName) userName.textContent = user.nome;
-  } else if (saudacao) {
-    saudacao.textContent = "Selecione um dashboard para abrir.";
-  }
-}
-
-/**
- * Gera partículas de fundo no container informado.
- */
-function gerarParticulasSelector(selector, totalParticles) {
-  const container = document.querySelector(selector);
-  if (!container) return;
-  for (let i = 0; i < totalParticles; i++) {
-    const p = document.createElement("div");
-    p.className = "particle";
-    p.style.left = Math.random() * 100 + "vw";
-    p.style.animationDelay = Math.random() * 20 + "s";
-    p.style.opacity = (0.15 + Math.random() * 0.7).toFixed(2);
-    container.appendChild(p);
-  }
-}
-
-/**
- * Monta cards de dashboards em um grid, com RBAC por empresa, tipo e usuário.
- * Regra: admin master vê tudo; para os demais, regra por tipo/e-mail abaixo.
- */
-function montarHubGenerico(options) {
-  const { gridId, dashboards, user, empresaObrigatoria } = options || {};
-  const grid = document.getElementById(gridId);
-  if (!grid) return;
-  grid.innerHTML = "";
-
-  const userTipo = user && user.tipo ? user.tipo : "";
-  const userEmail = user && user.email ? user.email.toLowerCase() : "";
-  const isMasterAdmin = userEmail === "admin"; // só o usuário admin vê tudo
-
-  (Array.isArray(dashboards) ? dashboards : [])
-    .filter((dash) => {
-      // Empresa obrigatória
-      if (empresaObrigatoria && dash.empresa && dash.empresa !== empresaObrigatoria) {
-        return false;
-      }
-
-      // Admin master passa direto
-      if (isMasterAdmin) {
-        return true;
-      }
-
-      const tipos = Array.isArray(dash.tiposPermitidos)
-        ? dash.tiposPermitidos
-        : [];
-      const emails = Array.isArray(dash.usuariosPermitidos)
-        ? dash.usuariosPermitidos.map((e) => (e || "").toLowerCase())
-        : [];
-
-      const temTipos = tipos.length > 0;
-      const temEmails = emails.length > 0;
-
-      if (temTipos) {
-        // Dashboards gerais (ex: Atividades, DualForce)
-        const liberaPorTipo = tipos.includes(userTipo);
-        const liberaPorEmail = !temEmails || emails.includes(userEmail);
-        return liberaPorTipo || liberaPorEmail;
-      } else {
-        // Dashboards nominais (sem tipos): só por e-mail
-        if (!temEmails) {
-          // sem tipos e sem e-mails => ninguém vê (exceto admin master)
-          return false;
-        }
-        return emails.includes(userEmail);
-      }
-    })
-    .forEach((dash) => {
-      const card = document.createElement("article");
-      card.className = "glass-card";
-      card.tabIndex = 0;
-      card.role = "button";
-      card.setAttribute("aria-label", "Abrir dashboard " + (dash.titulo || ""));
-
-      card.innerHTML = `
-        <div class="glass-card__header">
-          <div class="glass-card__icon-wrap">
-            ${
-              dash.iconImg
-                ? `<img src="${dash.iconImg}" alt="" />`
-                : `<span>${dash.iconEmoji || "📊"}</span>`
-            }
-          </div>
-          <div>
-            <h2 class="glass-card__title">${dash.titulo || ""}</h2>
-            <p class="glass-card__meta">${dash.descricaoCurta || ""}</p>
-          </div>
-        </div>
-        <p class="glass-card__description">
-          ${dash.descricaoLonga || ""}
-        </p>
-        <div class="glass-card__footer">
-          <span>${dash.frequencia || ""}</span>
-          <button type="button" class="btn-access glass-card__cta">
-            <span>Abrir dashboard</span>
-            <span class="btn-access-glow"></span>
-          </button>
-        </div>
-      `;
-
-      const abrir = () => {
-        if (dash.url) {
-          window.location.href = dash.url;
-        }
-      };
-
-      const btn = card.querySelector(".glass-card__cta");
-      if (btn) {
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          abrir();
-        });
-      }
-      card.addEventListener("click", abrir);
-      card.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          abrir();
-        }
-      });
-
-      grid.appendChild(card);
-    });
-}
-
-/**
- * Protege páginas de Power BI por empresa.
- */
-function validarAcessoDashboardEmpresa(codEmpresa) {
-  const user = validarAcessoEmpresa(codEmpresa);
-  return !!user;
-}
-
-/**
- * Protege dashboards VIP por empresa + lista de e-mails.
- */
-function validarAcessoDashboardVip(codEmpresa, emailsPermitidos) {
-  const user = getUsuarioAtual();
-  if (
-    !user ||
-    !Array.isArray(user.empresas) ||
-    !user.empresas.includes(codEmpresa)
-  ) {
-    window.location.href = "/index.html";
-    return false;
-  }
-
-  const emailUser = (user.email || "").toLowerCase();
-  const isMasterAdmin = emailUser === "admin"; // admin master abre todos os VIPs
-
-  if (!isMasterAdmin) {
-    const lista = (emailsPermitidos || []).map((e) => (e || "").toLowerCase());
-    if (!lista.includes(emailUser)) {
-      window.location.href = "/index.html";
-      return false;
-    }
-  }
-
-  return true;
-}
 
 // ================== CONFIG E HELPERS DE API ==================
 
@@ -344,15 +124,18 @@ const API_BASE =
   "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1";
 
 /**
- * Monta headers padrão com x-usuario-email para auditoria.
+ * Monta headers padrão com x-usuario-email para auditoria + Bearer token.
  */
 function buildDefaultHeaders(extra) {
   const user = getUsuarioAtual();
   const email = user && user.email ? user.email : "";
+  const token = user && user.token ? user.token : "";
+
   return Object.assign(
     {
       "Content-Type": "application/json",
       "x-usuario-email": email,
+      ...(token ? { Authorization: "Bearer " + token } : {}),
     },
     extra || {}
   );

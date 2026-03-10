@@ -20,17 +20,37 @@ function hideLoader() {
   if (el) el.style.display = "none";
 }
 
-// ================== HELPERS API ==================
+// ================== AUTH + HELPERS API ==================
+function getAuthHeadersCalendario() {
+  try {
+    const token =
+      (window.sessionStorage && sessionStorage.getItem("authToken")) || null;
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (token) {
+      headers["Authorization"] = "Bearer " + token;
+    }
+    const user =
+      typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+    if (user && user.email) {
+      headers["x-usuario-email"] = user.email;
+    }
+    return headers;
+  } catch (e) {
+    console.warn("[AUTH] erro ao montar headers:", e);
+    return {
+      "Content-Type": "application/json"
+    };
+  }
+}
+
 async function apiGet(path) {
-  const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
   const url = `${window.API_BASE}${path}`;
   console.log("[API GET] URL:", url);
   const resp = await fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "x-usuario-email": user ? user.email : "",
-    },
+    headers: getAuthHeadersCalendario()
   });
   console.log("[API GET] status:", resp.status);
   if (!resp.ok) {
@@ -42,16 +62,12 @@ async function apiGet(path) {
 }
 
 async function apiPost(path, body) {
-  const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
   const url = `${window.API_BASE}${path}`;
   console.log("[API POST] URL:", url, "body:", body);
   const resp = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-usuario-email": user ? user.email : "",
-    },
-    body: JSON.stringify(body),
+    headers: getAuthHeadersCalendario(),
+    body: JSON.stringify(body)
   });
   console.log("[API POST] status:", resp.status);
   if (!resp.ok) {
@@ -63,16 +79,12 @@ async function apiPost(path, body) {
 }
 
 async function apiPut(path, body) {
-  const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
   const url = `${window.API_BASE}${path}`;
   console.log("[API PUT] URL:", url, "body:", body);
   const resp = await fetch(url, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      "x-usuario-email": user ? user.email : "",
-    },
-    body: JSON.stringify(body),
+    headers: getAuthHeadersCalendario(),
+    body: JSON.stringify(body)
   });
   console.log("[API PUT] status:", resp.status);
   if (!resp.ok) {
@@ -84,16 +96,12 @@ async function apiPut(path, body) {
 }
 
 async function apiDelete(path, body) {
-  const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
   const url = `${window.API_BASE}${path}`;
   console.log("[API DELETE] URL:", url, "body:", body);
   const resp = await fetch(url, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      "x-usuario-email": user ? user.email : "",
-    },
-    body: body ? JSON.stringify(body) : null,
+    headers: getAuthHeadersCalendario(),
+    body: body ? JSON.stringify(body) : null
   });
   console.log("[API DELETE] status:", resp.status);
   if (!resp.ok) {
@@ -111,7 +119,7 @@ function storageKey(base) {
 function getStorageKeys() {
   return {
     STORAGE_KEY: storageKey("calendario_pagamentos"),
-    LOG_KEY: storageKey("calendario_pagamentos_logs"),
+    LOG_KEY: storageKey("calendario_pagamentos_logs")
   };
 }
 
@@ -174,7 +182,6 @@ async function initPagina() {
   EMPRESA_ATUAL = emp;
   console.log("[INIT] EMPRESA_ATUAL =", EMPRESA_ATUAL);
 
-  // Ajusta cabeçalho conforme empresa
   const logo = document.getElementById("logoEmpresa");
   const logoMobile = document.getElementById("logoEmpresaMobile");
   const headerTitle = document.getElementById("headerTitle");
@@ -202,14 +209,12 @@ async function initPagina() {
     if (mobileSub) mobileSub.textContent = "Empresa: Lithoplant";
   }
 
-  // zera filtros em memória
   filtroBuscaTexto = "";
   filtroStatus = "todos";
   filtroDataInicio = "";
   filtroDataFim = "";
   _ultimoValorBusca = "";
 
-  // trata campo de busca (bloqueia autofill)
   const inpBusca = document.getElementById("buscaTexto");
   if (inpBusca) {
     inpBusca.value = "";
@@ -222,7 +227,6 @@ async function initPagina() {
     }, 800);
   }
 
-  // reseta selects de filtro
   const selStatus = document.getElementById("filtroStatus");
   const dtIni = document.getElementById("filtroDataInicio");
   const dtFim = document.getElementById("filtroDataFim");
@@ -230,13 +234,16 @@ async function initPagina() {
   if (dtIni) dtIni.value = "";
   if (dtFim) dtFim.value = "";
 
-  // header do usuário
-  preencherHeaderUsuario(user, "saudacao", "userName");
+  const userNameEl = document.getElementById("userName");
+  if (userNameEl && (user.nome || user.email)) {
+    userNameEl.textContent = user.nome || user.email;
+  }
 
-  // partículas de fundo
-  gerarParticulasSelector(".particles-container", 18);
+  // partículas de fundo (só se existir função global)
+  if (typeof gerarParticulasSelector === "function") {
+    gerarParticulasSelector(".particles-container", 18);
+  }
 
-  // carrega calendário
   await initCalendario();
   console.log("========== initPagina FIM ==========");
 }
@@ -244,7 +251,8 @@ async function initPagina() {
 // Troca de empresa: alterna explícito entre linhagro / lithoplant
 function trocarEmpresa() {
   console.log("====== trocarEmpresa() CHAMADA ======");
-  const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+  const user =
+    typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
   console.log("[TROCAR_EMPRESA] user atual:", user);
   if (!user || !Array.isArray(user.empresas) || user.empresas.length === 0) {
     alert("Nenhuma empresa disponível para este usuário.");
@@ -296,7 +304,7 @@ async function initCalendario() {
       const dados = await apiGet(urlPath);
       console.log("[initCalendario] resposta /despesas =", dados);
 
-      despesasManuais = (dados.despesas || []).map((d) => {
+      despesasManuais = (dados.despesas || []).map(d => {
         const dtISO = (d.data_vencimento || "").slice(0, 10);
         return {
           id: d.id,
@@ -313,7 +321,7 @@ async function initCalendario() {
           excluidoPor: null,
           dataExclusao: null,
           origem: "manual",
-          logDetalhado: null,
+          logDetalhado: null
         };
       });
     } catch (e) {
@@ -327,19 +335,21 @@ async function initCalendario() {
       despesasManuais = window._despesas || [];
     }
 
-    // FINANCEIRO SANKHYA
-    try {
-      console.log("[initCalendario] chamando /despesas-financeiro");
-      const dadosFin = await apiGet(
-        `/despesas-financeiro?empresa=${EMPRESA_ATUAL}`
-      );
-      console.log("[initCalendario] resposta /despesas-financeiro =", dadosFin);
+// FINANCEIRO SANKHYA
+try {
+  console.log("[initCalendario] chamando /despesas-financeiro");
+  const dadosFin = await apiGet(
+    `/despesas-financeiro?empresa=${EMPRESA_ATUAL}`
+  );
+  console.log("[initCalendario] resposta /despesas-financeiro =", dadosFin);
 
-      const todasFin = Array.isArray(dadosFin.despesas_financeiro)
-        ? dadosFin.despesas_financeiro
-        : [];
+  // a API está retornando { despesas: [...] }
+  const todasFin = Array.isArray(dadosFin.despesas)
+    ? dadosFin.despesas
+    : [];
 
-      const filtradas = todasFin.filter((d) => {
+
+      const filtradas = todasFin.filter(d => {
         const dtVenc = d.DTVENC ? d.DTVENC.slice(0, 10) : null;
         if (!dtVenc) return false;
 
@@ -381,7 +391,7 @@ async function initCalendario() {
         filtradas.length
       );
 
-      despesasFinanceiro = filtradas.map((d) => {
+      despesasFinanceiro = filtradas.map(d => {
         const dtVenc = d.DTVENC ? d.DTVENC.slice(0, 10) : null;
         const dtBaixa = d.DHBAIXA ? d.DHBAIXA.slice(0, 10) : null;
         const status = dtBaixa ? "pago" : "pendente";
@@ -410,8 +420,8 @@ async function initCalendario() {
             criadoEm: hojeISO2,
             baixadoEm: dtBaixa || null,
             origem: "Sankhya",
-            financeiro: { ...d },
-          },
+            financeiro: { ...d }
+          }
         };
       });
     } catch (e) {
@@ -446,34 +456,14 @@ function salvarDespesas() {
 
 // ================== CONTATOS ==================
 async function carregarContatos() {
-  const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
   const empresa = EMPRESA_ATUAL;
 
   try {
-    const url = `${window.API_BASE}/contatos?empresa=${encodeURIComponent(
-      empresa
-    )}`;
-    console.log("[carregarContatos] GET", url);
-    const resp = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "x-usuario-email": user ? user.email : "",
-      },
-    });
-    console.log("[carregarContatos] status:", resp.status);
-    if (!resp.ok) {
-      console.error(
-        "Erro ao buscar contatos da API:",
-        resp.status,
-        await resp.text()
-      );
-      window._contatos = [];
-    } else {
-      const data = await resp.json();
-      console.log("[carregarContatos] json:", data);
-      window._contatos = Array.isArray(data.contatos) ? data.contatos : [];
-    }
+    const path = `/contatos?empresa=${encodeURIComponent(empresa)}`;
+    console.log("[carregarContatos] GET", window.API_BASE + path);
+    const data = await apiGet(path);
+    console.log("[carregarContatos] json:", data);
+    window._contatos = Array.isArray(data.contatos) ? data.contatos : [];
   } catch (e) {
     console.error("Falha ao chamar /contatos:", e);
     window._contatos = [];
@@ -497,7 +487,6 @@ async function abrirGerenciadorContatos() {
   document.getElementById("contatoIndexEdicao").value = "";
   document.getElementById("contatoNome").value = "";
   document.getElementById("contatoTelefone").value = "";
-
   modal.style.display = "flex";
 }
 
@@ -586,7 +575,7 @@ async function excluirContato(index) {
   showLoader();
   try {
     await apiDelete(`/contatos/${c.id}`, {
-      usuarioEmail: user ? user.email : null,
+      usuarioEmail: user ? user.email : null
     });
 
     await carregarContatos();
@@ -614,7 +603,7 @@ async function salvarContato(event) {
     empresa,
     nome,
     telefone,
-    usuarioEmail: user ? user.email : null,
+    usuarioEmail: user ? user.email : null
   };
 
   showLoader();
@@ -629,7 +618,7 @@ async function salvarContato(event) {
       await apiPut(`/contatos/${contatoAtual.id}`, {
         nome,
         telefone,
-        usuarioEmail: user ? user.email : null,
+        usuarioEmail: user ? user.email : null
       });
     }
 
@@ -680,13 +669,13 @@ function adicionarContatoSelecionado() {
   if (!contato) return;
 
   const jaExiste = window._contatosSelecionadosTemp.some(
-    (c) => c.telefone === contato.telefone
+    c => c.telefone === contato.telefone
   );
   if (!jaExiste) {
     window._contatosSelecionadosTemp.push({
       nome: contato.nome,
       telefone: contato.telefone,
-      tipo: "responsavel",
+      tipo: "responsavel"
     });
     renderizarChipsContatosSelecionados();
   }
@@ -696,20 +685,21 @@ function adicionarContatoSelecionado() {
 
 function adicionarContatoRapido() {
   const extraNome = document.getElementById("extraNome").value.trim();
-  const extraTelefone = document.getElementById("extraTelefone").value.trim();
+  const extraTelefone =
+    document.getElementById("extraTelefone").value.trim();
   if (!extraTelefone) {
     alert("Informe o telefone do contato rápido.");
     return;
   }
 
   const jaExiste = window._contatosSelecionadosTemp.some(
-    (c) => c.telefone === extraTelefone
+    c => c.telefone === extraTelefone
   );
   if (!jaExiste) {
     window._contatosSelecionadosTemp.push({
       nome: extraNome || "Contato",
       telefone: extraTelefone,
-      tipo: "responsavel",
+      tipo: "responsavel"
     });
     renderizarChipsContatosSelecionados();
   }
@@ -790,7 +780,7 @@ function removerContatoChip(index) {
 function normalizarModeloDespesas() {
   if (!Array.isArray(window._despesas)) return;
 
-  window._despesas = window._despesas.map((d) => {
+  window._despesas = window._despesas.map(d => {
     const novo = { ...d };
 
     if (!Array.isArray(novo.responsaveis)) {
@@ -802,14 +792,14 @@ function normalizarModeloDespesas() {
         arr.push({
           nome: novo.responsavelNome || "Responsável",
           telefone: novo.telefone,
-          tipo: "responsavel",
+          tipo: "responsavel"
         });
       }
       novo.responsaveis = arr;
     } else {
-      novo.responsaveis = novo.responsaveis.map((r) => ({
+      novo.responsaveis = novo.responsaveis.map(r => ({
         ...r,
-        tipo: r.tipo || "responsavel",
+        tipo: r.tipo || "responsavel"
       }));
     }
 
@@ -822,7 +812,7 @@ function normalizarModeloDespesas() {
     } else if (typeof novo.tiposAviso === "string") {
       novo.tiposAviso = novo.tiposAviso
         .split(",")
-        .map((x) => x.trim())
+        .map(x => x.trim())
         .filter(Boolean);
     }
 
@@ -838,7 +828,8 @@ function registrarLog(acao, despesa, detalhes) {
   const { LOG_KEY } = getStorageKeys();
   const raw = localStorage.getItem(LOG_KEY);
   const logs = raw ? JSON.parse(raw) : [];
-  const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+  const user =
+    typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
   const usuario = user && (user.nome || user.email || "Desconhecido");
 
   const entry = {
@@ -850,7 +841,7 @@ function registrarLog(acao, despesa, detalhes) {
     empresa: despesa.empresa || EMPRESA_ATUAL,
     usuario,
     dataAcao: new Date().toISOString(),
-    detalhes: detalhes || null,
+    detalhes: detalhes || null
   };
   console.log("[LOG] registrando:", entry);
 
@@ -868,8 +859,8 @@ function expandirRecorrencias() {
   const novas = [];
 
   existentes
-    .filter((d) => d.recorrente === "mensal" && !d.excluido)
-    .forEach((d) => {
+    .filter(d => d.recorrente === "mensal" && !d.excluido)
+    .forEach(d => {
       if (!d.vencimento) return;
       const [ano, mes, dia] = d.vencimento.split("-").map(Number);
       let base = new Date(ano, mes - 1, dia);
@@ -881,14 +872,14 @@ function expandirRecorrencias() {
         const dataStr = base.toISOString().slice(0, 10);
 
         const jaExiste = existentes.some(
-          (x) =>
+          x =>
             x.vencimento === dataStr &&
             x.descricao === d.descricao &&
             !x.excluido &&
             x.empresa === (d.empresa || EMPRESA_ATUAL)
         );
         const jaNoNovo = novas.some(
-          (x) => x.vencimento === dataStr && x.descricao === d.descricao
+          x => x.vencimento === dataStr && x.descricao === d.descricao
         );
 
         if (!jaExiste && !jaNoNovo) {
@@ -897,7 +888,7 @@ function expandirRecorrencias() {
             id: Date.now() + Math.random(),
             vencimento: dataStr,
             status: "pendente",
-            dataPagamento: null,
+            dataPagamento: null
           });
         }
 
@@ -938,7 +929,7 @@ function formatarMesAno(date) {
     "Setembro",
     "Outubro",
     "Novembro",
-    "Dezembro",
+    "Dezembro"
   ];
   return meses[date.getMonth()] + " de " + date.getFullYear();
 }
@@ -959,7 +950,7 @@ function aplicarFiltros() {
   }
   const hojeISO = dataISO(new Date());
 
-  window._despesasFiltradas = window._despesas.filter((d) => {
+  window._despesasFiltradas = window._despesas.filter(d => {
     if (d.empresa !== EMPRESA_ATUAL) return false;
     if (d.excluido) return false;
 
@@ -1178,7 +1169,7 @@ function renderizarCalendario() {
     eventosDiv.className = "day-events";
 
     let despesasDoDia = despesasEmpresa.filter(
-      (d) => d.vencimento === dataStr
+      d => d.vencimento === dataStr
     );
     despesasDoDia = ordenarDespesas(despesasDoDia, hojeISO);
 
@@ -1186,24 +1177,22 @@ function renderizarCalendario() {
     const qtd = despesasDoDia.length;
     const mostrar = despesasDoDia.slice(0, maxMostrar);
 
-    mostrar.forEach((despesa) => {
+    mostrar.forEach(despesa => {
       const pill = document.createElement("div");
       pill.className = "event-pill " + classeStatus(despesa, hojeISO);
       pill.textContent = despesa.descricao;
 
-      // Tooltip custom
-      pill.addEventListener("mouseenter", (e) => {
+      pill.addEventListener("mouseenter", e => {
         showCalTooltip(despesa, e.clientX, e.clientY);
       });
-      pill.addEventListener("mousemove", (e) => {
+      pill.addEventListener("mousemove", e => {
         showCalTooltip(despesa, e.clientX, e.clientY);
       });
       pill.addEventListener("mouseleave", () => {
         hideCalTooltip();
       });
 
-      // Clique abre o modal detalhado
-      pill.onclick = (e) => {
+      pill.onclick = e => {
         e.stopPropagation();
         abrirModalDia(dataStr, despesa.id);
       };
@@ -1216,7 +1205,7 @@ function renderizarCalendario() {
       const mais = document.createElement("div");
       mais.className = "event-pill status-pendente";
       mais.textContent = `+${restante} despesas`;
-      mais.onclick = (e) => {
+      mais.onclick = e => {
         e.stopPropagation();
         abrirModalDia(dataStr);
       };
@@ -1246,7 +1235,10 @@ function tooltipDespesa(d) {
 
   if (d.status === "pago" && d.dataPagamento) {
     linhas.push(
-      `Situação: Pago em ${d.dataPagamento.split("-").reverse().join("/")}`
+      `Situação: Pago em ${d.dataPagamento
+        .split("-")
+        .reverse()
+        .join("/")}`
     );
   } else {
     linhas.push(`Situação: ${d.status === "pago" ? "Pago" : "Pendente"}`);
@@ -1272,7 +1264,7 @@ function tooltipDespesa(d) {
       linhas.push(
         `Valor: R$ ${Number(f.VLRDESDOB).toLocaleString("pt-BR", {
           minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
+          maximumFractionDigits: 2
         })}`
       );
     }
@@ -1331,415 +1323,435 @@ function getTooltipHtml(d) {
   );
 
   if (d.status === "pago" && d.dataPagamento) {
-    const dtPag = d.dataPagamento.split("-").reverse().join("/");
     partes.push(
-      `<div class="cal-tooltip-status">Situação: Pago em ${dtPag}</div>`
+      `<div class="cal-tooltip-line">Situação: <strong>Pago em ${d.dataPagamento
+        .split("-")
+        .reverse()
+        .join("/")}</strong></div>`
     );
   } else {
-    const sit = d.status === "pago" ? "Pago" : "Pendente";
     partes.push(
-      `<div class="cal-tooltip-status">Situação: ${sit}</div>`
+      `<div class="cal-tooltip-line">Situação: <strong>${
+        d.status === "pago" ? "Pago" : "Pendente"
+      }</strong></div>`
     );
   }
 
   if (d.origem === "sankhya" && d.logDetalhado && d.logDetalhado.financeiro) {
     const f = d.logDetalhado.financeiro;
-    const linhas = [];
 
-    if (f.NUFIN) linhas.push(`Nº despesa: ${f.NUFIN}`);
-    if (f.NOME_NATUREZA) linhas.push(`Natureza: ${f.NOME_NATUREZA}`);
-    if (f.HISTORICO) linhas.push(`Descrição: ${f.HISTORICO}`);
+    if (f.NUFIN)
+      partes.push(
+        `<div class="cal-tooltip-line">Número da despesa (financeiro): <span>${String(
+          f.NUFIN
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</span></div>`
+      );
+    if (f.NOME_NATUREZA)
+      partes.push(
+        `<div class="cal-tooltip-line">Natureza: <span>${String(
+          f.NOME_NATUREZA
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</span></div>`
+      );
+    if (f.HISTORICO)
+      partes.push(
+        `<div class="cal-tooltip-line">Descrição da despesa: <span>${String(
+          f.HISTORICO
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</span></div>`
+      );
 
     if (f.NOMEPARC || f.CODPARC) {
       const base = f.NOMEPARC || "Parceiro";
-      linhas.push(
-        `Fornecedor/Cliente: ${base}${
-          f.CODPARC ? " (cód. " + f.CODPARC + ")" : ""
-        }`
+      const codparcStr = f.CODPARC ? ` (cód. ${f.CODPARC})` : "";
+      partes.push(
+        `<div class="cal-tooltip-line">Fornecedor / Cliente: <span>${String(
+          base
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}${codparcStr}</span></div>`
       );
     }
 
     if (f.VLRDESDOB != null) {
-      linhas.push(
-        `Valor: R$ ${Number(f.VLRDESDOB).toLocaleString("pt-BR", {
+      partes.push(
+        `<div class="cal-tooltip-line">Valor: <span>R$ ${Number(
+          f.VLRDESDOB
+        ).toLocaleString("pt-BR", {
           minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}`
+          maximumFractionDigits: 2
+        })}</span></div>`
       );
     }
 
-    if (f.CODNAT) linhas.push(`Natureza fin.: ${f.CODNAT}`);
-    if (f.CODCENCUS) linhas.push(`Centro de custo: ${f.CODCENCUS}`);
-    if (f.CODCTABCOINT) linhas.push(`Conta: ${f.CODCTABCOINT}`);
-    if (f.CODTIPTIT) linhas.push(`Tipo título: ${f.CODTIPTIT}`);
-    if (f.CODTIPOPER) linhas.push(`Tipo operação: ${f.CODTIPOPER}`);
+    if (f.CODNAT)
+      partes.push(
+        `<div class="cal-tooltip-line">Cód. natureza financeira: <span>${String(
+          f.CODNAT
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</span></div>`
+      );
+    if (f.CODCENCUS)
+      partes.push(
+        `<div class="cal-tooltip-line">Centro de custo: <span>${String(
+          f.CODCENCUS
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</span></div>`
+      );
+    if (f.CODCTABCOINT)
+      partes.push(
+        `<div class="cal-tooltip-line">Conta bancária/contábil: <span>${String(
+          f.CODCTABCOINT
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</span></div>`
+      );
+    if (f.CODTIPTIT)
+      partes.push(
+        `<div class="cal-tooltip-line">Tipo de título: <span>${String(
+          f.CODTIPTIT
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</span></div>`
+      );
+    if (f.CODTIPOPER)
+      partes.push(
+        `<div class="cal-tooltip-line">Tipo de operação: <span>${String(
+          f.CODTIPOPER
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</span></div>`
+      );
+    if (f.NUFTC)
+      partes.push(
+        `<div class="cal-tooltip-line">Número da fatura: <span>${String(
+          f.NUFTC
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</span></div>`
+      );
+    if (f.NURENEG)
+      partes.push(
+        `<div class="cal-tooltip-line">Número da renegociação: <span>${String(
+          f.NURENEG
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</span></div>`
+      );
+    if (f.NUMNOTA)
+      partes.push(
+        `<div class="cal-tooltip-line">Número da nota fiscal: <span>${String(
+          f.NUMNOTA
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</span></div>`
+      );
+    if (f.NUNOTA)
+      partes.push(
+        `<div class="cal-tooltip-line">Nota única (Sankhya): <span>${String(
+          f.NUNOTA
+        )
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</span></div>`
+      );
 
     if (f.DTENTSAI) {
-      linhas.push(`Entrada/Saída: ${formatarDataBR(f.DTENTSAI)}`);
-    }
-    if (f.DTVENC) {
-      linhas.push(`Vencimento (financeiro): ${formatarDataBR(f.DTVENC)}`);
-    }
-    if (f.DHBAIXA) {
-      const dt = f.DHBAIXA.substring(0, 10).split("-").reverse().join("/");
-      const hr = f.DHBAIXA.substring(11, 19);
-      linhas.push(`Baixa no financeiro: ${dt} ${hr}`);
-    } else {
-      linhas.push(
-        "Status de pagamento controlado pelo financeiro (Sankhya)"
+      partes.push(
+        `<div class="cal-tooltip-line">Data de entrada/saída: <span>${formatarDataBR(
+          f.DTENTSAI
+        )}</span></div>`
       );
     }
 
-    partes.push(
-      `<div class="cal-tooltip-body">${linhas
-        .map((x) =>
-          x.replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    if (f.DTVENC) {
+      partes.push(
+        `<div class="cal-tooltip-line">Vencimento no financeiro: <span>${formatarDataBR(
+          f.DTVENC
+        )}</span></div>`
+      );
+    }
+
+    if (f.DHBAIXA) {
+      partes.push(
+        `<div class="cal-tooltip-line">Baixa no financeiro: <span>${f.DHBAIXA.substring(
+          0,
+          10
         )
-        .join("<br>")}</div>`
-    );
+          .split("-")
+          .reverse()
+          .join("/")} ${f.DHBAIXA.substring(11, 19)}</span></div>`
+      );
+    }
+    if (f.DtCarga) {
+      partes.push(
+        `<div class="cal-tooltip-line">Data de carga no dashboard: <span>${f.DtCarga.substring(
+          0,
+          10
+        )
+          .split("-")
+          .reverse()
+          .join("/")} ${f.DtCarga.substring(11, 19)}</span></div>`
+      );
+    }
   }
 
   return partes.join("");
 }
 
-function showCalTooltip(despesa, clientX, clientY) {
-  const el = document.getElementById("calTooltip");
-  if (!el) return;
+function showCalTooltip(despesa, x, y) {
+  const tooltip = document.getElementById("calTooltip");
+  if (!tooltip) return;
 
-  el.innerHTML = getTooltipHtml(despesa);
-  el.style.display = "block";
+  tooltip.innerHTML = getTooltipHtml(despesa);
+  tooltip.style.display = "block";
 
-  const padding = 8;
-  const rect = el.getBoundingClientRect();
-  let left = clientX + 12;
-  let top = clientY + 12;
-
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  if (left + rect.width + padding > vw) {
-    left = clientX - rect.width - 12;
-  }
-  if (top + rect.height + padding > vh) {
-    top = clientY - rect.height - 12;
-  }
-
-  el.style.left = left + "px";
-  el.style.top = top + "px";
+  const offset = 16;
+  tooltip.style.left = x + offset + "px";
+  tooltip.style.top = y + offset + "px";
 }
 
 function hideCalTooltip() {
-  const el = document.getElementById("calTooltip");
-  if (!el) return;
-  el.style.display = "none";
+  const tooltip = document.getElementById("calTooltip");
+  if (!tooltip) return;
+  tooltip.style.display = "none";
 }
 
-// ================== MODAL DIA ==================
-function abrirModalDia(dataISOdia, idFocar) {
-  let despesasDoDia = (window._despesasFiltradas || []).filter(
-    (d) => d.vencimento === dataISOdia
-  );
-
-  const hojeISO = dataISO(new Date());
-  despesasDoDia = ordenarDespesas(despesasDoDia, hojeISO);
-
-  console.log(
-    "[abrirModalDia] data:",
-    dataISOdia,
-    "qtd:",
-    despesasDoDia.length,
-    "empresa:",
-    EMPRESA_ATUAL
-  );
-
+// ================== MODAL DIA / DETALHES ==================
+function abrirModalDia(dataISOstr, despesaId) {
   const modal = document.getElementById("modalDia");
-  const container = document.getElementById("listaDiaContainer");
-  const titulo = document.getElementById("tituloModalDia");
+  const listaContainer = document.getElementById("listaDiaContainer");
+  const tituloModal = document.getElementById("tituloModalDia");
+  if (!modal || !listaContainer || !tituloModal) return;
 
-  if (!modal || !container || !titulo) {
-    console.warn(
-      "[abrirModalDia] Elementos do modal do dia não encontrados. Verifique HTML."
-    );
-    return;
-  }
+  const [ano, mes, dia] = dataISOstr.split("-");
+  tituloModal.textContent = `Despesas de ${dia}/${mes}/${ano}`;
 
-  titulo.textContent =
-    "Despesas de " + dataISOdia.split("-").reverse().join("/");
+  const despesasDia = (window._despesasFiltradas || []).filter(
+    d => d.vencimento === dataISOstr
+  );
 
-  container.innerHTML = "";
-
-  if (despesasDoDia.length === 0) {
+  listaContainer.innerHTML = "";
+  if (!despesasDia.length) {
     const vazio = document.createElement("div");
     vazio.style.fontSize = "0.85rem";
     vazio.style.color = "#9ca3af";
-    vazio.textContent = "Nenhuma despesa cadastrada para este dia.";
-    container.appendChild(vazio);
+    vazio.textContent = "Nenhuma despesa neste dia.";
+    listaContainer.appendChild(vazio);
   } else {
-    despesasDoDia.forEach((d) => {
-      const item = document.createElement("div");
-      item.className = "item-dia";
-      item.dataset.idDespesa = d.id;
+    const hojeISO = dataISO(new Date());
+    const ordenadas = ordenarDespesas(despesasDia, hojeISO);
 
-      const header = document.createElement("div");
-      header.className = "item-dia-header";
-
-      const desc = document.createElement("div");
-      desc.className = "item-dia-desc";
-      desc.textContent = d.descricao;
-
-      const badge = document.createElement("span");
-      badge.className = "event-pill " + classeStatus(d, hojeISO);
-      badge.textContent =
-        d.status === "pago"
-          ? "Pago"
-          : d.vencimento < hojeISO
-          ? "Vencido"
-          : d.vencimento === hojeISO
-          ? "Hoje"
-          : "Pendente";
-
-      header.appendChild(desc);
-      header.appendChild(badge);
-
-      const linhaResp = document.createElement("div");
-      linhaResp.className = "item-dia-email";
-
-      let textoResp = "";
-
-      if (
-        d.origem === "sankhya" &&
-        d.logDetalhado &&
-        d.logDetalhado.financeiro
-      ) {
-        const f = d.logDetalhado.financeiro;
-        const partes = [];
-
-        if (f.NUFIN) partes.push(`Nº da despesa: ${f.NUFIN}`);
-        if (f.NOME_NATUREZA) partes.push(`Natureza: ${f.NOME_NATUREZA}`);
-        if (f.HISTORICO) partes.push(`Descrição: ${f.HISTORICO}`);
-
-        if (f.NOMEPARC || f.CODPARC) {
-          const base = f.NOMEPARC || "Parceiro";
-          partes.push(
-            `Fornecedor / Cliente: ${base}${
-              f.CODPARC ? " (cód. " + f.CODPARC + ")" : ""
-            }`
-          );
-        }
-
-        if (f.VLRDESDOB != null) {
-          partes.push(
-            `Valor: R$ ${Number(f.VLRDESDOB).toLocaleString("pt-BR", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}`
-          );
-        }
-        if (f.CODNAT) partes.push(`Cód. natureza financeira: ${f.CODNAT}`);
-        if (f.CODCENCUS) partes.push(`Centro de custo: ${f.CODCENCUS}`);
-        if (f.CODCTABCOINT)
-          partes.push(`Conta bancária/contábil: ${f.CODCTABCOINT}`);
-        if (f.CODTIPTIT) partes.push(`Tipo de título: ${f.CODTIPTIT}`);
-        if (f.CODTIPOPER) partes.push(`Tipo de operação: ${f.CODTIPOPER}`);
-        if (f.NUFTC) partes.push(`Número da fatura: ${f.NUFTC}`);
-        if (f.NURENEG) partes.push(`Renegociação: ${f.NURENEG}`);
-        if (f.NUMNOTA) partes.push(`Nota fiscal: ${f.NUMNOTA}`);
-        if (f.NUNOTA) partes.push(`Nota única (Sankhya): ${f.NUNOTA}`);
-
-        textoResp = partes.join(" • ");
-      } else {
-        if (Array.isArray(d.responsaveis) && d.responsaveis.length) {
-          textoResp =
-            "Contatos: " +
-            d.responsaveis
-              .map((r) => {
-                const tipoLabel =
-                  r.tipo === "informativo" ? "informado" : "responsável";
-                return `${r.nome} (${r.telefone} – ${tipoLabel})`;
-              })
-              .join(" • ");
-        }
-
-        if (d.recorrente === "mensal") {
-          if (textoResp) textoResp += " • ";
-          textoResp += "Recorrência: mensal";
-        }
-      }
-
-      linhaResp.textContent = textoResp;
-
-      const log = document.createElement("div");
-      log.className = "item-dia-log";
-
-      const partesLog = [];
-      partesLog.push(
-        "Situação: " + (d.status === "pago" ? "Pago" : "Pendente")
-      );
-
-      if (d.dataPagamento) {
-        partesLog.push(
-          "Pago em " + d.dataPagamento.split("-").reverse().join("/")
-        );
-      }
-
-      if (
-        d.origem === "sankhya" &&
-        d.logDetalhado &&
-        d.logDetalhado.financeiro
-      ) {
-        const f = d.logDetalhado.financeiro;
-
-        if (f.DTENTSAI) {
-          partesLog.push("Entrada/Saída: " + formatarDataBR(f.DTENTSAI));
-        }
-        if (f.DTVENC) {
-          partesLog.push(
-            "Vencimento (financeiro): " + formatarDataBR(f.DTVENC)
-          );
-        }
-        if (f.DHBAIXA) {
-          partesLog.push(
-            "Baixa no financeiro: " +
-              f.DHBAIXA.substring(0, 10).split("-").reverse().join("/") +
-              " " +
-              f.DHBAIXA.substring(11, 19)
-          );
-        } else {
-          partesLog.push(
-            "Status de pagamento controlado pelo financeiro (Sankhya)"
-          );
-        }
-      }
-
-      log.textContent = partesLog.join(" • ");
-
-      const acoes = document.createElement("div");
-      acoes.className = "item-dia-acoes";
-
-      if (d.origem === "manual") {
-        const btnPago = document.createElement("button");
-        btnPago.className = "btn-mini btn-mini-pago";
-        btnPago.textContent = "Marcar como pago";
-        btnPago.onclick = () => alterarStatus(d.id, "pago");
-
-        const btnPendente = document.createElement("button");
-        btnPendente.className = "btn-mini btn-mini-pendente";
-        btnPendente.textContent = "Voltar para pendente";
-        btnPendente.onclick = () => alterarStatus(d.id, "pendente");
-
-        const btnEditar = document.createElement("button");
-        btnEditar.className = "btn-mini";
-        btnEditar.style.background = "#0ea5e9";
-        btnEditar.style.color = "#022c22";
-        btnEditar.textContent = "Editar";
-        btnEditar.onclick = () => editarDespesa(d.id);
-
-        const btnExcluir = document.createElement("button");
-        btnExcluir.className = "btn-mini";
-        btnExcluir.style.background = "#b91c1c";
-        btnExcluir.style.color = "#fee2e2";
-        btnExcluir.textContent = "Excluir";
-        btnExcluir.onclick = () => excluirDespesa(d.id);
-
-        acoes.appendChild(btnPago);
-        acoes.appendChild(btnPendente);
-        acoes.appendChild(btnEditar);
-        acoes.appendChild(btnExcluir);
-      } else {
-        const info = document.createElement("div");
-        info.style.fontSize = "0.75rem";
-        info.style.color = "#9ca3af";
-        info.textContent =
-          "Status de pagamento controlado apenas pelo financeiro (Sankhya).";
-        acoes.appendChild(info);
-      }
-
-      item.appendChild(header);
-      item.appendChild(linhaResp);
-      if (log.textContent) item.appendChild(log);
-      item.appendChild(acoes);
-
-      container.appendChild(item);
+    ordenadas.forEach(d => {
+      const card = criarCardDespesa(d);
+      listaContainer.appendChild(card);
     });
-
-    if (idFocar != null) {
-      const alvo = container.querySelector(
-        `[data-id-despesa="${idFocar}"]`
-      );
-      if (alvo) {
-        alvo.style.outline = "1px solid #38bdf8";
-        alvo.style.boxShadow = "0 0 0 1px rgba(56,189,248,0.6)";
-        alvo.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }
   }
 
   modal.style.display = "flex";
 }
 
 function fecharModalDia() {
-  const m = document.getElementById("modalDia");
-  if (m) m.style.display = "none";
+  const modal = document.getElementById("modalDia");
+  if (!modal) return;
+  modal.style.display = "none";
+}
+function criarCardDespesa(d) {
+  const hojeISO = dataISO(new Date());
+  const card = document.createElement("div");
+  card.className = "item-dia";
+
+  const header = document.createElement("div");
+  header.className = "item-dia-header";
+
+  const desc = document.createElement("div");
+  desc.className = "item-dia-desc";
+  desc.textContent = d.descricao || "Despesa";
+
+  const info = document.createElement("div");
+  info.className = "item-dia-info";
+  info.textContent = `Vencimento: ${formatarDataBR(d.vencimento)}`;
+
+  header.appendChild(desc);
+  header.appendChild(info);
+
+  const statusDiv = document.createElement("div");
+  statusDiv.className = "item-dia-status " + classeStatus(d, hojeISO);
+  statusDiv.textContent =
+    d.status === "pago"
+      ? "Pago"
+      : d.vencimento < hojeISO
+      ? "Vencida"
+      : d.vencimento === hojeISO
+      ? "Hoje"
+      : "Pendente";
+
+  // BLOCO DE DETALHES DO FINANCEIRO
+  const detalhes = document.createElement("div");
+  detalhes.className = "item-dia-log"; // mesma classe já usada pro log, mantém visual
+  detalhes.style.marginTop = "4px";
+
+  if (d.origem === "sankhya" && d.logDetalhado && d.logDetalhado.financeiro) {
+    const f = d.logDetalhado.financeiro;
+
+    const linhas = [];
+
+    // Identificação básica
+    if (f.NUFIN) linhas.push(`Número da despesa: ${f.NUFIN}`);
+    if (f.Id) linhas.push(`ID interno: ${f.Id}`);
+    if (f.NOME_NATUREZA)
+      linhas.push(`Natureza: ${f.NOME_NATUREZA}`);
+    if (f.HISTORICO)
+      linhas.push(`Histórico: ${f.HISTORICO}`);
+
+    // Parceiro
+    if (f.NOMEPARC || f.CODPARC) {
+      const base = f.NOMEPARC || "Parceiro";
+      linhas.push(
+        `Fornecedor / Cliente: ${base}${
+          f.CODPARC ? ` (cód. ${f.CODPARC})` : ""
+        }`
+      );
+    }
+
+    // Valores e classificação
+    if (f.VLRDESDOB != null) {
+      linhas.push(
+        `Valor da parcela: R$ ${Number(f.VLRDESDOB).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })}`
+      );
+    }
+    if (f.CODNAT)
+      linhas.push(`Cód. natureza financeira: ${f.CODNAT}`);
+    if (f.CODCENCUS)
+      linhas.push(`Centro de custo: ${f.CODCENCUS}`);
+    if (f.CODCTABCOINT)
+      linhas.push(`Conta bancária/contábil: ${f.CODCTABCOINT}`);
+    if (f.CODTIPTIT)
+      linhas.push(`Tipo de título: ${f.CODTIPTIT}`);
+    if (f.CODTIPOPER)
+      linhas.push(`Tipo de operação: ${f.CODTIPOPER}`);
+    if (f.RECDESP === -1)
+      linhas.push("Tipo: Despesa");
+    else if (f.RECDESP === 1)
+      linhas.push("Tipo: Receita");
+
+    // Documentos
+    if (f.NUMNOTA) linhas.push(`Número da nota fiscal: ${f.NUMNOTA}`);
+    if (f.NUNOTA) linhas.push(`Nota única (Sankhya): ${f.NUNOTA}`);
+    if (f.NUFTC) linhas.push(`Número da fatura: ${f.NUFTC}`);
+    if (f.NURENEG) linhas.push(`Número da renegociação: ${f.NURENEG}`);
+
+    // Datas
+    if (f.DTENTSAI) {
+      linhas.push(
+        `Data de entrada/saída: ${formatarDataBR(f.DTENTSAI)}`
+      );
+    }
+    if (f.DTVENC) {
+      linhas.push(
+        `Vencimento no financeiro: ${formatarDataBR(f.DTVENC)}`
+      );
+    }
+    if (f.DHBAIXA) {
+      const dataBaixa = f.DHBAIXA.substring(0, 10);
+      const horaBaixa = f.DHBAIXA.substring(11, 19);
+      linhas.push(
+        `Baixa no financeiro: ${formatarDataBR(
+          dataBaixa
+        )} ${horaBaixa}`
+      );
+    }
+    if (f.PROVISAO)
+      linhas.push(`Provisão: ${f.PROVISAO === "S" ? "Sim" : "Não"}`);
+    if (f.CODEMP != null)
+      linhas.push(`Empresa (Sankhya): ${f.CODEMP}`);
+
+    detalhes.textContent = linhas.join(" | ");
+  } else if (Array.isArray(d.responsaveis) && d.responsaveis.length) {
+    const contatos = d.responsaveis
+      .map(r => `${r.nome || "Contato"} (${r.telefone || "-"})`)
+      .join(" • ");
+    detalhes.textContent = `Contatos: ${contatos}`;
+  } else {
+    detalhes.textContent = "";
+  }
+
+  const acoes = document.createElement("div");
+  acoes.className = "item-dia-acoes";
+
+  const btnEditar = document.createElement("button");
+  btnEditar.className = "btn-mini btn-mini-pago";
+  btnEditar.textContent = "Editar";
+  btnEditar.onclick = () => abrirModalInclusao(d);
+
+  const btnExcluir = document.createElement("button");
+  btnExcluir.className = "btn-mini";
+  btnExcluir.style.background = "#b91c1c";
+  btnExcluir.style.color = "#fee2e2";
+  btnExcluir.textContent = "Excluir";
+  btnExcluir.onclick = () => abrirModalExclusao(d);
+
+  acoes.appendChild(btnEditar);
+  acoes.appendChild(btnExcluir);
+
+  card.appendChild(header);
+  card.appendChild(statusDiv);
+  if (detalhes.textContent) card.appendChild(detalhes);
+  card.appendChild(acoes);
+
+  return card;
 }
 
 // ================== MODAL INCLUSÃO / EDIÇÃO ==================
-function abrirModalInclusao(dataPre) {
+function abrirModalInclusao(despesa) {
   const modal = document.getElementById("modalInclusao");
   if (!modal) return;
 
-  modal.style.display = "flex";
+  document.getElementById("descricao").value = despesa?.descricao || "";
+  document.getElementById("dataVenc").value = despesa?.vencimento || "";
+  document.getElementById("empresaDespesa").value =
+    despesa?.empresa || EMPRESA_ATUAL || "linhagro";
+  document.getElementById("recorrente").value =
+    despesa?.recorrente === "mensal" ? "mensal" : "nao";
 
-  const form = modal.querySelector("form");
-  delete form.dataset.editId;
-
-  document.getElementById("descricao").value = "";
-
-  let valorData = dataPre;
-  if (!valorData) {
-    const hoje = new Date();
-    valorData = hoje.toISOString().slice(0, 10);
-  }
-  document.getElementById("dataVenc").value = valorData;
-
-  const selEmp = document.getElementById("empresaDespesa");
-  if (selEmp && EMPRESA_ATUAL) {
-    selEmp.value = EMPRESA_ATUAL;
-  }
-
-  document.getElementById("extraNome").value = "";
-  document.getElementById("extraTelefone").value = "";
-
-  document.getElementById("aviso7").checked = false;
-  document.getElementById("aviso5").checked = false;
-  document.getElementById("aviso3").checked = true;
-  document.getElementById("aviso1").checked = false;
-  document.getElementById("aviso0").checked = false;
-
-  document.getElementById("recorrente").value = "nao";
-
-  window._contatosSelecionadosTemp = [];
-  preencherSelectContatos();
+  window._contatosSelecionadosTemp = Array.isArray(despesa?.responsaveis)
+    ? despesa.responsaveis.map(c => ({ ...c }))
+    : [];
   renderizarChipsContatosSelecionados();
 
-  document.getElementById("descricao").focus();
+  modal.dataset.idEdicao = despesa ? despesa.id : "";
+  modal.style.display = "flex";
 }
 
 function fecharModalInclusao() {
   const modal = document.getElementById("modalInclusao");
   if (!modal) return;
   modal.style.display = "none";
+  modal.dataset.idEdicao = "";
+  window._contatosSelecionadosTemp = [];
+  renderizarChipsContatosSelecionados();
 }
 
-function salvarDespesa(event) {
+async function salvarDespesa(event) {
   event.preventDefault();
 
   const descricao = document.getElementById("descricao").value.trim();
   const dataVenc = document.getElementById("dataVenc").value;
   const empresaDespesa = document.getElementById("empresaDespesa").value;
   const recorrente = document.getElementById("recorrente").value;
+  const modal = document.getElementById("modalInclusao");
+  const idEdicao = modal ? modal.dataset.idEdicao : "";
 
-  if (!descricao || !dataVenc) {
-    alert("Informe descrição e data de vencimento.");
+  if (!descricao || !dataVenc || !empresaDespesa) {
+    alert("Preencha descrição, vencimento e empresa.");
     return;
   }
 
@@ -1751,92 +1763,46 @@ function salvarDespesa(event) {
   if (document.getElementById("aviso0").checked) tiposAviso.push("0");
   if (!tiposAviso.length) tiposAviso.push("3");
 
-  const extraNome = document.getElementById("extraNome").value.trim();
-  const extraTelefone =
-    document.getElementById("extraTelefone").value.trim();
+  const responsaveis = (window._contatosSelecionadosTemp || []).map(c => ({
+    nome: c.nome,
+    telefone: c.telefone,
+    tipo: c.tipo || "responsavel"
+  }));
 
-  const responsaveis = [...(window._contatosSelecionadosTemp || [])];
-
-  if (extraTelefone) {
-    const jaExiste = responsaveis.some(
-      (r) => r.telefone === extraTelefone
-    );
-    if (!jaExiste) {
-      responsaveis.push({
-        nome: extraNome || "Contato",
-        telefone: extraTelefone,
-        tipo: "responsavel",
-      });
-    }
-  }
-
-  const modal = document.getElementById("modalInclusao");
-  const form = modal.querySelector("form");
-  const editId = form.dataset.editId;
-
-  if (editId) {
-    const idx = window._despesas.findIndex(
-      (d) => d.id === Number(editId)
-    );
-    if (idx >= 0) {
-      const antigo = window._despesas[idx];
-      const atualizado = {
-        ...antigo,
-        descricao,
-        vencimento: dataVenc,
-        recorrente,
-        tiposAviso,
-        responsaveis,
-        empresa: empresaDespesa,
-      };
-      window._despesas[idx] = atualizado;
-      salvarDespesas();
-      registrarLog("editar", atualizado, {
-        antes: antigo,
-        depois: atualizado,
-      });
-    }
-  } else {
-    const nova = {
-      id: Date.now(),
-      empresa: empresaDespesa,
-      descricao,
-      vencimento: dataVenc,
-      status: "pendente",
-      recorrente,
-      responsaveis,
-      tiposAviso,
-      dataPagamento: null,
-      excluido: false,
-      motivoExclusao: null,
-      excluidoPor: null,
-      dataExclusao: null,
-      origem: "manual",
-      logDetalhado: null,
-    };
-    window._despesas.push(nova);
-    salvarDespesas();
-    registrarLog("criar", nova, null);
-  }
+  const payload = {
+    empresa: empresaDespesa,
+    descricao,
+    data_vencimento: dataVenc,
+    recorrencia_tipo: recorrente === "mensal" ? "mensal" : "nao",
+    contato_principal: null,
+    contatos: responsaveis,
+    tipos_aviso: tiposAviso
+  };
 
   showLoader();
   try {
-    aplicarFiltros();
-    renderizarCalendario();
+    if (!idEdicao) {
+      const resp = await apiPost("/despesas", payload);
+      console.log("salvarDespesa (novo) resp:", resp);
+    } else {
+      const resp = await apiPut(`/despesas/${idEdicao}`, payload);
+      console.log("salvarDespesa (edição) resp:", resp);
+    }
+
+    await initCalendario();
+    fecharModalInclusao();
+  } catch (e) {
+    console.error("Erro em salvarDespesa:", e);
+    alert("Erro ao salvar despesa na API.");
   } finally {
     hideLoader();
   }
-
-  fecharModalInclusao();
 }
 
-// ================== EXCLUSÃO / STATUS ==================
-function excluirDespesa(id) {
-  const desp = window._despesas.find((d) => d.id === id);
-  if (!desp) return;
-
-  _idParaExcluir = id;
-  _recorrenciaParaExcluir = desp.recorrente === "mensal";
+// ================== MODAL EXCLUSÃO ==================
+function abrirModalExclusao(despesa) {
+  _idParaExcluir = despesa.id;
+  _recorrenciaParaExcluir = despesa.recorrente || "nao";
 
   const modal = document.getElementById("modalConfirmarExclusao");
   if (!modal) return;
@@ -1844,16 +1810,27 @@ function excluirDespesa(id) {
   document.getElementById("motivoExclusao").value = "";
   document.getElementById("erroMotivoExclusao").textContent = "";
   document.getElementById("erroSenhaExclusao").textContent = "";
-  document.getElementById("senhaExclusao").value = "";
 
   const blocoRec = document.getElementById("blocoRecorrencia");
-  if (blocoRec)
-    blocoRec.style.display =
-      desp.recorrente === "mensal" ? "block" : "none";
-
   const blocoSenha = document.getElementById("blocoSenhaExclusao");
-  if (blocoSenha)
-    blocoSenha.style.display = desp.status === "pago" ? "block" : "none";
+
+  if (blocoRec) {
+    blocoRec.style.display =
+      _recorrenciaParaExcluir === "mensal" ? "block" : "none";
+  }
+
+  const user = getUsuarioAtual();
+  if (blocoSenha) {
+    blocoSenha.style.display =
+      user && user.tipo === "ADMIN" ? "block" : "none";
+  }
+
+  if (_recorrenciaParaExcluir === "mensal") {
+    const radios = document.querySelectorAll(
+      'input[name="modoExclusao"][value="unico"]'
+    );
+    radios.forEach(r => (r.checked = true));
+  }
 
   modal.style.display = "flex";
 }
@@ -1864,183 +1841,241 @@ function fecharModalExclusao() {
   modal.style.display = "none";
   _idParaExcluir = null;
   _recorrenciaParaExcluir = null;
+  document.getElementById("motivoExclusao").value = "";
+  document.getElementById("erroMotivoExclusao").textContent = "";
+  document.getElementById("erroSenhaExclusao").textContent = "";
 }
 
-function confirmarExclusaoDespesa() {
-  if (_idParaExcluir == null) return;
+async function confirmarExclusaoDespesa() {
+  if (!_idParaExcluir) return;
 
   const motivo = document.getElementById("motivoExclusao").value.trim();
   const erroMotivo = document.getElementById("erroMotivoExclusao");
   const erroSenha = document.getElementById("erroSenhaExclusao");
-  const senha = document.getElementById("senhaExclusao").value;
+  const blocoSenha = document.getElementById("blocoSenhaExclusao");
+  const senhaInput = document.getElementById("senhaExclusao");
 
-  erroMotivo.textContent = "";
-  erroSenha.textContent = "";
+  if (erroMotivo) erroMotivo.textContent = "";
+  if (erroSenha) erroSenha.textContent = "";
 
   if (!motivo) {
-    erroMotivo.textContent = "Informe o motivo da exclusão.";
+    if (erroMotivo)
+      erroMotivo.textContent = "Informe o motivo da exclusão.";
     return;
   }
 
-  const idx = window._despesas.findIndex((d) => d.id === _idParaExcluir);
-  if (idx < 0) {
-    fecharModalExclusao();
-    return;
-  }
-
-  const desp = window._despesas[idx];
-
-  if (desp.status === "pago") {
+  const user = getUsuarioAtual();
+  if (blocoSenha && blocoSenha.style.display === "block") {
+    const senha = (senhaInput?.value || "").trim();
+    if (!senha) {
+      if (erroSenha)
+        erroSenha.textContent = "Informe a senha de administrador.";
+      return;
+    }
     if (senha !== ADMIN_PASSWORD) {
-      erroSenha.textContent = "Senha inválida.";
+      if (erroSenha) erroSenha.textContent = "Senha incorreta.";
       return;
     }
   }
 
-  const user = getUsuarioAtual();
-  const agoraISO = new Date().toISOString().slice(0, 10);
-
-  const modo =
-    document.querySelector("input[name='modoExclusao']:checked")?.value ||
-    "unico";
-
-  if (desp.recorrente === "mensal" && modo !== "unico") {
-    window._despesas = window._despesas.map((d) => {
-      if (d.descricao !== desp.descricao) return d;
-      if (d.empresa !== desp.empresa) return d;
-      if (modo === "futuras" && d.vencimento < desp.vencimento) return d;
-
-      return {
-        ...d,
-        excluido: true,
-        motivoExclusao: motivo,
-        excluidoPor: user ? user.email : null,
-        dataExclusao: agoraISO,
-      };
-    });
-  } else {
-    window._despesas[idx] = {
-      ...desp,
-      excluido: true,
-      motivoExclusao: motivo,
-      excluidoPor: user ? user.email : null,
-      dataExclusao: agoraISO,
-    };
+  let modo = "unico";
+  if (_recorrenciaParaExcluir === "mensal") {
+    const selecionado = document.querySelector(
+      'input[name="modoExclusao"]:checked'
+    );
+    if (selecionado) modo = selecionado.value;
   }
 
-  salvarDespesas();
-  registrarLog("excluir", desp, { motivo, modo });
-
-  showLoader();
-  try {
-    aplicarFiltros();
-    renderizarCalendario();
-  } finally {
-    hideLoader();
-  }
-
-  fecharModalExclusao();
-}
-
-function alterarStatus(id, novoStatus) {
-  const idx = window._despesas.findIndex((d) => d.id === id);
-  if (idx < 0) return;
-
-  const antiga = window._despesas[idx];
-  const hojeISO = new Date().toISOString().slice(0, 10);
-
-  const atualizado = {
-    ...antiga,
-    status: novoStatus,
-    dataPagamento: novoStatus === "pago" ? hojeISO : null,
+  const payload = {
+    motivo,
+    modo,
+    empresa: EMPRESA_ATUAL,
+    usuarioEmail: user ? user.email : null
   };
 
-  window._despesas[idx] = atualizado;
-  salvarDespesas();
-  registrarLog("alterar_status", atualizado, {
-    statusAnterior: antiga.status,
-    statusNovo: novoStatus,
-  });
-
   showLoader();
   try {
-    aplicarFiltros();
-    renderizarCalendario();
+    await apiDelete(`/despesas/${_idParaExcluir}`, payload);
+    await initCalendario();
+    fecharModalExclusao();
+  } catch (e) {
+    console.error("Erro em confirmarExclusaoDespesa:", e);
+    alert("Erro ao excluir despesa na API.");
   } finally {
     hideLoader();
   }
 }
 
-// ================== ENVIO WHATSAPP ==================
-function abrirModalResultadoEnvio(envios, erroGeral) {
+// ================== MODAL SELEÇÃO ENVIO ==================
+async function abrirModalSelecionarEnvio() {
+  const modal = document.getElementById("modalSelecionarEnvio");
+  const lista = document.getElementById("listaSelecionarEnvio");
+  if (!modal || !lista) return;
+
+  lista.innerHTML = "";
+
+  const hojeISO = dataISO(new Date());
+  const candidatas = (window._despesasFiltradas || []).filter(d => {
+    if (d.status === "pago") return false;
+    if (d.vencimento && d.vencimento < hojeISO) return true;
+    if (d.vencimento && d.vencimento === hojeISO) return true;
+    return false;
+  });
+
+  if (!candidatas.length) {
+    const vazio = document.createElement("div");
+    vazio.style.fontSize = "0.85rem";
+    vazio.style.color = "#9ca3af";
+    vazio.textContent = "Nenhuma despesa vencida ou vencendo hoje.";
+    lista.appendChild(vazio);
+  } else {
+    candidatas.forEach(d => {
+      const item = document.createElement("div");
+      item.className = "item-dia";
+
+      const header = document.createElement("div");
+      header.className = "item-dia-header";
+
+      const desc = document.createElement("div");
+      desc.className = "item-dia-desc";
+      desc.textContent = d.descricao || "Despesa";
+
+      const info = document.createElement("div");
+      info.className = "item-dia-info";
+      info.textContent = `Vencimento: ${formatarDataBR(d.vencimento)}`;
+
+      header.appendChild(desc);
+      header.appendChild(info);
+
+      const statusDiv = document.createElement("div");
+      statusDiv.className = "item-dia-status " + classeStatus(d, hojeISO);
+      statusDiv.textContent =
+        d.vencimento < hojeISO
+          ? "Vencida"
+          : d.vencimento === hojeISO
+          ? "Hoje"
+          : "Pendente";
+
+      const acoes = document.createElement("div");
+      acoes.className = "item-dia-acoes";
+
+      const chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.className = "chk-envio";
+      chk.dataset.id = d.id;
+
+      acoes.appendChild(chk);
+
+      item.appendChild(header);
+      item.appendChild(statusDiv);
+      item.appendChild(acoes);
+
+      lista.appendChild(item);
+    });
+  }
+
+  modal.style.display = "flex";
+}
+
+function fecharModalSelecionarEnvio() {
+  const modal = document.getElementById("modalSelecionarEnvio");
+  if (!modal) return;
+  modal.style.display = "none";
+}
+
+async function confirmarEnvioSelecionado() {
+  const lista = document.getElementById("listaSelecionarEnvio");
+  if (!lista) return;
+
+  const selecionados = Array.from(
+    lista.querySelectorAll(".chk-envio")
+  ).filter(chk => chk.checked);
+
+  if (!selecionados.length) {
+    alert("Selecione ao menos uma despesa para envio.");
+    return;
+  }
+
+  const idsSelecionados = selecionados.map(chk => chk.dataset.id);
+
+  const despesasEnviar = (window._despesasFiltradas || []).filter(d =>
+    idsSelecionados.includes(String(d.id))
+  );
+
+  if (!despesasEnviar.length) {
+    alert("Nenhuma despesa correspondente encontrada.");
+    return;
+  }
+
+  showLoader();
+  try {
+    const payload = {
+      empresa: EMPRESA_ATUAL,
+      despesas: despesasEnviar.map(d => ({
+        id: d.id,
+        descricao: d.descricao,
+        vencimento: d.vencimento,
+        responsaveis: d.responsaveis || [],
+        tiposAviso: d.tiposAviso || ["3"]
+      }))
+    };
+
+    const url = `${window.WHATSAPP_BASE}/enviar-lembretes`;
+    console.log("[confirmarEnvioSelecionado] POST", url, payload);
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const resultado = await resp.json();
+    console.log("[confirmarEnvioSelecionado] resp:", resultado);
+
+    fecharModalSelecionarEnvio();
+    abrirModalResultadoEnvio(resultado);
+  } catch (e) {
+    console.error("Erro em confirmarEnvioSelecionado:", e);
+    alert("Erro ao enviar lembretes via WhatsApp.");
+  } finally {
+    hideLoader();
+  }
+}
+
+// ================== MODAL RESULTADO ENVIO ==================
+function abrirModalResultadoEnvio(resultado) {
   const modal = document.getElementById("modalResultadoEnvio");
   const lista = document.getElementById("resultadoEnvioLista");
   if (!modal || !lista) return;
 
   lista.innerHTML = "";
 
-  if (erroGeral) {
-    const div1 = document.createElement("div");
-    div1.style.fontSize = "0.9rem";
-    div1.style.color = "#fecaca";
-    div1.textContent =
-      "Ocorreu um erro geral ao enviar as mensagens para o servidor de WhatsApp.";
-
-    const div2 = document.createElement("div");
-    div2.style.fontSize = "0.78rem";
-    div2.style.color = "#9ca3af";
-    div2.style.marginTop = "4px";
-    div2.textContent =
-      "Tente novamente em alguns instantes ou verifique o status do serviço.";
-
-    lista.appendChild(div1);
-    lista.appendChild(div2);
-  } else if (!envios || !envios.length) {
-    const div1 = document.createElement("div");
-    div1.style.fontSize = "0.9rem";
-    div1.style.color = "#e5e7eb";
-    div1.textContent = "Nenhuma mensagem foi enviada.";
-
-    const div2 = document.createElement("div");
-    div2.style.fontSize = "0.78rem";
-    div2.style.color = "#9ca3af";
-    div2.style.marginTop = "4px";
-    div2.textContent =
-      "Verifique se as despesas selecionadas possuem contatos válidos para notificação.";
-
-    lista.appendChild(div1);
-    lista.appendChild(div2);
+  if (!resultado || !Array.isArray(resultado.itens) || !resultado.itens.length) {
+    const vazio = document.createElement("div");
+    vazio.style.fontSize = "0.85rem";
+    vazio.style.color = "#9ca3af";
+    vazio.textContent = "Nenhum resultado informado pelo serviço.";
+    lista.appendChild(vazio);
   } else {
-    const topo = document.createElement("div");
-    topo.style.fontSize = "0.85rem";
-    topo.style.marginBottom = "8px";
-    topo.style.color = "#bbf7d0";
-    topo.textContent = `✅ Envio concluído. Mensagens enviadas para ${envios.length} contato(s):`;
-    lista.appendChild(topo);
+    resultado.itens.forEach(item => {
+      const linha = document.createElement("div");
+      linha.className = "resultado-envio-item";
 
-    envios.forEach((e) => {
-      const item = document.createElement("div");
-      item.className = "item-dia";
+      const desc = document.createElement("div");
+      desc.className = "resultado-envio-desc";
+      desc.textContent = `${item.descricaoDespesa || "Despesa"} – ${
+        item.telefoneDestino || "Sem telefone"
+      }`;
 
-      const linha1 = document.createElement("div");
-      linha1.className = "item-dia-desc";
-      linha1.textContent = `${e.nome || "Contato"} (${e.telefone})`;
+      const status = document.createElement("div");
+      status.className = "resultado-envio-status";
+      status.textContent =
+        item.sucesso === true ? "Enviado" : "Falha no envio";
 
-      const detalhes = document.createElement("div");
-      detalhes.className = "item-dia-email";
+      linha.appendChild(desc);
+      linha.appendChild(status);
 
-      let vencPtbr = "";
-      if (e.vencimento) {
-        vencPtbr = e.vencimento.split("-").reverse().join("/");
-      }
-
-      detalhes.textContent = `Descr.: ${
-        e.descricao || "-"
-      } • Venc.: ${vencPtbr || "-"}`;
-
-      item.appendChild(linha1);
-      item.appendChild(detalhes);
-      lista.appendChild(item);
+      lista.appendChild(linha);
     });
   }
 
@@ -2049,191 +2084,46 @@ function abrirModalResultadoEnvio(envios, erroGeral) {
 
 function fecharModalResultadoEnvio() {
   const modal = document.getElementById("modalResultadoEnvio");
-  if (modal) modal.style.display = "none";
+  if (!modal) return;
+  modal.style.display = "none";
 }
 
-function abrirModalSelecionarEnvio() {
-  const ano = mesAtual.getFullYear();
-  const mes = mesAtual.getMonth();
-  const inicioISO = new Date(ano, mes, 1).toISOString().slice(0, 10);
-  const fimISO = new Date(ano, mes + 1, 0).toISOString().slice(0, 10);
-
-  const lista = document.getElementById("listaSelecionarEnvio");
-  if (!lista) return;
-  lista.innerHTML = "";
-
-  const candidatos = (window._despesas || []).filter((d) => {
-    if (d.excluido) return false;
-    if (d.empresa !== EMPRESA_ATUAL) return false;
-    if (!d.vencimento) return false;
-    if (!Array.isArray(d.responsaveis) || !d.responsaveis.length) return false;
-    return d.vencimento >= inicioISO && d.vencimento <= fimISO;
-  });
-
-  if (!candidatos.length) {
-    const vazio = document.createElement("div");
-    vazio.style.fontSize = "0.85rem";
-    vazio.style.color = "#9ca3af";
-    vazio.textContent =
-      "Nenhuma despesa cadastrada neste mês com contatos para notificação.";
-    lista.appendChild(vazio);
-  } else {
-    candidatos.forEach((d) => {
-      const row = document.createElement("label");
-      row.className = "item-dia";
-      row.style.cursor = "pointer";
-
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.className = "chk-envio";
-      checkbox.value = d.id;
-      checkbox.style.marginRight = "8px";
-
-      const texto = document.createElement("div");
-      texto.style.display = "flex";
-      texto.style.flexDirection = "column";
-
-      const linha1 = document.createElement("span");
-      linha1.textContent = `${d.descricao} – vence em ${d.vencimento
-        .split("-")
-        .reverse()
-        .join("/")}`;
-
-      const linha2 = document.createElement("span");
-      linha2.style.fontSize = "0.8rem";
-      linha2.style.color = "#9ca3af";
-
-      if (Array.isArray(d.responsaveis) && d.responsaveis.length) {
-        linha2.textContent =
-          "Notificar: " +
-          d.responsaveis
-            .map((r) => {
-              const tipoLabel =
-                r.tipo === "informativo" ? "informar" : "responsável";
-              return `${r.nome} (${r.telefone}, ${tipoLabel})`;
-            })
-            .join(" / ");
-      } else {
-        linha2.textContent = "Sem contatos cadastrados para notificação.";
-      }
-
-      texto.appendChild(linha1);
-      texto.appendChild(linha2);
-
-      row.appendChild(checkbox);
-      row.appendChild(texto);
-
-      lista.appendChild(row);
-    });
-  }
-
-  document.getElementById("modalSelecionarEnvio").style.display = "flex";
-}
-
-async function confirmarEnvioSelecionado() {
-  const chkList = document.querySelectorAll(
-    "#listaSelecionarEnvio .chk-envio"
-  );
-
-  const idsSelecionados = [];
-  chkList.forEach((chk) => {
-    if (chk.checked) idsSelecionados.push(Number(chk.value));
-  });
-
-  if (!idsSelecionados.length) {
-    alert("Selecione pelo menos uma despesa para envio.");
+// ================== EXPORT LOGS (OPCIONAL) ==================
+function exportarLogs() {
+  const { LOG_KEY } = getStorageKeys();
+  const raw = localStorage.getItem(LOG_KEY);
+  const logs = raw ? JSON.parse(raw) : [];
+  if (!logs.length) {
+    alert("Nenhum log para exportar.");
     return;
   }
 
-  const despesasSelecionadas = (window._despesas || []).filter(
-    (d) =>
-      idsSelecionados.includes(d.id) &&
-      !d.excluido &&
-      d.empresa === EMPRESA_ATUAL
-  );
+  const cabecalho =
+    "id;acao;despesaId;descricao;dataVenc;empresa;usuario;dataAcao;detalhes\n";
+  const linhas = logs.map(l => {
+    const detalhes = l.detalhes ? JSON.stringify(l.detalhes) : "";
+    return [
+      l.id,
+      l.acao,
+      l.despesaId,
+      (l.descricao || "").replace(/;/g, ","),
+      l.dataVenc || "",
+      l.empresa || "",
+      (l.usuario || "").replace(/;/g, ","),
+      l.dataAcao || "",
+      detalhes.replace(/;/g, ",")
+    ].join(";");
+  });
 
-  if (!despesasSelecionadas.length) {
-    alert("Não foi possível localizar as despesas selecionadas.");
-    return;
-  }
+  const csv = cabecalho + linhas.join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
 
-  const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
-  const usuarioEmail = user ? user.email : null;
-
-  const payload = {
-    empresa: EMPRESA_ATUAL,
-    usuarioEmail,
-    lembretes: despesasSelecionadas,
-  };
-
-  showLoader();
-
-  let erroGeral = null;
-  let resposta = null;
-
-  try {
-    const resp = await fetch(
-      `${window.WHATSAPP_BASE}/api/enviar-lembretes`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    if (!resp.ok) {
-      const txt = await resp.text();
-      throw new Error(
-        `HTTP ${resp.status} ao enviar-lembretes: ${txt || "sem detalhes"}`
-      );
-    }
-
-    resposta = await resp.json();
-    console.log("Resposta envio WhatsApp:", resposta);
-  } catch (e) {
-    console.error("Erro ao enviar lembretes para WhatsApp:", e);
-    erroGeral = e;
-  } finally {
-    hideLoader();
-  }
-
-  document.getElementById("modalSelecionarEnvio").style.display = "none";
-
-  if (erroGeral) {
-    abrirModalResultadoEnvio([], true);
-  } else if (resposta && Array.isArray(resposta.envios)) {
-    abrirModalResultadoEnvio(resposta.envios, false);
-  } else {
-    abrirModalResultadoEnvio([], false);
-  }
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `logs_calendario_${EMPRESA_ATUAL || "geral"}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
-
-function fecharModalSelecionarEnvio() {
-  const m = document.getElementById("modalSelecionarEnvio");
-  if (m) m.style.display = "none";
-}
-
-// ================== Expor funções globais ==================
-window.initPagina = initPagina;
-window.mudarMes = mudarMes;
-window.abrirGerenciadorContatos = abrirGerenciadorContatos;
-window.abrirModalInclusao = abrirModalInclusao;
-window.fecharModalInclusao = fecharModalInclusao;
-window.fecharModalContato = fecharModalContato;
-window.fecharModalDia = fecharModalDia;
-window.fecharModalExclusao = fecharModalExclusao;
-window.confirmarExclusaoDespesa = confirmarExclusaoDespesa;
-window.abrirModalSelecionarEnvio = abrirModalSelecionarEnvio;
-window.confirmarEnvioSelecionado = confirmarEnvioSelecionado;
-window.fecharModalSelecionarEnvio = fecharModalSelecionarEnvio;
-window.fecharModalResultadoEnvio = fecharModalResultadoEnvio;
-window.onChangeBuscaTexto = onChangeBuscaTexto;
-window.onChangeFiltroStatus = onChangeFiltroStatus;
-window.onChangeFiltroPeriodo = onChangeFiltroPeriodo;
-window.salvarDespesa = salvarDespesa;
-window.adicionarContatoSelecionado = adicionarContatoSelecionado;
-window.adicionarContatoRapido = adicionarContatoRapido;
-window.habilitarBuscaTexto = habilitarBuscaTexto;
-window.trocarEmpresa = trocarEmpresa;

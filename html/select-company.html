@@ -29,22 +29,36 @@
       }
 
       const empresasUser = user.empresas || [];
+      const perfisUser = user.perfis || [];
+      const isAdmin = perfisUser.includes("ADMIN");
 
-      // Se só tem 1 empresa, já redireciona para o menu
-      if (empresasUser.length === 1) {
-        selecionarEmpresa(empresasUser[0]);
-        return;
-      }
+      // NÃO redireciona mais automático.
+      // Sempre mostra a tela e esconde só o que ele não tem acesso.
 
-      // Mostrar/esconder cards conforme empresas do usuário
       const cardLinhagro = document.querySelector('[data-empresa="linhagro"]');
       const cardLitho    = document.querySelector('[data-empresa="lithoplant"]');
 
-      if (cardLinhagro && !empresasUser.includes("linhagro")) {
-        cardLinhagro.style.display = "none";
+      // Admin vê tudo; não-admin vê apenas empresas às quais tem acesso
+      if (!isAdmin) {
+        if (cardLinhagro && !empresasUser.includes("linhagro")) {
+          cardLinhagro.style.display = "none";
+        }
+        if (cardLitho && !empresasUser.includes("lithoplant")) {
+          cardLitho.style.display = "none";
+        }
       }
-      if (cardLitho && !empresasUser.includes("lithoplant")) {
-        cardLitho.style.display = "none";
+
+      // Mostrar/ocultar item de Logística no menu lateral
+      const itensSidebar = document.querySelectorAll(".sidebar-item");
+      const itemLogistica = Array.from(itensSidebar).find(li =>
+        li.textContent && li.textContent.includes("Logística")
+      );
+      if (itemLogistica) {
+        if (!isAdmin) {
+          itemLogistica.style.display = "none";  // só ADMIN vê
+        } else {
+          itemLogistica.style.display = "";
+        }
       }
     }
 

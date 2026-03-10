@@ -22,7 +22,8 @@ body.calendario-page {
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
   color: #e5e7eb;
   background: #020617;
 }
@@ -379,28 +380,32 @@ body.calendario-page {
   color: #e5e7eb;
 }
 
-/* LISTAS */
+/* LISTAS (CARDS DO DIA) */
 
 .item-dia {
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid var(--cal-border);
-  background: var(--cal-card);
-  padding: 6px 8px;
-  margin-bottom: 5px;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.9);
+  background: linear-gradient(135deg, #020617, #020617);
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.9);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .item-dia-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 2px;
 }
 
 .item-dia-desc {
-  font-size: 0.82rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e5e7eb;
 }
 
 .item-dia-email {
@@ -409,17 +414,87 @@ body.calendario-page {
   margin-bottom: 2px;
 }
 
+/* status com DOT */
+
+.item-dia-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #cbd5f5;
+}
+
+.item-dia-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  box-shadow: 0 0 4px rgba(15, 23, 42, 0.8);
+}
+
+/* cores do dot */
+
+.item-dia-status-dot.pago {
+  background: #22c55e;
+}
+
+.item-dia-status-dot.vencido {
+  background: #ef4444;
+}
+
+.item-dia-status-dot.hoje {
+  background: #3b82f6;
+}
+
+/* bloco de detalhes principal (duas colunas) */
 .item-dia-log {
   font-size: 0.74rem;
-  color: #bbf7d0;
-  margin-top: 2px;
+  color: #e5e7eb;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: radial-gradient(
+    circle at top left,
+    rgba(15, 23, 42, 0.55),
+    #020617
+  );
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  display: block;              /* <<< bloco único, ocupa largura cheia */
+  max-height: none;            /* <<< não limita altura */
+  overflow: visible;           /* <<< deixa crescer para baixo */
+  line-height: 1.35;
+  word-break: break-word;      /* <<< quebra palavras longas */
+  white-space: normal;         /* <<< quebra onde tiver espaço/| */
 }
+
+/* título opcional, se usar */
+.item-dia-log-section-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.item-dia-log-line {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.item-dia-log-strong {
+  color: #bfdbfe;
+  font-weight: 500;
+}
+
+/* rodapé de ações */
 
 .item-dia-acoes {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 4px;
+  gap: 6px;
+  margin-top: 6px;
+  justify-content: flex-end;
+  border-top: 1px solid rgba(30, 41, 59, 0.8);
+  padding-top: 4px;
 }
 
 /* BOTÕES MINI */
@@ -432,7 +507,8 @@ body.calendario-page {
   font-size: 0.7rem;
   padding: 2px 8px;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s;
+  transition: background 0.15s ease, border-color 0.15s ease,
+    transform 0.08s;
 }
 
 .btn-mini:hover {
@@ -464,8 +540,8 @@ body.calendario-page {
   gap: 0.3rem;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.8);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.08s,
-    background 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.08s, background 0.15s ease;
 }
 
 .btn-chip span.icon {
@@ -752,7 +828,7 @@ body.calendario-page {
   accent-color: #22c55e;
 }
 
-/* LOADER GLOBAL (alinhado com #loaderGlobal do HTML) */
+/* LOADER GLOBAL */
 
 #loaderGlobal {
   position: fixed;
@@ -779,7 +855,7 @@ body.calendario-page {
   gap: 12px;
 }
 
-/* spinner aproveitando keyframes tri-spinner */
+/* spinner */
 
 .spinner {
   width: 56px;
@@ -960,6 +1036,10 @@ body.calendario-page {
   #gridDias {
     grid-auto-rows: minmax(72px, 1fr);
   }
+
+  .item-dia-log {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* BOTÃO SAIR - estilo select-company */
@@ -983,15 +1063,19 @@ body.calendario-page {
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition-duration: .3s;
+  transition-duration: 0.3s;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75);
-  background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.3), #020617);
+  background: radial-gradient(
+    circle at top left,
+    rgba(34, 197, 94, 0.3),
+    #020617
+  );
   border: 1px solid rgba(34, 197, 94, 0.7);
 }
 
 .Btn .sign {
   width: 100%;
-  transition-duration: .3s;
+  transition-duration: 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1013,7 +1097,7 @@ body.calendario-page {
   color: #e5fdf7;
   font-size: 0.82rem;
   font-weight: 600;
-  transition-duration: .3s;
+  transition-duration: 0.3s;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
@@ -1021,7 +1105,11 @@ body.calendario-page {
 .Btn:hover {
   width: 120px;
   border-radius: 999px;
-  background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.45), #020617);
+  background: radial-gradient(
+    circle at top left,
+    rgba(34, 197, 94, 0.45),
+    #020617
+  );
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.9);
 }
 

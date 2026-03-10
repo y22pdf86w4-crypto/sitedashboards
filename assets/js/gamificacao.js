@@ -1,11 +1,152 @@
 // assets/js/gamificacao.js
 
-const API_BASE = "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net";
+console.log("[GAMIF] Script gamificacao.js carregado.");
+
+// Base da API: usa window.APIBASE (core global); se não existir, cai no default.
+function getApiBaseGamif() {
+  if (typeof window !== "undefined" && window.APIBASE) {
+    return window.APIBASE; // já vem com /api/v1 do global.js
+  }
+  return "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1";
+}
+
+// Garante usuário logado (mesmo padrão do calendário)
+function getUsuarioObrigatorioGamif() {
+  const user =
+    typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+  console.log("[GAMIF][getUsuarioObrigatorio] user:", user && {
+    email: user.email,
+    nome: user.nome,
+    tipo: user.tipo,
+    perfis: user.perfis
+  });
+
+  if (!user) {
+    console.warn("[GAMIF][getUsuarioObrigatorio] Sem usuário, redirecionando.");
+    window.location.href = "../index.html";
+    return null;
+  }
+  if (!user.email) {
+    console.warn(
+      "[GAMIF][getUsuarioObrigatorio] Usuário sem email, redirecionando."
+    );
+    window.location.href = "../index.html";
+    return null;
+  }
+  return user;
+}
+
+// Headers com token + e-mail, reaproveitando helper global se existir
+function getAuthHeadersGamif() {
+  const user = getUsuarioObrigatorioGamif();
+  if (!user) {
+    console.warn(
+      "[GAMIF][getAuthHeadersGamif] Sem usuário, retornando headers mínimos."
+    );
+    return { "Content-Type": "application/json" };
+  }
+
+  let headers;
+
+  if (typeof getAuthHeadersCalendario === "function") {
+    headers = getAuthHeadersCalendario(); // mesmo helper do calendário
+  } else {
+    headers = { "Content-Type": "application/json" };
+    try {
+      const token =
+        (window.sessionStorage && sessionStorage.getItem("authToken")) || null;
+      if (token) {
+        headers["Authorization"] = "Bearer " + token;
+      } else {
+        console.warn(
+          "[GAMIF][getAuthHeadersGamif] authToken ausente no sessionStorage."
+        );
+      }
+    } catch (e) {
+      console.warn(
+        "[GAMIF][getAuthHeadersGamif] Erro ao ler authToken:",
+        e
+      );
+    }
+  }
+
+  headers["x-usuario-email"] = user.email;
+
+  const safe = { ...headers };
+  if (safe.Authorization) safe.Authorization = "Bearer ****";
+  console.log("[GAMIF][getAuthHeadersGamif] Headers finais:", safe);
+
+  return headers;
+}
+
+// GET genérico para gamificação
+async function apiGetGamif(path) {
+  const base = getApiBaseGamif();
+  if (!base) {
+    console.error("[GAMIF][apiGetGamif] API base não definida.");
+    throw new Error("API base não configurada");
+  }
+
+  const url = base + path;
+  console.log("[GAMIF][apiGetGamif] URL:", url);
+
+  const headers = getAuthHeadersGamif();
+  const safe = { ...headers };
+  if (safe.Authorization) safe.Authorization = "Bearer ****";
+  console.log("[GAMIF][apiGetGamif] Headers enviados:", safe);
+
+  let resp;
+  try {
+    resp = await fetch(url, {
+      method: "GET",
+      headers
+    });
+  } catch (e) {
+    console.error("[GAMIF][apiGetGamif] Erro de rede/fetch:", e);
+    throw new Error("Falha na comunicação com o servidor (gamificação)");
+  }
+
+  console.log("[GAMIF][apiGetGamif] HTTP status:", resp.status);
+
+  if (!resp.ok) {
+    let body = "";
+    try {
+      body = await resp.text();
+    } catch (e) {
+      console.warn("[GAMIF][apiGetGamif] Erro ao ler corpo:", e);
+    }
+    console.error(
+      "[GAMIF][apiGetGamif] Resposta não OK:",
+      "status=", resp.status,
+      "body=", body
+    );
+    if (resp.status === 401) {
+      console.warn(
+        "[GAMIF][apiGetGamif] 401 - não autorizado (token/e-mail ausente ou inválido)."
+      );
+    }
+    throw new Error("HTTP " + resp.status + " ao chamar " + path);
+  }
+
+  try {
+    const json = await resp.json();
+    console.log("[GAMIF][apiGetGamif] JSON recebido:", json);
+    return json;
+  } catch (e) {
+    console.error("[GAMIF][apiGetGamif] Erro ao fazer parse JSON:", e);
+    throw new Error("Erro ao interpretar resposta JSON");
+  }
+}
 
 let gamificacaoBruta = [];
 let linhasFiltradas = [];
 
 window.addEventListener("DOMContentLoaded", () => {
+  console.log("[GAMIF] DOMContentLoaded");
+
+  const user = getUsuarioObrigatorioGamif();
+  if (!user) return;
+
   const app = document.getElementById("app");
   const btnToggle = document.getElementById("btnToggleSidebar");
   if (app && btnToggle) {
@@ -27,7 +168,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
   window.addEventListener("resize", ajustarAlturaTabela);
 
-  // Define mês/ano atual e já carrega
   inicializarPeriodoPadrao();
 });
 
@@ -134,14 +274,10 @@ async function carregarGamificacao() {
     params.set("vendedorId", String(vendedorId));
   }
 
-  const url = `${API_BASE}/api/v1/gamificacao?${params.toString()}`;
+  const path = `/gamificacao?${params.toString()}`;
 
   try {
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      throw new Error("HTTP " + resp.status);
-    }
-    const data = await resp.json();
+    const data = await apiGetGamif(path);
 
     const lista = data && Array.isArray(data.gamificacao)
       ? data.gamificacao
@@ -164,7 +300,7 @@ async function carregarGamificacao() {
 
     aplicarFiltroLocal();
   } catch (e) {
-    console.error("Erro ao carregar gamificação:", e);
+    console.error("[GAMIF] Erro ao carregar gamificação:", e);
     tbody.innerHTML = `
       <tr>
         <td colspan="10" class="empty-state">
@@ -301,9 +437,12 @@ function atualizarCardsResumo(lista) {
   const media = soma / lista.length;
 
   if (cardPontuacaoMedia) cardPontuacaoMedia.textContent = media.toFixed(1);
-  if (cardPontuacaoMax) cardPontuacaoMax.textContent = isFinite(max) ? max.toFixed(1) : "0,0";
-  if (cardPontuacaoMin) cardPontuacaoMin.textContent = isFinite(min) ? min.toFixed(1) : "0,0";
-  if (cardQtdeVendedores) cardQtdeVendedores.textContent = String(lista.length);
+  if (cardPontuacaoMax)
+    cardPontuacaoMax.textContent = isFinite(max) ? max.toFixed(1) : "0,0";
+  if (cardPontuacaoMin)
+    cardPontuacaoMin.textContent = isFinite(min) ? min.toFixed(1) : "0,0";
+  if (cardQtdeVendedores)
+    cardQtdeVendedores.textContent = String(lista.length);
 
   if (cardMelhorVendedor) {
     const nome = melhor?.nmVendedor ?? melhor?.NMVENDEDOR ?? "";

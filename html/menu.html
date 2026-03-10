@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <title>Centro de Navegação - Dashboards</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <link rel="icon" href="../assets/imagem/favicon.png" type="image/png" />
   <link rel="stylesheet" href="../assets/css/menu.css" />
   <script src="../assets/js/global.js" defer></script>
@@ -13,139 +14,86 @@
       linhagro: {
         nome: "Linhagro",
         calendarioPath: "calendario.html",
-        hubDescricao: "Escolha abaixo qual painel deseja abrir. Cada card abre um dashboard em tela cheia."
+        hubDescricao:
+          "Escolha abaixo qual painel deseja abrir. Cada card abre um dashboard em tela cheia.",
       },
       lithoplant: {
         nome: "Lithoplant",
         calendarioPath: "calendario.html",
         hubBadges: ["DualForce", "Carteira", "Vendedores", "Estoque"],
-        hubDescricao: "Escolha abaixo qual painel deseja abrir. Cada card abre um dashboard em tela cheia."
-      }
+        hubDescricao:
+          "Escolha abaixo qual painel deseja abrir. Cada card abre um dashboard em tela cheia.",
+      },
     };
 
-    const DASHBOARDS = [
-  {
-    id: "linha-atividades",
-    empresa: "linhagro",
-    titulo: "Atividades - A2W",
-    descricaoCurta: "Vendas, carteira, metas e indicadores de performance.",
-    descricaoLonga: "Visão principal por consultor, linha, região e margem.",
-    iconEmoji: "📊",
-    url: "dashboards/linhagro/atividades.html",
-    frequencia: "Atualização: a cada 30 minutos"
-  },
-{
-  id: "linha-gamificacao",
-  empresa: "linhagro",
-  titulo: "Gamificação - A2W",
-  descricaoCurta: "Pontuação dos vendedores por período.",
-  descricaoLonga: "Avaliação de performance por dias sem rota, atividades ruins e pendentes, com classificação por vendedor.",
-  iconEmoji: "🏅",
-  url: "dashboards/linhagro/gamificacao.html",
-  frequencia: "Atualização: a cada 30 minutos"
-},
-  {
-    id: "linha-financeiro",
-    empresa: "linhagro",
-    titulo: "Financeiro – Linhagro",
-    descricaoCurta: "Receitas, despesas, DRE e fluxo de caixa.",
-    descricaoLonga: "Painel financeiro com visão por centro de custo, período e indicador de resultado.",
-    iconEmoji: "💰",
-    url: "dashboards/linhagro/inadimplencia.html",
-    frequencia: "Atualização: diária"
-  },
-  {
-    id: "linha-estoque",
-    empresa: "linhagro",
-    titulo: "Estoque – Linhagro",
-    descricaoCurta: "Saldo, giro, cobertura e alertas de ruptura.",
-    descricaoLonga: "Painel de estoque consolidado por produto, família e região.",
-    iconEmoji: "📦",
-    url: "dashboards/linhagro/estoque.html",
-    frequencia: "Atualização: diária"
-  },
-  {
-    id: "linha-powerbi-geral",
-    empresa: "linhagro",
-    titulo: "Power BI – Linhagro (Geral)",
-    descricaoCurta: "Visão consolidada dos indicadores da Linhagro.",
-    descricaoLonga: "Dashboard geral com visão integrada de indicadores financeiros, comerciais e operacionais.",
-    iconEmoji: "📈",
-    url: "dashboards/linhagro/powerbi-linhagro.html",
-    frequencia: "Atualização: a cada 30 minutos"
-  },
-  {
-    id: "litho-dualforce",
-    empresa: "lithoplant",
-    titulo: "DualForce Lithoplant",
-    descricaoCurta: "Projeto DualForce – visão consolidada.",
-    descricaoLonga: "Dashboard principal com vendas, carteira, metas e indicadores operacionais.",
-    iconEmoji: "📊",
-    url: "dashboards/lithoplant/dualforce.html",
-    frequencia: "Atualização: a cada 30 minutos"
-  },
-  {
-    id: "litho-estoque",
-    empresa: "lithoplant",
-    titulo: "Estoque – Lithoplant",
-    descricaoCurta: "Visão industrial de estoque e insumos.",
-    descricaoLonga: "Análises de nível de estoque, consumo e reposição da unidade.",
-    iconEmoji: "📦",
-    url: "dashboards/lithoplant/estoque.html",
-    frequencia: "Atualização: diária"
-  },
-  {
-    id: "litho-gracielli",
-    empresa: "lithoplant",
-    titulo: "Dashboard VIP – Gracielli",
-    descricaoCurta: "Painel individual para acompanhamento estratégico.",
-    descricaoLonga: "Visão dedicada de indicadores selecionados para a gestão da Gracielli na Lithoplant.",
-    iconEmoji: "⭐",
-    url: "dashboards/lithoplant/vip-gracielli.html",
-    frequencia: "Atualização: a cada 30 minutos"
-  },
-  {
-    id: "litho-joao-paulo",
-    empresa: "lithoplant",
-    titulo: "Dashboard VIP – João Paulo",
-    descricaoCurta: "Painel individual para acompanhamento estratégico.",
-    descricaoLonga: "Visão dedicada de indicadores selecionados para o acompanhamento do João Paulo na Lithoplant.",
-    iconEmoji: "⭐",
-    url: "dashboards/lithoplant/vip-joaopaulo.html",
-    frequencia: "Atualização: a cada 30 minutos"
-  },
-  {
-    id: "litho-paulo-modesto",
-    empresa: "lithoplant",
-    titulo: "Dashboard VIP – Paulo Modesto",
-    descricaoCurta: "Painel individual para acompanhamento estratégico.",
-    descricaoLonga: "Visão dedicada de indicadores selecionados para o acompanhamento do Paulo Modesto na Lithoplant.",
-    iconEmoji: "⭐",
-    url: "dashboards/lithoplant/vip-paulomodesto.html",
-    frequencia: "Atualização: a cada 30 minutos"
-  },
-  {
-    id: "litho-raphael-brandao",
-    empresa: "lithoplant",
-    titulo: "Dashboard VIP – Raphael Brandão",
-    descricaoCurta: "Painel individual para acompanhamento estratégico.",
-    descricaoLonga: "Visão dedicada de indicadores selecionados para o acompanhamento do Raphael Brandão na Lithoplant.",
-    iconEmoji: "⭐",
-    url: "dashboards/lithoplant/vip-raphaelbrandao.html",
-    frequencia: "Atualização: a cada 30 minutos"
-  }
-    ];
-
+    let DASHBOARDS = [];
     let dashboardsFiltrados = [];
 
-    function carregarMenu() {
+    // ----------------- PERMISSÃO / RBAC NO FRONT -----------------
+
+    function usuarioPodeVerDashboard(user, dash) {
+      const email = (user.email || "").toLowerCase();
+      const perfis = user.perfis || [];
+      const isAdmin = perfis.includes("ADMIN");
+
+      // ADMIN vê tudo da empresa
+      if (isAdmin) return true;
+
+      const tiposPermitidos = dash.tiposPermitidos || [];
+      const usuariosPermitidos = (dash.usuariosPermitidos || []).map((e) =>
+        (e || "").toLowerCase()
+      );
+
+      // VIP por e-mail
+      if (usuariosPermitidos.length > 0 && !usuariosPermitidos.includes(email)) {
+        return false;
+      }
+
+      // restrição por perfil
+      if (tiposPermitidos.length > 0) {
+        const temPerfil = perfis.some((p) => tiposPermitidos.includes(p));
+        if (!temPerfil) return false;
+      }
+
+      return true;
+    }
+
+    // ----------------- CARREGAR DASHBOARDS DA API -----------------
+
+    async function carregarDashboardsDaAPI(empresaApi) {
+      // empresaApi = 'LINHAGRO' ou 'LITHOPLANT'
+      const data = await apiGet(
+        `/dashboards?empresa=${encodeURIComponent(empresaApi)}`
+      );
+      const lista = data.dashboards || [];
+
+      // Normaliza para o formato usado no front
+      DASHBOARDS = lista.map((d) => ({
+        id: d.id,
+        empresa: (d.empresa || "").toLowerCase(), // 'linhagro' / 'lithoplant'
+        titulo: d.titulo,
+        descricaoCurta: d.descricaoCurta,
+        descricaoLonga: d.descricaoLonga,
+        iconEmoji: d.iconEmoji || "📊",
+        url: d.url,
+        frequencia: d.frequencia,
+        ativo: d.ativo === true || d.ativo === 1,
+        tiposPermitidos: d.perfisPermitidos || [],
+        usuariosPermitidos: d.usuariosPermitidos || [],
+      }));
+    }
+
+    // ----------------- CARREGAR MENU PRINCIPAL -----------------
+
+    async function carregarMenu() {
       const user = getUsuarioAtual();
       if (!user) {
         window.location.href = "../index.html";
         return;
       }
 
-      const empresa = window.sessionStorage ? sessionStorage.getItem("empresaSelecionada") : null;
+      const empresa =
+        window.sessionStorage && sessionStorage.getItem("empresaSelecionada");
       if (!empresa || !user.empresas || !user.empresas.includes(empresa)) {
         window.location.href = "./select-company.html";
         return;
@@ -157,7 +105,23 @@
         return;
       }
 
-      preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
+      // Carrega dashboards da API
+      const empresaApi = empresa.toUpperCase(); // 'linhagro' -> 'LINHAGRO'
+      try {
+        await carregarDashboardsDaAPI(empresaApi);
+      } catch (e) {
+        console.error("Erro ao carregar dashboards da API:", e);
+      }
+
+      // saudação no sidebar
+      if (typeof preencherHeaderUsuario === "function") {
+        preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
+      } else {
+        const saud = document.getElementById("saudacaoSidebar");
+        const nome = document.getElementById("userNameSidebar");
+        if (saud) saud.textContent = "Centro de navegação";
+        if (nome) nome.textContent = user.nome || user.email || "Usuário";
+      }
 
       const hubSubtitle = document.getElementById("hubSubtitle");
       if (hubSubtitle) hubSubtitle.textContent = cfg.hubDescricao;
@@ -165,7 +129,7 @@
       const hubBadgesWrap = document.getElementById("hubBadges");
       if (hubBadgesWrap) {
         hubBadgesWrap.innerHTML = "";
-        (cfg.hubBadges || []).forEach(txt => {
+        (cfg.hubBadges || []).forEach((txt) => {
           const span = document.createElement("span");
           span.className = "badge";
           span.textContent = txt;
@@ -173,7 +137,10 @@
         });
       }
 
-      dashboardsFiltrados = DASHBOARDS.filter(d => d.empresa === empresa);
+      // Filtra por empresa + permissão
+      dashboardsFiltrados = DASHBOARDS.filter(
+        (d) => d.empresa === empresa && usuarioPodeVerDashboard(user, d)
+      );
       atualizarGridDashboards(empresa);
 
       const app = document.getElementById("app");
@@ -185,17 +152,18 @@
       }
     }
 
+    // ----------------- GRID / RENDERIZAÇÃO DOS CARDS -----------------
+
     function atualizarGridDashboards(empresa) {
       const grid = document.getElementById("dashboardGrid");
       if (!grid) return;
 
-      const base = dashboardsFiltrados;
       grid.innerHTML = "";
 
-      base.forEach(d => {
+      dashboardsFiltrados.forEach((d) => {
         const card = document.createElement("article");
         card.className = "dash-card";
-        card.onclick = () => window.location.href = d.url;
+        card.onclick = () => (window.location.href = d.url);
 
         card.innerHTML = `
           <div class="dash-card-top">
@@ -225,18 +193,31 @@
       });
     }
 
+    // ----------------- BUSCA / FILTRO POR TEXTO -----------------
+
     function filtrarDashboardsPorTexto(texto) {
       const termo = (texto || "").toLowerCase();
-      const empresa = window.sessionStorage ? sessionStorage.getItem("empresaSelecionada") : null;
+      const empresa =
+        window.sessionStorage && sessionStorage.getItem("empresaSelecionada");
       if (!empresa) return;
 
-      const base = DASHBOARDS.filter(d => d.empresa === empresa);
+      const user = getUsuarioAtual();
+      if (!user) return;
+
+      const baseEmpresa = DASHBOARDS.filter(
+        (d) => d.empresa === empresa && usuarioPodeVerDashboard(user, d)
+      );
 
       if (!termo) {
-        dashboardsFiltrados = [...base];
+        dashboardsFiltrados = [...baseEmpresa];
       } else {
-        dashboardsFiltrados = base.filter(d => {
-          const t = (d.titulo || "") + " " + (d.descricaoCurta || "") + " " + (d.descricaoLonga || "");
+        dashboardsFiltrados = baseEmpresa.filter((d) => {
+          const t =
+            (d.titulo || "") +
+            " " +
+            (d.descricaoCurta || "") +
+            " " +
+            (d.descricaoLonga || "");
           return t.toLowerCase().includes(termo);
         });
       }
@@ -244,25 +225,41 @@
       atualizarGridDashboards(empresa);
     }
 
+    // ----------------- SIDEBAR / NAVEGAÇÃO LATERAL -----------------
+
     function ativarItemSidebar(chave) {
-      document.querySelectorAll(".sidebar-item").forEach(item => {
-        item.classList.toggle("sidebar-item-active", item.dataset.key === chave);
+      document.querySelectorAll(".sidebar-item").forEach((item) => {
+        item.classList.toggle(
+          "sidebar-item-active",
+          item.dataset.key === chave
+        );
       });
 
-      const empresa = window.sessionStorage ? sessionStorage.getItem("empresaSelecionada") : null;
+      const empresa =
+        window.sessionStorage && sessionStorage.getItem("empresaSelecionada");
       if (!empresa) return;
 
       const cfg = EMPRESAS_CONFIG[empresa];
 
       if (chave === "dashboards") {
-        dashboardsFiltrados = DASHBOARDS.filter(d => d.empresa === empresa);
+        const user = getUsuarioAtual();
+        if (!user) return;
+        dashboardsFiltrados = DASHBOARDS.filter(
+          (d) => d.empresa === empresa && usuarioPodeVerDashboard(user, d)
+        );
         atualizarGridDashboards(empresa);
       } else if (chave === "calendario") {
         window.location.href = cfg.calendarioPath;
       } else if (chave === "organograma") {
-        window.location.href = "./org-linhagro.html";
+        if (empresa === "linhagro") {
+          window.location.href = "./org-linhagro.html";
+        } else if (empresa === "lithoplant") {
+          window.location.href = "./org-lithoplant.html";
+        }
       }
     }
+
+    // ----------------- TROCAR EMPRESA / LOGOUT -----------------
 
     function trocarEmpresa() {
       if (window.sessionStorage) {
@@ -275,14 +272,22 @@
       deslogar();
     }
 
+    // ----------------- INICIALIZAÇÃO -----------------
+
     window.addEventListener("DOMContentLoaded", carregarMenu);
+
+    // Deixa as funções globais que o HTML usa
+    window.filtrarDashboardsPorTexto = filtrarDashboardsPorTexto;
+    window.ativarItemSidebar = ativarItemSidebar;
+    window.trocarEmpresa = trocarEmpresa;
+    window.voltarLogin = voltarLogin;
   </script>
 </head>
 
 <body>
   <div class="bg-container">
     <div class="animated-bg"></div>
-    <div class="grid-bg"></"></div>
+    <div class="grid-bg"></div>
     <div class="glow-orb orb-1"></div>
     <div class="glow-orb orb-2"></div>
     <div class="particles-container"></div>
@@ -376,8 +381,11 @@
 
       <div class="main-badges" id="hubBadges"></div>
 
-      <section class="dashboard-grid" id="dashboardGrid" aria-label="Lista de dashboards">
-      </section>
+      <section
+        class="dashboard-grid"
+        id="dashboardGrid"
+        aria-label="Lista de dashboards"
+      ></section>
     </main>
   </div>
 </body>

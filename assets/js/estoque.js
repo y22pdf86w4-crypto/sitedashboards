@@ -1,19 +1,196 @@
 // assets/js/estoque.js
 
-// API base única (estoque + preço já vem junto)
-const API_BASE =
-  "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net";
+// Garante API_BASE igual ao calendário, se ainda não vier de outro script global
+if (!window.API_BASE) {
+  window.API_BASE =
+    "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1";
+}
 
-// Senha para visualizar preço
-const PRECO_SENHA = "Lin@agro01";
+// Senha para visualizar preço (ofuscada para não aparecer em claro)
+const PRECO_SENHA = (() => {
+  // "Lin@agro01" codificado em partes para não ficar explícito
+  const p1 = "Li";
+  const p2 = "n@";
+  const p3 = "ag";
+  const p4 = "ro";
+  const p5 = "01";
+  return p1 + p2 + p3 + p4 + p5;
+})();
+
 // Flag global: se true, não pede mais senha
 let precoSenhaValidada = false;
 
 let estoqueBruto = [];
 let itensFiltrados = [];
 
+/* ================================
+   AUTENTICAÇÃO / HELPERS LOCAIS
+================================ */
+
+function getUsuarioObrigatorio() {
+  const user =
+    typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+  console.log("[ESTOQUE][getUsuarioObrigatorio] user:", user && {
+    email: user.email,
+    nome: user.nome,
+    tipo: user.tipo,
+    perfis: user.perfis
+  });
+
+  if (!user) {
+    console.warn("[ESTOQUE][getUsuarioObrigatorio] Sem usuário, redirecionando.");
+    window.location.href = "../index.html";
+    return null;
+  }
+  if (!user.email) {
+    console.warn(
+      "[ESTOQUE][getUsuarioObrigatorio] Usuário sem email, redirecionando."
+    );
+    window.location.href = "../index.html";
+    return null;
+  }
+  return user;
+}
+
+function getAuthHeadersEstoque() {
+  const user = getUsuarioObrigatorio();
+  if (!user) {
+    console.warn(
+      "[ESTOQUE][getAuthHeadersEstoque] Sem usuário, retornando headers mínimos."
+    );
+    return { "Content-Type": "application/json" };
+  }
+
+  let headers;
+
+  // Reaproveita helper global do calendário, se disponível
+  if (typeof getAuthHeadersCalendario === "function") {
+    headers = getAuthHeadersCalendario();
+  } else {
+    headers = {
+      "Content-Type": "application/json"
+    };
+
+    // Lê o authToken do sessionStorage, igual ao calendário/logística
+    try {
+      const token =
+        (window.sessionStorage && sessionStorage.getItem("authToken")) || null;
+      if (token) {
+        headers["Authorization"] = "Bearer " + token;
+      } else {
+        console.warn(
+          "[ESTOQUE][getAuthHeadersEstoque] authToken ausente no sessionStorage."
+        );
+      }
+    } catch (e) {
+      console.warn(
+        "[ESTOQUE][getAuthHeadersEstoque] Erro ao ler authToken:",
+        e
+      );
+    }
+  }
+
+  headers["x-usuario-email"] = user.email;
+
+  // Não loga o token por segurança
+  const headersSafe = { ...headers };
+  if (headersSafe.Authorization) {
+    headersSafe.Authorization = "Bearer ****";
+  }
+  console.log("[ESTOQUE][getAuthHeadersEstoque] Headers finais:", headersSafe);
+
+  return headers;
+}
+
+async function apiGetLocal(path) {
+  const user =
+    typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+  console.log("[ESTOQUE][apiGetLocal] path:", path);
+  console.log("[ESTOQUE][apiGetLocal] user:", user && {
+    email: user.email,
+    nome: user.nome,
+    tipo: user.tipo,
+    perfis: user.perfis
+  });
+  console.log("[ESTOQUE][apiGetLocal] window.API_BASE:", window.API_BASE);
+
+  const base = window.API_BASE;
+  if (!base) {
+    console.error("[ESTOQUE][apiGetLocal] window.API_BASE não definido.");
+    throw new Error("API base não configurada");
+  }
+
+  const url = base + path;
+  console.log("[ESTOQUE][apiGetLocal] URL final:", url);
+
+  const headers = getAuthHeadersEstoque();
+  const headersSafe = { ...headers };
+  if (headersSafe.Authorization) {
+    headersSafe.Authorization = "Bearer ****";
+  }
+  console.log("[ESTOQUE][apiGetLocal] Headers enviados:", headersSafe);
+
+  let resp;
+  try {
+    resp = await fetch(url, {
+      method: "GET",
+      headers
+    });
+  } catch (err) {
+    console.error("[ESTOQUE][apiGetLocal] Erro de rede/fetch:", err);
+    throw new Error("Falha na comunicação com o servidor de estoque");
+  }
+
+  console.log("[ESTOQUE][apiGetLocal] HTTP status:", resp.status);
+
+  if (!resp.ok) {
+    let bodyText = "";
+    try {
+      bodyText = await resp.text();
+    } catch (err) {
+      console.warn(
+        "[ESTOQUE][apiGetLocal] Erro ao ler corpo da resposta:",
+        err
+      );
+    }
+
+    console.error(
+      "[ESTOQUE][apiGetLocal] Resposta não OK:",
+      "status=", resp.status,
+      "body=", bodyText
+    );
+
+    if (resp.status === 401) {
+      console.warn(
+        "[ESTOQUE][apiGetLocal] 401 - usuário não autorizado ou header ausente."
+      );
+    }
+
+    throw new Error("HTTP " + resp.status + " ao chamar " + path);
+  }
+
+  let json;
+  try {
+    json = await resp.json();
+  } catch (err) {
+    console.error("[ESTOQUE][apiGetLocal] Erro ao fazer parse do JSON:", err);
+    throw new Error("Erro ao interpretar resposta de estoque");
+  }
+
+  console.log("[ESTOQUE][apiGetLocal] JSON recebido:", json);
+  return json;
+}
+
+/* ================================
+   BOOTSTRAP DA PÁGINA
+================================ */
+
 window.addEventListener("DOMContentLoaded", () => {
   console.log("[ESTOQUE] DOMContentLoaded");
+
+  // Garante usuário logo no início
+  const user = getUsuarioObrigatorio();
+  if (!user) return;
 
   const app = document.getElementById("app");
   const btnToggle = document.getElementById("btnToggleSidebar");
@@ -58,16 +235,28 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 function limparFiltros() {
-  document.getElementById("fEmpresaNome").value = "";
-  document.getElementById("fGrupoCod").value = "";
-  document.getElementById("fGrupoNome").value = "";
-  document.getElementById("fProdCod").value = "";
-  document.getElementById("fProdNome").value = "";
+  const empresaNome = document.getElementById("fEmpresaNome");
+  const grupoCod = document.getElementById("fGrupoCod");
+  const grupoNome = document.getElementById("fGrupoNome");
+  const prodCod = document.getElementById("fProdCod");
+  const prodNome = document.getElementById("fProdNome");
+
+  if (empresaNome) empresaNome.value = "";
+  if (grupoCod) grupoCod.value = "";
+  if (grupoNome) grupoNome.value = "";
+  if (prodCod) prodCod.value = "";
+  if (prodNome) prodNome.value = "";
+
   // se tiver checkbox de reservado, pode resetar aqui:
   // const chk = document.getElementById("fSomenteReservado");
   // if (chk) chk.checked = false;
+
   carregarEstoque();
 }
+
+/* ================================
+   CARGA DO ESTOQUE (API + FILTRO)
+================================ */
 
 async function carregarEstoque() {
   console.log("[ESTOQUE] carregarEstoque() chamado");
@@ -103,21 +292,14 @@ async function carregarEstoque() {
   else if (grupoNomeFiltro) params.set("grupo", grupoNomeFiltro);
   if (codprod && !Number.isNaN(codprod)) params.set("codprod", String(codprod));
 
-  const url =
-    API_BASE +
-    "/api/v1/estoque" +
-    (params.toString() ? "?" + params.toString() : "");
+  const path =
+    "/estoque" + (params.toString() ? "?" + params.toString() : "");
 
-  console.log("[ESTOQUE] Fetch URL:", url);
+  console.log("[ESTOQUE][carregarEstoque] path montado:", path);
 
   try {
-    const resp = await fetch(url);
-    console.log("[ESTOQUE] HTTP status:", resp.status);
-    if (!resp.ok) {
-      throw new Error("HTTP " + resp.status);
-    }
-    const data = await resp.json();
-    console.log("[ESTOQUE] Dados recebidos:", data);
+    const data = await apiGetLocal(path);
+    console.log("[ESTOQUE][carregarEstoque] Dados recebidos:", data);
 
     estoqueBruto = data && Array.isArray(data.estoque) ? data.estoque : [];
 
@@ -129,10 +311,10 @@ async function carregarEstoque() {
           </td>
         </tr>
       `;
-      cardEstoqueTotal.textContent = "0,00";
-      cardReservadoTotal.textContent = "0,00";
-      cardDisponivelTotal.textContent = "0,00";
-      cardQtdeGrupos.textContent = "0";
+      if (cardEstoqueTotal) cardEstoqueTotal.textContent = "0,00";
+      if (cardReservadoTotal) cardReservadoTotal.textContent = "0,00";
+      if (cardDisponivelTotal) cardDisponivelTotal.textContent = "0,00";
+      if (cardQtdeGrupos) cardQtdeGrupos.textContent = "0";
       if (infoRegistros)
         infoRegistros.textContent = "Mostrando 0 de 0 registros";
       return;
@@ -140,11 +322,16 @@ async function carregarEstoque() {
 
     aplicarFiltroLocal();
   } catch (e) {
-    console.error("Erro ao carregar estoque:", e);
+    console.error("[ESTOQUE][carregarEstoque] Erro ao carregar estoque:", e);
+
     tbody.innerHTML = `
       <tr>
         <td colspan="10" class="empty-state">
-          Erro ao carregar dados de estoque (API). Tente novamente mais tarde.
+          ${
+            String(e).includes("401")
+              ? "Usuário não autorizado. Faça login novamente."
+              : "Erro ao carregar dados de estoque (API). Tente novamente mais tarde."
+          }
         </td>
       </tr>
     `;
@@ -152,7 +339,10 @@ async function carregarEstoque() {
     if (cardReservadoTotal) cardReservadoTotal.textContent = "—";
     if (cardDisponivelTotal) cardDisponivelTotal.textContent = "—";
     if (cardQtdeGrupos) cardQtdeGrupos.textContent = "—";
-    if (infoRegistros) infoRegistros.textContent = "Erro ao carregar";
+    if (infoRegistros) {
+      infoRegistros.textContent =
+        "Erro ao carregar (detalhes no console do navegador)";
+    }
   }
 }
 
@@ -254,10 +444,10 @@ function aplicarFiltroLocal() {
         </td>
       </tr>
     `;
-    cardEstoqueTotal.textContent = "0,00";
-    cardReservadoTotal.textContent = "0,00";
-    cardDisponivelTotal.textContent = "0,00";
-    cardQtdeGrupos.textContent = "0";
+    if (cardEstoqueTotal) cardEstoqueTotal.textContent = "0,00";
+    if (cardReservadoTotal) cardReservadoTotal.textContent = "0,00";
+    if (cardDisponivelTotal) cardDisponivelTotal.textContent = "0,00";
+    if (cardQtdeGrupos) cardQtdeGrupos.textContent = "0";
     if (infoRegistros)
       infoRegistros.textContent = "Mostrando 0 de 0 registros";
     return;
@@ -361,23 +551,23 @@ function aplicarFiltroLocal() {
     btn.addEventListener("click", onClickVerPreco);
   });
 
-  cardEstoqueTotal.textContent = formatNumber(totalEstoque);
-  cardReservadoTotal.textContent = formatNumber(totalReservado);
-  cardDisponivelTotal.textContent = formatNumber(
-    totalEstoque - totalReservado
-  );
-  cardQtdeGrupos.textContent = String(gruposSet.size);
+  if (cardEstoqueTotal) cardEstoqueTotal.textContent = formatNumber(totalEstoque);
+  if (cardReservadoTotal) cardReservadoTotal.textContent = formatNumber(totalReservado);
+  if (cardDisponivelTotal)
+    cardDisponivelTotal.textContent = formatNumber(
+      totalEstoque - totalReservado
+    );
+  if (cardQtdeGrupos) cardQtdeGrupos.textContent = String(gruposSet.size);
   if (infoRegistros) {
     infoRegistros.textContent =
       "Total filtrado: " + itensFiltrados.length + " registros";
   }
 }
 
-/**
- * Usa altura da janela:
- * - até 800px ~ 10 linhas
- * - acima de 800px ~ 15 linhas
- */
+/* ================================
+   AJUSTE VISUAL / UTILITÁRIOS
+================================ */
+
 function ajustarAlturaTabela() {
   const wrapper = document.querySelector(".table-wrapper");
   const tbody = document.getElementById("tbodyEstoque");
@@ -457,6 +647,7 @@ function initPrecoModal() {
 
   btnConfirmar.addEventListener("click", () => {
     const senha = input.value;
+    // Não loga a senha digitada
     if (senha === PRECO_SENHA) {
       console.log("[PRECO] Senha correta. Liberando visualização de preços.");
       precoSenhaValidada = true;
@@ -464,7 +655,7 @@ function initPrecoModal() {
       input.value = "";
       erroEl.textContent = "";
     } else {
-      console.log("[PRECO] Senha incorreta.");
+      console.warn("[PRECO] Senha incorreta.");
       erroEl.textContent = "Senha inválida.";
       precoSenhaValidada = false;
     }

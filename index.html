@@ -35,12 +35,58 @@
     <div class="grid-bg"></div>
   </div>
 
+  <!-- Overlay de loading de login -->
+  <div id="login-loading-overlay" class="login-loading-overlay" style="display:none;">
+    <div class="login-loading-content">
+      <svg height="128px" width="128px" viewBox="0 0 128 128" class="pl1">
+        <defs>
+          <linearGradient y2="1" x2="1" y1="0" x1="0" id="pl-grad">
+            <stop stop-color="#000" offset="0%"></stop>
+            <stop stop-color="#fff" offset="100%"></stop>
+          </linearGradient>
+          <mask id="pl-mask">
+            <rect fill="url(#pl-grad)" height="128" width="128" y="0" x="0"></rect>
+          </mask>
+        </defs>
+        <g fill="var(--loader-base)">
+          <g class="pl1__g">
+            <g transform="translate(20,20) rotate(0,44,44)">
+              <g class="pl1__rect-g">
+                <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+                <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+              </g>
+              <g transform="rotate(180,44,44)" class="pl1__rect-g">
+                <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+                <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+              </g>
+            </g>
+          </g>
+        </g>
+        <g mask="url(#pl-mask)" fill="var(--loader-accent)">
+          <g class="pl1__g">
+            <g transform="translate(20,20) rotate(0,44,44)">
+              <g class="pl1__rect-g">
+                <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+                <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+              </g>
+              <g transform="rotate(180,44,44)" class="pl1__rect-g">
+                <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+                <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
+              </g>
+            </g>
+          </g>
+        </g>
+      </svg>
+      <p class="login-loading-text">Validando credenciais...</p>
+    </div>
+  </div>
+
   <!-- Conteúdo principal -->
   <div class="container">
     <!-- Lado esquerdo (texto) -->
     <section class="left-section" aria-labelledby="portal-title">
       <div class="header-brand">
-        <!-- Se quiser recolocar logo, é só descomentar
+        <!--
         <div class="logo-container">
           <img src="assets/imagem/logo.png" alt="Linhagro & Lithoplant" class="logo-image" />
         </div>
@@ -133,49 +179,43 @@
   </div>
 
   <script>
-    // Mostrar / ocultar senha
     function toggleSenha() {
       const input = document.getElementById('senha');
       if (!input) return;
       input.type = input.type === 'password' ? 'text' : 'password';
     }
 
-    function login() {
+    async function login() {
       const usuario = document.getElementById("usuario").value;
       const senha = document.getElementById("senha").value;
       const btn = document.getElementById("btnLogin");
       const erro = document.getElementById("erro");
+      const overlay = document.getElementById("login-loading-overlay");
 
       if (erro) erro.style.display = "none";
 
-      const user = loginSistema(usuario, senha); // definida em global.js
+      btn.disabled = true;
+      if (overlay) overlay.style.display = "flex";
 
-      if (!user) {
-        if (erro) erro.style.display = "flex";
-        return;
-      }
+      try {
+        const user = await loginSistema(usuario, senha);
 
-      btn.classList.add("loading");
-
-      // Se o usuário só tiver UMA empresa, já salva e vai direto pro menu
-      if (user.empresas && user.empresas.length === 1) {
-        const emp = user.empresas[0];
-        if (window.sessionStorage) {
-          sessionStorage.setItem("empresaSelecionada", emp);
+        if (!user) {
+          if (erro) erro.style.display = "flex";
+          return;
         }
-        setTimeout(() => {
-          window.location.href = "html/menu.html";
-        }, 300);
-        return;
-      }
 
-      // Se tiver mais de uma empresa, vai para select-company escolher
-      setTimeout(() => {
+        // Sempre vai para select-company.
         window.location.href = "html/select-company.html";
-      }, 300);
+      } catch (e) {
+        console.error("Erro no login:", e);
+        if (erro) erro.style.display = "flex";
+      } finally {
+        if (overlay) overlay.style.display = "none";
+        btn.disabled = false;
+      }
     }
 
-    // partículas de fundo
     (function gerarParticulas() {
       const container = document.querySelector('.particles-container');
       if (!container) return;

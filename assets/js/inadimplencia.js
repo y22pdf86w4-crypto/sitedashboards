@@ -1,5 +1,14 @@
-const API_BASE =
-  "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net";
+// assets/js/inadimplencia.js
+
+console.log("[INAD] Script inadimplencia.js carregado.");
+
+// Base da API: usa window.APIBASE (core global); se não existir, cai no default.
+function getApiBaseInad() {
+  if (typeof window !== "undefined" && window.APIBASE) {
+    return window.APIBASE;
+  }
+  return "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1";
+}
 
 let leafletMap = null;
 let heatLayer = null;
@@ -13,8 +22,9 @@ const pontoIcon = L.icon({
   popupAnchor: [1, -34]
 });
 
-console.log("[INIT] Script inadimplencia.js carregado");
-
+/* ================================
+   CSS do mapa (inline)
+================================ */
 (function ensureMapCss() {
   const style = document.createElement("style");
   style.innerHTML = `
@@ -35,6 +45,10 @@ console.log("[INIT] Script inadimplencia.js carregado");
   document.head.appendChild(style);
 })();
 
+/* ================================
+   HELPERS GERAIS
+================================ */
+
 function debounce(fn, delay) {
   let t;
   return (...args) => {
@@ -43,8 +57,145 @@ function debounce(fn, delay) {
   };
 }
 
+// Garante usuário logado
+function getUsuarioObrigatorioInad() {
+  const user =
+    typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+  console.log("[INAD][getUsuarioObrigatorio] user:", user && {
+    email: user.email,
+    nome: user.nome,
+    tipo: user.tipo,
+    perfis: user.perfis
+  });
+
+  if (!user) {
+    console.warn("[INAD][getUsuarioObrigatorio] Sem usuário, redirecionando.");
+    window.location.href = "../index.html";
+    return null;
+  }
+  if (!user.email) {
+    console.warn(
+      "[INAD][getUsuarioObrigatorio] Usuário sem email, redirecionando."
+    );
+    window.location.href = "../index.html";
+    return null;
+  }
+  return user;
+}
+
+// Headers com token + e-mail, reaproveitando helper global se existir
+function getAuthHeadersInad() {
+  const user = getUsuarioObrigatorioInad();
+  if (!user) {
+    console.warn(
+      "[INAD][getAuthHeadersInad] Sem usuário, retornando headers mínimos."
+    );
+    return { "Content-Type": "application/json" };
+  }
+
+  let headers;
+
+  if (typeof getAuthHeadersCalendario === "function") {
+    // Usa exatamente o mesmo helper do calendário
+    headers = getAuthHeadersCalendario();
+  } else {
+    headers = { "Content-Type": "application/json" };
+
+    try {
+      const token =
+        (window.sessionStorage && sessionStorage.getItem("authToken")) || null;
+      if (token) {
+        headers["Authorization"] = "Bearer " + token;
+      } else {
+        console.warn(
+          "[INAD][getAuthHeadersInad] authToken ausente no sessionStorage."
+        );
+      }
+    } catch (e) {
+      console.warn(
+        "[INAD][getAuthHeadersInad] Erro ao ler authToken:",
+        e
+      );
+    }
+  }
+
+  headers["x-usuario-email"] = user.email;
+
+  const safe = { ...headers };
+  if (safe.Authorization) safe.Authorization = "Bearer ****";
+  console.log("[INAD][getAuthHeadersInad] Headers finais:", safe);
+
+  return headers;
+}
+
+// GET genérico para inadimplência/vendas
+async function apiGetInad(path) {
+  const base = getApiBaseInad();
+  if (!base) {
+    console.error("[INAD][apiGetInad] API base não definida.");
+    throw new Error("API base não configurada");
+  }
+
+  const url = base + path;
+  console.log("[INAD][apiGetInad] URL:", url);
+
+  const headers = getAuthHeadersInad();
+  const safe = { ...headers };
+  if (safe.Authorization) safe.Authorization = "Bearer ****";
+  console.log("[INAD][apiGetInad] Headers enviados:", safe);
+
+  let resp;
+  try {
+    resp = await fetch(url, {
+      method: "GET",
+      headers
+    });
+  } catch (e) {
+    console.error("[INAD][apiGetInad] Erro de rede/fetch:", e);
+    throw new Error("Falha na comunicação com o servidor (inadimplência)");
+  }
+
+  console.log("[INAD][apiGetInad] HTTP status:", resp.status);
+
+  if (!resp.ok) {
+    let body = "";
+    try {
+      body = await resp.text();
+    } catch (e) {
+      console.warn("[INAD][apiGetInad] Erro ao ler corpo:", e);
+    }
+    console.error(
+      "[INAD][apiGetInad] Resposta não OK:",
+      "status=", resp.status,
+      "body=", body
+    );
+    if (resp.status === 401) {
+      console.warn(
+        "[INAD][apiGetInad] 401 - não autorizado (token/e-mail ausente ou inválido)."
+      );
+    }
+    throw new Error("HTTP " + resp.status + " ao chamar " + path);
+  }
+
+  try {
+    const json = await resp.json();
+    console.log("[INAD][apiGetInad] JSON recebido:", json);
+    return json;
+  } catch (e) {
+    console.error("[INAD][apiGetInad] Erro ao fazer parse JSON:", e);
+    throw new Error("Erro ao interpretar resposta JSON");
+  }
+}
+
+/* ================================
+   DOMContentLoaded
+================================ */
+
 window.addEventListener("DOMContentLoaded", () => {
-  console.log("[INIT] DOMContentLoaded");
+  console.log("[INAD] DOMContentLoaded");
+
+  const user = getUsuarioObrigatorioInad();
+  if (!user) return;
 
   if (typeof gerarParticulasSelector === "function") {
     const particlesContainer = document.querySelector(".particles-container");
@@ -201,10 +352,14 @@ function limparFiltros() {
   const fMes = document.getElementById("fMes");
   if (fMes) fMes.value = "";
 
-  document.getElementById("fRegiao").value = "";
-  document.getElementById("fVendedor").value = "";
-  document.getElementById("fVendedorNome").value = "";
-  document.getElementById("fCliente").value = "";
+  const fRegiao = document.getElementById("fRegiao");
+  if (fRegiao) fRegiao.value = "";
+  const fVendedor = document.getElementById("fVendedor");
+  if (fVendedor) fVendedor.value = "";
+  const fVendedorNome = document.getElementById("fVendedorNome");
+  if (fVendedorNome) fVendedorNome.value = "";
+  const fCliente = document.getElementById("fCliente");
+  if (fCliente) fCliente.value = "";
 
   const fClienteNome = document.getElementById("fClienteNome");
   if (fClienteNome) fClienteNome.value = "";
@@ -218,10 +373,11 @@ function limparFiltros() {
 function getFiltrosQueryString(extra = {}) {
   const anoStr = (document.getElementById("fAno")?.value || "").trim();
   const mesStr = (document.getElementById("fMes")?.value || "").trim();
-  const regiao = document.getElementById("fRegiao").value || "";
-  const vendedor = document.getElementById("fVendedor").value || "";
-  const vendedorNome = document.getElementById("fVendedorNome").value || "";
-  const cliente = document.getElementById("fCliente").value || "";
+  const regiao = document.getElementById("fRegiao")?.value || "";
+  const vendedor = document.getElementById("fVendedor")?.value || "";
+  const vendedorNome =
+    document.getElementById("fVendedorNome")?.value || "";
+  const cliente = document.getElementById("fCliente")?.value || "";
 
   const params = new URLSearchParams();
 
@@ -292,44 +448,38 @@ function truncarNomeVendedor(nome, max = 12) {
 
 async function carregarDashboard() {
   const qs = getFiltrosQueryString();
-  const urlInad = `${API_BASE}/api/v1/inadimplencia/dashboard${qs}`;
-  const urlVend = `${API_BASE}/api/v1/vendas/dashboard${qs}`;
+  const pathInad = `/inadimplencia/dashboard${qs}`;
+  const pathVend = `/vendas/dashboard${qs}`;
 
-  console.log("[DASHBOARD] Requisição inadimplência:", urlInad);
-  console.log("[DASHBOARD] Requisição vendas:", urlVend);
+  console.log("[DASHBOARD] Paths:", pathInad, pathVend);
 
   const cardReceita = document.getElementById("cardReceitaTotal");
   const cardInad = document.getElementById("cardInad");
   const cardClientes = document.getElementById("cardClientesInad");
   const cardTicket = document.getElementById("cardTicket");
 
-  cardReceita.textContent = "…";
-  cardInad.textContent = "…";
-  cardClientes.textContent = "…";
-  cardTicket.textContent = "…";
+  if (cardReceita) cardReceita.textContent = "…";
+  if (cardInad) cardInad.textContent = "…";
+  if (cardClientes) cardClientes.textContent = "…";
+  if (cardTicket) cardTicket.textContent = "…";
 
-  const [respInad, respVend] = await Promise.all([
-    fetch(urlInad),
-    fetch(urlVend)
+  const [dataInad, dataVend] = await Promise.all([
+    apiGetInad(pathInad),
+    apiGetInad(pathVend)
   ]);
-
-  console.log("[DASHBOARD] Status inad:", respInad.status);
-  console.log("[DASHBOARD] Status vend:", respVend.status);
-
-  if (!respInad.ok) throw new Error("Erro inadimplência " + respInad.status);
-  if (!respVend.ok) throw new Error("Erro vendas " + respVend.status);
-
-  const dataInad = await respInad.json();
-  const dataVend = await respVend.json();
 
   ultimoDashboardData = dataInad || null;
 
-  cardReceita.textContent = fmtValor(dataVend.valor_venda_total || 0);
-  cardInad.textContent = fmtValor(dataInad.total_inadimplencia || 0);
-  cardClientes.textContent = fmtInt(
-    dataInad.qtde_clientes_inadimplentes || 0
-  );
-  cardTicket.textContent = fmtValor(dataInad.ticket_medio_geral || 0);
+  if (cardReceita)
+    cardReceita.textContent = fmtValor(dataVend.valor_venda_total || 0);
+  if (cardInad)
+    cardInad.textContent = fmtValor(dataInad.total_inadimplencia || 0);
+  if (cardClientes)
+    cardClientes.textContent = fmtInt(
+      dataInad.qtde_clientes_inadimplentes || 0
+    );
+  if (cardTicket)
+    cardTicket.textContent = fmtValor(dataInad.ticket_medio_geral || 0);
 
   return dataInad;
 }
@@ -441,11 +591,12 @@ function montarRankingAPartirClientes(clientes) {
   const tbody = document.getElementById("tbodyRanking");
   if (!tbody) return;
 
-  const vendedorFiltro = (document.getElementById("fVendedor").value || "")
-    .toString()
-    .trim();
+  const vendedorFiltro =
+    (document.getElementById("fVendedor")?.value || "")
+      .toString()
+      .trim();
   const vendedorNomeFiltro = (
-    document.getElementById("fVendedorNome").value || ""
+    document.getElementById("fVendedorNome")?.value || ""
   )
     .toString()
     .trim()
@@ -549,7 +700,7 @@ function montarRankingAPartirClientes(clientes) {
 /* ========= BUSCA RÁPIDA DE CLIENTE ========= */
 
 async function buscarClientePorNome() {
-  const termo = (document.getElementById("fClienteNome").value || "").trim();
+  const termo = (document.getElementById("fClienteNome")?.value || "").trim();
   const container = document.getElementById("clienteBuscaResultados");
   if (!container) return;
 
@@ -559,43 +710,41 @@ async function buscarClientePorNome() {
   }
 
   const qs = getFiltrosQueryString({ clienteNome: termo });
-  const url = `${API_BASE}/api/v1/inadimplencia/dashboard${qs}`;
+  const path = `/inadimplencia/dashboard${qs}`;
 
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    console.error("[BUSCA-CLIENTE] Erro dashboard com clienteNome", resp.status);
-    return;
+  try {
+    const data = await apiGetInad(path);
+    const clientes = data.clientes || [];
+    if (!clientes.length) {
+      container.innerHTML = "<span>Nenhum cliente encontrado.</span>";
+      return;
+    }
+
+    const items = clientes
+      .slice(0, 20)
+      .map(c => {
+        const nome = c.nome_cliente || "";
+        const vendedor = c.nome_vendedor || "Sem vendedor";
+        const valor = fmtValor(c.valor_inadimplencia || 0);
+        return `
+          <li>
+            <span class="nome">${nome}</span>
+            <span class="vendedor">${vendedor}</span>
+            <span class="valor">${valor}</span>
+          </li>
+        `;
+      })
+      .join("");
+
+    container.innerHTML = `
+      <span>Clientes inadimplentes encontrados:</span>
+      <ul>
+        ${items}
+      </ul>
+    `;
+  } catch (e) {
+    console.error("[BUSCA-CLIENTE] Erro ao carregar dashboard com clienteNome:", e);
   }
-  const data = await resp.json();
-
-  const clientes = data.clientes || [];
-  if (!clientes.length) {
-    container.innerHTML = "<span>Nenhum cliente encontrado.</span>";
-    return;
-  }
-
-  const items = clientes
-    .slice(0, 20)
-    .map(c => {
-      const nome = c.nome_cliente || "";
-      const vendedor = c.nome_vendedor || "Sem vendedor";
-      const valor = fmtValor(c.valor_inadimplencia || 0);
-      return `
-        <li>
-          <span class="nome">${nome}</span>
-          <span class="vendedor">${vendedor}</span>
-          <span class="valor">${valor}</span>
-        </li>
-      `;
-    })
-    .join("");
-
-  container.innerHTML = `
-    <span>Clientes inadimplentes encontrados:</span>
-    <ul>
-      ${items}
-    </ul>
-  `;
 }
 
 /* ========= MODAL DE CLIENTES ========= */
@@ -610,15 +759,9 @@ function inicializarModalClientes() {
 
   const fechar = () => fecharModalClientes();
 
-  if (backdrop) {
-    backdrop.addEventListener("click", fechar);
-  }
-  if (btnClose) {
-    btnClose.addEventListener("click", fechar);
-  }
-  if (btnCloseFooter) {
-    btnCloseFooter.addEventListener("click", fechar);
-  }
+  if (backdrop) backdrop.addEventListener("click", fechar);
+  if (btnClose) btnClose.addEventListener("click", fechar);
+  if (btnCloseFooter) btnCloseFooter.addEventListener("click", fechar);
 
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
@@ -692,15 +835,15 @@ function fecharModalClientes() {
 /* ========= ORQUESTRAÇÃO ========= */
 
 async function atualizarTudo() {
-  console.log("========== [ATUALIZAR TUDO] ==========");
+  console.log("========== [INAD][ATUALIZAR TUDO] ==========");
   try {
     const dataDash = await carregarDashboard();
     await initLeafletMap();
     montarHeatmapAPartirClientes(dataDash.clientes || []);
     montarRankingAPartirClientes(dataDash.clientes || []);
-    console.log("[ATUALIZAR TUDO] Concluído com sucesso");
+    console.log("[INAD][ATUALIZAR TUDO] Concluído com sucesso");
   } catch (e) {
-    console.error("[ATUALIZAR TUDO] Erro:", e);
+    console.error("[INAD][ATUALIZAR TUDO] Erro:", e);
     alert("Erro ao carregar dados: " + e.message);
   }
 }

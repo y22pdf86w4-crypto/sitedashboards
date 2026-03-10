@@ -1,32 +1,54 @@
-// ======== CONFIG API BASE ========
-
-if (window.API_BASE === undefined) {
+// CONFIG API BASE
+if (window.APIBASE === undefined) {
   const DEFAULT_LOGISTICA_API_BASE =
-    'https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1';
-
+    "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1";
   const LOGISTICA_SCRIPT_TAG = document.currentScript;
   const LOGISTICA_API_BASE =
     LOGISTICA_SCRIPT_TAG?.dataset?.apiBase || DEFAULT_LOGISTICA_API_BASE;
+  window.APIBASE = LOGISTICA_API_BASE;
+}
+console.log("logistica.js carregado. APIBASE =", window.APIBASE);
 
-  window.API_BASE = LOGISTICA_API_BASE;
+// AUTH HELPER JWT
+function getAuthHeaders() {
+  try {
+    const token =
+      (window.sessionStorage && sessionStorage.getItem("authToken")) || null;
+    if (!token) return;
+    return {
+      Authorization: "Bearer " + token
+    };
+  } catch (e) {
+    console.warn("Erro ao recuperar authToken do sessionStorage:", e);
+    return;
+  }
 }
 
-console.log('logistica.js carregado. API_BASE =', window.API_BASE);
+async function apiFetch(path, options = {}) {
+  const url = window.APIBASE + path;
+  const resp = await fetch(url, {
+    method: options.method || "GET",
+    headers: {
+      ...(options.headers || {}),
+      ...(getAuthHeaders() || {})
+    },
+    body: options.body === undefined ? undefined : options.body
+  });
+  return resp;
+}
 
-// ======== CONSTANTES DE LIMITE ========
-
+// CONSTANTES DE LIMITE
 const LIMITE_PONTOS_ROTA = 80;
 
-// ======== TOMTOM TRAFFIC (FLOW) ========
-
-const TOMTOM_API_KEY = 'l22aGTuKjY30e1lAcUqAup3XZ8pYzCOb';
+// TOMTOM TRAFFIC FLOW
+const TOMTOM_API_KEY = "l22aGTuKjY30e1lAcUqAup3XZ8pYzCOb";
 
 const tomtomTrafficLayer = L.tileLayer(
-  'https://api.tomtom.com/traffic/map/4/tile/flow/absolute/{z}/{x}/{y}.png?key=' +
+  "https://api.tomtom.com/traffic/map/4/tile/flow/absolute/{z}/{x}/{y}.png?key=" +
     TOMTOM_API_KEY,
   {
     opacity: 0.7,
-    attribution: '&copy; TomTom'
+    attribution: "© TomTom"
   }
 );
 
@@ -38,35 +60,36 @@ function toggleTraffic(ativo) {
   }
 }
 
-// ======== TOMTOM TRAFFIC INCIDENTS (PONTOS) ========
-
+// TOMTOM TRAFFIC INCIDENTS
 let incidentMarkers = [];
 
 function escolherIconePorCategoria(cat) {
-  let color = '#2563eb';
-
-  if (cat === 1) color = '#ef4444';
-  else if (cat === 6) color = '#f97316';
-  else if (cat === 8) color = '#111827';
-  else if (cat === 9) color = '#eab308';
+  let color = "#2563eb";
+  if (cat === 1) color = "#ef4444";
+  else if (cat === 6) color = "#f97316";
+  else if (cat === 8) color = "#111827";
+  else if (cat === 9) color = "#eab308";
 
   return L.divIcon({
-    className: 'incident-marker-wrapper',
+    className: "incident-marker-wrapper",
     html: `<div class="incident-marker" style="
-      width:14px;height:14px;border-radius:50%;
-      background:${color};border:2px solid #0f172a;
-      box-shadow:0 0 6px rgba(15,23,42,0.8);
-    "></div>`,
+        width:14px;
+        height:14px;
+        border-radius:50%;
+        background:${color};
+        border:2px solid #0f172a;
+        box-shadow:0 0 6px rgba(15,23,42,0.8);
+      "></div>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7]
   });
 }
 
-function traduzirDescricaoTomTom(desc, props = {}) {
-  if (!desc) return 'Incidente de trânsito';
+function traduzirDescricaoTomTom(desc, props) {
+  if (!desc) return "Incidente de trânsito";
   const d = String(desc).toLowerCase();
-  if (d.includes('queuing traffic')) return '🚗🚗 Trânsito em fila (lento)';
-  if (d.includes('stationary traffic')) return '⛔ Trânsito parado';
+  if (d.includes("queuing traffic")) return "Trânsito em fila / lento";
+  if (d.includes("stationary traffic")) return "Trânsito parado";
   return desc;
 }
 
@@ -81,47 +104,41 @@ async function carregarIncidentesTomTom() {
   const maxLon = bounds.getEast();
 
   if (map.getZoom() < 9) {
-    console.log('Zoom muito baixo para incidentes, pulando chamada TomTom');
+    console.log("Zoom muito baixo para incidentes, pulando chamada TomTom");
     return;
   }
 
   const bbox = `${minLon},${minLat},${maxLon},${maxLat}`;
-  const url = `${window.API_BASE}/logistica/tomtom/incidentes?bbox=${encodeURIComponent(
-    bbox
-  )}`;
+  const path = `/logistica/tomtom/incidentes?bbox=${encodeURIComponent(bbox)}`;
 
   try {
-    const resp = await fetch(url);
+    const resp = await apiFetch(path);
     if (!resp.ok) {
-      console.warn('Incidentes HTTP', resp.status);
+      console.warn("Incidentes HTTP", resp.status);
       return;
     }
     const data = await resp.json();
-
     (data.incidents || []).forEach(inc => {
-      const props = inc.properties || {};
-      const geom = inc.geometry || {};
+      const props = inc.properties;
+      const geom = inc.geometry;
       const cat = props.iconCategory;
-      const evt = (props.events && props.events[0]) || {};
-      const descrOriginal = evt.description || 'Incidente de trânsito';
+      const evt = props.events && props.events[0];
+      const descrOriginal = evt?.description || "Incidente de trânsito";
       const descr = traduzirDescricaoTomTom(descrOriginal, props);
 
       let lat = null;
       let lon = null;
-
-      if (geom.type === 'Point') {
-        const coords = geom.coordinates || [];
+      if (geom.type === "Point") {
+        const coords = geom.coordinates;
         lon = coords[0];
         lat = coords[1];
-      } else if (geom.type === 'LineString') {
+      } else if (geom.type === "LineString") {
         const coords = geom.coordinates || [];
-        if (coords.length > 0) {
-          const mid = Math.floor(coords.length / 2);
-          lon = coords[mid][0];
-          lat = coords[mid][1];
-        }
+        if (coords.length === 0) return;
+        const mid = Math.floor(coords.length / 2);
+        lon = coords[mid][0];
+        lat = coords[mid][1];
       }
-
       if (lat == null || lon == null) return;
 
       const marker = L.marker([lat, lon], {
@@ -132,13 +149,12 @@ async function carregarIncidentesTomTom() {
       incidentMarkers.push(marker);
     });
   } catch (e) {
-    console.warn('Erro ao carregar incidentes TomTom:', e);
+    console.warn("Erro ao carregar incidentes TomTom:", e);
   }
 }
 
-// ======== MAPA (OpenStreetMap France, por ex.) ========
-
-const map = L.map('map', {
+// MAPA
+const map = L.map("map", {
   zoomSnap: 0.25,
   zoomDelta: 0.5,
   wheelDebounceTime: 20,
@@ -146,42 +162,39 @@ const map = L.map('map', {
   attributionControl: false
 }).setView([-19.5, -40.3], 7);
 
-// Você pode trocar o tileLayer aqui se quiser outro estilo
-const OpenStreetMap_France = L.tileLayer(
-  'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
+const OpenStreetMapFrance = L.tileLayer(
+  "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
   {
     maxZoom: 20,
     attribution:
-      '&copy; OpenStreetMap France | &copy; ' +
-      '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }
 );
-
-OpenStreetMap_France.addTo(map);
+OpenStreetMapFrance.addTo(map);
 map.doubleClickZoom.disable();
 
-// ======== ESTADO ========
-
+// ESTADO
 let routingControl = null;
 let clienteMarkers = {};
 let todosMarkersRota = [];
-let ultimaRotaWaypoints = [];
-let cacheClientes = [];
-let cachePedidosPendentes = [];
-let cacheCarteira = [];
-let cacheVendedores = [];
-let clientesFiltradosAtuais = [];
+let ultimaRotaWaypoints = null;
+
+let cacheClientes = null;
+let cachePedidosPendentes = null;
+let cacheCarteira = null;
+let cacheVendedores = null;
+
+let clientesFiltradosAtuais = null;
 let paginaClientes = 0;
 const TAMANHO_PAGINA = 30;
 let carregandoMais = false;
+
 let ultimaAnaliseRota = null;
 let rotaDebounceTimeout = null;
 let dragListaConfigurado = false;
 
 let idsSelecionados = new Set();
-
-// origemAtual: 'pedidos' | 'clientes' | 'carteira'
-let origemAtual = 'pedidos';
+let origemAtual = "pedidos"; // "pedidos" | "clientes" | "carteira"
 
 // origem fixa para o ponto de partida
 const ORIGEM_FIXA = {
@@ -192,66 +205,54 @@ const ORIGEM_FIXA = {
 let marcadorLocalizacao = null;
 // começa na origem fixa, mas pode ser arrastado depois
 let origemManual = { ...ORIGEM_FIXA };
+
 let pontosManuais = [];
 let manualIdSeq = 1;
 
 const myLocationIcon = L.divIcon({
-  className: '',
-  html: '<div class="pin-minha-localizacao"></div>',
+  className: "",
+  html: `<div class="pin-minha-localizacao"></div>`,
   iconSize: [26, 34],
   iconAnchor: [13, 26]
 });
 
-// ======== DOM ========
-
-const listaClientesDiv = document.getElementById('listaClientes');
-const contadorClientesSpan = document.getElementById('contadorClientes');
-const contadorSelecionadosSpan = document.getElementById(
-  'contadorSelecionados'
-);
-const resumoSelecionadosDiv =
-  document.getElementById('resumoSelecionados');
-
-const alertasRota = document.getElementById('alertasRota');
-const alertasRotaSidebar = document.getElementById('alertasRotaSidebar');
-
-const filtroNomeInput = document.getElementById('filtroNome');
-
-const btnGerarLinkMapsSidebar = document.getElementById(
-  'btnGerarLinkMapsSidebar'
-);
-
-const chkEvitarPedagios = document.getElementById('chkEvitarPedagios');
-const chkEvitarPontes = document.getElementById('chkEvitarPontes');
-const linkMapsDiv = document.getElementById('linkMaps');
+// DOM
+const listaClientesDiv = document.getElementById("listaClientes");
+const contadorClientesSpan = document.getElementById("contadorClientes");
+const contadorSelecionadosSpan = document.getElementById("contadorSelecionados");
+const resumoSelecionadosDiv = document.getElementById("resumoSelecionados");
+const alertasRota = document.getElementById("alertasRota");
+const alertasRotaSidebar = document.getElementById("alertasRotaSidebar");
+const filtroNomeInput = document.getElementById("filtroNome");
+const btnGerarLinkMapsSidebar = document.getElementById("btnGerarLinkMapsSidebar");
+const chkEvitarPedagios = document.getElementById("chkEvitarPedagios");
+const chkEvitarPontes = document.getElementById("chkEvitarPontes");
+const linkMapsDiv = document.getElementById("linkMaps");
 
 // seletor de origem e vendedores
-const tipoOrigemSelect = document.getElementById('tipoOrigem');
-const grupoVendedoresDiv = document.getElementById('grupoVendedores');
-const selectVendedor = document.getElementById('selectVendedor');
+const tipoOrigemSelect = document.getElementById("tipoOrigem");
+const grupoVendedoresDiv = document.getElementById("grupoVendedores");
+const selectVendedor = document.getElementById("selectVendedor");
 
 // trânsito
-let chkVerTransito = document.getElementById('chkVerTransito');
+let chkVerTransito = document.getElementById("chkVerTransito");
 if (!chkVerTransito) chkVerTransito = chkEvitarPontes;
 
 // painel rota
-const rotaListaDiv = document.getElementById('rotaListaPontos');
-const novoPontoInput = document.getElementById('novoPontoInput');
-const btnAdicionarPonto = document.getElementById('btnAdicionarPonto');
-const rotaPanel = document.getElementById('rota-panel');
-const rotaPanelHeader = document.getElementById('rota-panel-header');
-const rotaPanelMinimize = document.getElementById('rotaPanelMinimize');
+const rotaListaDiv = document.getElementById("rotaListaPontos");
+const novoPontoInput = document.getElementById("novoPontoInput");
+const btnAdicionarPonto = document.getElementById("btnAdicionarPonto");
+const rotaPanel = document.getElementById("rota-panel");
+const rotaPanelHeader = document.getElementById("rota-panel-header");
+const rotaPanelMinimize = document.getElementById("rotaPanelMinimize");
+const destinoCampoPainel = document.getElementById("destinoCampoPainel");
+const btnGerarRota = document.getElementById("btnGerarRota");
+const btnGerarLinkMaps = document.getElementById("btnGerarLinkMaps");
+const btnSelecionarTodos = document.getElementById("btnSelecionarTodos");
+const btnLimparSelecao = document.getElementById("btnLimparSelecao");
+const btnOtimizarRota = document.getElementById("btnOtimizarRota");
 
-const destinoCampoPainel =
-  document.getElementById('destinoCampoPainel');
-const btnGerarRota = document.getElementById('btnGerarRota');
-const btnGerarLinkMaps = document.getElementById('btnGerarLinkMaps');
-const btnSelecionarTodos = document.getElementById('btnSelecionarTodos');
-const btnLimparSelecao = document.getElementById('btnLimparSelecao');
-const btnOtimizarRota = document.getElementById('btnOtimizarRota');
-
-// ======== HELPERS ========
-
+// HELPERS
 function getDestinoCampo() {
   return destinoCampoPainel.value.trim();
 }
@@ -266,13 +267,12 @@ function setLinkMapsEnabled(enabled) {
   btnGerarLinkMapsSidebar.disabled = !enabled;
 }
 
-// NÃO remove o marcadorLocalizacao (pin vermelho)
+// remove o marcadorLocalizacao (pin vermelho)
 function removerTodosMarkersDoMapa() {
   todosMarkersRota.forEach(m => {
     if (map.hasLayer(m)) map.removeLayer(m);
   });
   todosMarkersRota = [];
-
   Object.values(clienteMarkers).forEach(m => {
     if (map.hasLayer(m)) map.removeLayer(m);
   });
@@ -282,22 +282,18 @@ function removerTodosMarkersDoMapa() {
 // monta string de endereço
 function montarEnderecoPadrao(item) {
   const partes = [];
-
   if (item.logradouro) {
     let log = item.logradouro;
-    if (item.numero) log += `, ${item.numero}`;
+    if (item.numero) log += ", " + item.numero;
     partes.push(log);
   }
-
   const linha2 = [];
   if (item.bairro) linha2.push(item.bairro);
   if (item.cidade) linha2.push(item.cidade);
   if (item.uf) linha2.push(item.uf);
-  if (linha2.length) partes.push(linha2.join(' - '));
-
-  if (item.cep) partes.push(`CEP ${item.cep}`);
-
-  return partes.join(' | ');
+  if (linha2.length) partes.push(linha2.join(" - "));
+  if (item.cep) partes.push("CEP " + item.cep);
+  return partes.join(" | ");
 }
 
 function criarMarkerNumerado(lat, lng, numero, titulo, pontoRef) {
@@ -307,7 +303,7 @@ function criarMarkerNumerado(lat, lng, numero, titulo, pontoRef) {
     </div>
   `;
   const icon = L.divIcon({
-    className: 'marker-numero-wrapper',
+    className: "marker-numero-wrapper",
     html,
     iconSize: [26, 26],
     iconAnchor: [13, 26]
@@ -318,73 +314,59 @@ function criarMarkerNumerado(lat, lng, numero, titulo, pontoRef) {
     draggable: true
   }).bindPopup(titulo);
 
-  marker.on('dragend', e => {
+  marker.on("dragend", e => {
     const { lat: newLat, lng: newLng } = e.target.getLatLng();
-
-    if (pontoRef.tipo === 'cliente') {
+    if (pontoRef.tipo === "cliente") {
       const base = getCacheAtual();
       const c = base.find(x => x.id === pontoRef.id);
       if (c) {
         c.lat = newLat;
         c.lng = newLng;
       }
-    } else if (pontoRef.tipo === 'manual') {
+    } else if (pontoRef.tipo === "manual") {
       const p = pontosManuais.find(x => x.id === pontoRef.id);
       if (p) {
         p.lat = newLat;
         p.lng = newLng;
       }
     }
-
     gerarRotaAuto();
   });
 
   return marker;
 }
 
-// ======== COORDENADAS SEGURAS ========
-
+// COORDENADAS SEGURAS
 function normalizarLat(valor) {
   if (valor == null) return null;
-
-  if (typeof valor === 'number') {
-    return Number.isFinite(valor) && valor >= -90 && valor <= 90
-      ? valor
-      : null;
+  if (typeof valor === "number") {
+    return Number.isFinite(valor) && valor >= -90 && valor <= 90 ? valor : null;
   }
-
   const s = String(valor).trim();
   if (!s) return null;
-  if (s.includes('°')) return null;
-
-  const n = parseFloat(s.replace(',', '.'));
+  if (s.includes("e") || s.includes("E")) return null;
+  const n = parseFloat(s.replace(",", "."));
   if (!Number.isFinite(n) || n < -90 || n > 90) return null;
   return n;
 }
 
 function normalizarLng(valor) {
   if (valor == null) return null;
-
-  if (typeof valor === 'number') {
-    return Number.isFinite(valor) && valor >= -180 && valor <= 180
-      ? valor
-      : null;
+  if (typeof valor === "number") {
+    return Number.isFinite(valor) && valor >= -180 && valor <= 180 ? valor : null;
   }
-
   const s = String(valor).trim();
   if (!s) return null;
-  if (s.includes('°')) return null;
-
-  const n = parseFloat(s.replace(',', '.'));
+  if (s.includes("e") || s.includes("E")) return null;
+  const n = parseFloat(s.replace(",", "."));
   if (!Number.isFinite(n) || n < -180 || n > 180) return null;
   return n;
 }
 
-// ======== PARSE "lat,lng" (texto) ========
-
+// PARSE lat,lng texto
 function parseLatLngText(txt) {
   if (!txt) return null;
-  const parts = txt.split(',');
+  const parts = txt.split(",");
   if (parts.length !== 2) return null;
   const lat = parts[0].trim();
   const lng = parts[1].trim();
@@ -392,15 +374,13 @@ function parseLatLngText(txt) {
   return { lat, lng };
 }
 
-// ======== GEOCODE BACKEND (Nominatim/Google) ========
-
+// GEOCODE BACKEND
 async function geocodeTexto(texto) {
-  const url = `${window.API_BASE}/geocode?q=${encodeURIComponent(texto)}`;
-
+  const path = `/geocode?q=${encodeURIComponent(texto)}`;
   try {
-    const resp = await fetch(url);
+    const resp = await apiFetch(path);
     if (!resp.ok) {
-      console.error('Erro HTTP no geocode:', resp.status);
+      console.error("Erro HTTP no geocode:", resp.status);
       return null;
     }
     const data = await resp.json();
@@ -413,33 +393,33 @@ async function geocodeTexto(texto) {
     }
     return null;
   } catch (e) {
-    console.error('Erro ao chamar geocode:', e);
+    console.error("Erro ao chamar geocode:", e);
     return null;
   }
 }
 
-// ======== LISTA / SELEÇÃO ========
-
+// LISTA / SELEÇÃO
 function atualizarResumoSelecionados() {
   const qtde = idsSelecionados.size;
-  if (qtde === 0)
-    resumoSelecionadosDiv.textContent = 'Nenhum cliente selecionado.';
-  else if (qtde === 1)
-    resumoSelecionadosDiv.textContent = '1 cliente selecionado.';
-  else resumoSelecionadosDiv.textContent = `${qtde} clientes selecionados.`;
+  if (qtde === 0) {
+    resumoSelecionadosDiv.textContent = "Nenhum cliente selecionado.";
+  } else if (qtde === 1) {
+    resumoSelecionadosDiv.textContent = "1 cliente selecionado.";
+  } else {
+    resumoSelecionadosDiv.textContent = qtde + " clientes selecionados.";
+  }
 }
 
 function atualizarContadorSelecionados() {
   const qtde = idsSelecionados.size;
-  contadorSelecionadosSpan.textContent = `${qtde} selecionados`;
+  contadorSelecionadosSpan.textContent = qtde + " selecionados";
   atualizarResumoSelecionados();
 
   if (qtde === 0 && pontosManuais.length === 0) {
     limparRota();
-    rotaListaDiv.innerHTML = '';
+    rotaListaDiv.innerHTML = "";
     return;
   }
-
   reconstruirPainelRota();
   gerarRotaAuto();
 }
@@ -447,19 +427,16 @@ function atualizarContadorSelecionados() {
 // Selecionar até 20 primeiros visíveis
 function marcarTodosVisiveis(marcar) {
   const itens = Array.from(
-    listaClientesDiv.querySelectorAll('.cliente-item .cliente-checkbox')
+    listaClientesDiv.querySelectorAll(".cliente-item .cliente-checkbox")
   );
-
   const limite = 20;
   let count = 0;
 
   itens.forEach(cb => {
     const id = parseInt(cb.value, 10);
-    const wrapper = cb.closest('.cliente-item');
-    const semLoc = wrapper?.classList.contains('cliente-sem-localizacao');
-
+    const wrapper = cb.closest(".cliente-item");
+    const semLoc = wrapper?.classList.contains("cliente-sem-localizacao");
     if (semLoc) {
-      // nunca marcar clientes sem coordenadas
       cb.checked = false;
       idsSelecionados.delete(id);
       return;
@@ -480,84 +457,76 @@ function marcarTodosVisiveis(marcar) {
 }
 
 function criarItemCliente(c) {
-  const div = document.createElement('div');
-  div.className = 'cliente-item';
+  const div = document.createElement("div");
+  div.className = "cliente-item";
   div.draggable = true;
   div.dataset.id = c.id;
 
-  const checkWrap = document.createElement('label');
-  checkWrap.className = 'checkbox-wrapper checkbox-sm checkbox-cliente';
+  const checkWrap = document.createElement("label");
+  checkWrap.className = "checkbox-wrapper checkbox-sm checkbox-cliente";
 
-  const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.className = 'cliente-checkbox';
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.className = "cliente-checkbox";
   checkbox.value = c.id;
 
-  const checkmark = document.createElement('div');
-  checkmark.className = 'checkmark';
+  const checkmark = document.createElement("div");
+  checkmark.className = "checkmark";
   checkmark.innerHTML = `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path
-        d="M20 6L9 17L4 12"
-        stroke-width="3"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      ></path>
+      <path d="M20 6L9 17L4 12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   `;
 
-  const spanLabelVis = document.createElement('span');
-  spanLabelVis.className = 'label';
-  spanLabelVis.textContent = '';
+  const spanLabelVis = document.createElement("span");
+  spanLabelVis.className = "label";
+  spanLabelVis.textContent = "";
 
   checkWrap.appendChild(checkbox);
   checkWrap.appendChild(checkmark);
   checkWrap.appendChild(spanLabelVis);
 
-  const textos = document.createElement('div');
-  textos.className = 'cliente-textos';
+  const textos = document.createElement("div");
+  textos.className = "cliente-textos";
 
-  const spanNome = document.createElement('span');
-  spanNome.className = 'nome';
-
+  const spanNome = document.createElement("span");
+  spanNome.className = "nome";
   const nomePrincipal =
-    c.origemTipo === 'pedido'
-      ? `${c.nunota} - ${c.nome}`
-      : `${c.codigo} - ${c.nome}`;
-
+    c.origemTipo === "pedido" ? `${c.nunota} - ${c.nome}` : `${c.codigo} - ${c.nome}`;
   spanNome.textContent = nomePrincipal;
 
-  const spanBadge = document.createElement('span');
-  spanBadge.className = 'badge';
-  spanBadge.textContent = c.endereco || '';
+  const spanBadge = document.createElement("span");
+  spanBadge.className = "badge";
+  spanBadge.textContent = c.endereco || "";
 
-  const spanAlerta = document.createElement('span');
-  spanAlerta.className = 'badge alerta';
-  spanAlerta.style.display = 'none';
-  spanAlerta.textContent = '⚠ endereço não localizado';
+  const spanAlerta = document.createElement("span");
+  spanAlerta.className = "badge alerta";
+  spanAlerta.style.display = "none";
+  spanAlerta.textContent = "endereço não localizado";
 
-  // valida coordenadas
   const latValida = normalizarLat(c.lat) != null;
   const lngValida = normalizarLng(c.lng) != null;
   const semLocalizacao = !latValida || !lngValida;
 
   if (semLocalizacao) {
-    spanAlerta.style.display = 'inline-block';
-    div.classList.add('cliente-sem-localizacao');
-    // impede seleção: desabilita checkbox visual e bloqueia click
+    spanAlerta.style.display = "inline-block";
+    div.classList.add("cliente-sem-localizacao");
     checkbox.disabled = true;
-    checkWrap.classList.add('checkbox-desabilitado');
+    checkWrap.classList.add("checkbox-desabilitado");
   }
 
-  checkbox.addEventListener('change', () => {
+  checkbox.addEventListener("change", () => {
     if (semLocalizacao) {
       checkbox.checked = false;
       return;
     }
-    if (checkbox.checked) idsSelecionados.add(c.id);
-    else idsSelecionados.delete(c.id);
+    if (checkbox.checked) {
+      idsSelecionados.add(c.id);
+    } else {
+      idsSelecionados.delete(c.id);
+    }
     atualizarContadorSelecionados();
-    div.classList.toggle('selecionado', checkbox.checked);
+    div.classList.toggle("selecionado", checkbox.checked);
   });
 
   textos.appendChild(spanNome);
@@ -574,43 +543,45 @@ function configurarDragAndDropLista() {
   if (dragListaConfigurado) return;
   dragListaConfigurado = true;
 
-  listaClientesDiv.addEventListener('dragover', e => {
+  listaClientesDiv.addEventListener("dragover", e => {
     e.preventDefault();
-    const dragging =
-      listaClientesDiv.querySelector('.cliente-item.dragging');
+    const dragging = listaClientesDiv.querySelector(".cliente-item.dragging");
     if (!dragging) return;
     const afterElement = getDragAfterElement(
       listaClientesDiv,
       e.clientY,
-      '.cliente-item:not(.dragging)'
+      ".cliente-item:not(.dragging)"
     );
-    if (afterElement == null) listaClientesDiv.appendChild(dragging);
-    else listaClientesDiv.insertBefore(dragging, afterElement);
+    if (afterElement == null) {
+      listaClientesDiv.appendChild(dragging);
+    } else {
+      listaClientesDiv.insertBefore(dragging, afterElement);
+    }
   });
 
-  listaClientesDiv.addEventListener('dragstart', e => {
-    const item = e.target.closest('.cliente-item');
+  listaClientesDiv.addEventListener("dragstart", e => {
+    const item = e.target.closest(".cliente-item");
     if (!item) return;
-    item.classList.add('dragging');
+    item.classList.add("dragging");
   });
 
-  listaClientesDiv.addEventListener('dragend', e => {
-    const item = e.target.closest('.cliente-item');
+  listaClientesDiv.addEventListener("dragend", e => {
+    const item = e.target.closest(".cliente-item");
     if (!item) return;
-    item.classList.remove('dragging');
+    item.classList.remove("dragging");
   });
 }
 
 function limparListaClientesVisual() {
-  listaClientesDiv.innerHTML = '';
-  contadorSelecionadosSpan.textContent = `${idsSelecionados.size} selecionados`;
+  listaClientesDiv.innerHTML = "";
+  contadorSelecionadosSpan.textContent = idsSelecionados.size + " selecionados";
   atualizarResumoSelecionados();
 }
 
 function renderClientesPagina() {
   if (!clientesFiltradosAtuais || clientesFiltradosAtuais.length === 0) {
     limparListaClientesVisual();
-    contadorClientesSpan.textContent = '0 clientes';
+    contadorClientesSpan.textContent = "0 clientes";
     return;
   }
 
@@ -626,44 +597,44 @@ function renderClientesPagina() {
   for (let i = inicio; i < fim; i++) {
     const c = clientesFiltradosAtuais[i];
     const div = criarItemCliente(c);
-
     if (idsSelecionados.has(c.id)) {
-      const cb = div.querySelector('.cliente-checkbox');
-      if (cb && !cb.disabled) cb.checked = true;
-      if (!div.classList.contains('cliente-sem-localizacao')) {
-        div.classList.add('selecionado');
+      const cb = div.querySelector(".cliente-checkbox");
+      if (cb && !cb.disabled) {
+        cb.checked = true;
+        if (!div.classList.contains("cliente-sem-localizacao")) {
+          div.classList.add("selecionado");
+        }
       }
     }
-
     frag.appendChild(div);
   }
-  listaClientesDiv.appendChild(frag);
 
-  paginaClientes++;
-  contadorClientesSpan.textContent = `${clientesFiltradosAtuais.length} clientes`;
+  listaClientesDiv.appendChild(frag);
+  paginaClientes += 1;
+
+  contadorClientesSpan.textContent =
+    clientesFiltradosAtuais.length + " clientes";
 }
 
 function renderClientes(clientes) {
-  clientesFiltradosAtuais = clientes || getCacheAtual();
+  clientesFiltradosAtuais = clientes;
   paginaClientes = 0;
   limparListaClientesVisual();
   renderClientesPagina();
   configurarDragAndDropLista();
 }
 
-// ======== INFINITE SCROLL ========
-
+// INFINITE SCROLL
 function configurarInfiniteScrollClientes() {
-  listaClientesDiv.addEventListener('scroll', () => {
+  listaClientesDiv.addEventListener("scroll", () => {
     if (carregandoMais) return;
     const scrollBottom =
       listaClientesDiv.scrollTop + listaClientesDiv.clientHeight;
     const limite = listaClientesDiv.scrollHeight - 40;
-
     if (scrollBottom >= limite) {
       const inicio = paginaClientes * TAMANHO_PAGINA;
-      if (inicio >= clientesFiltradosAtuais.length) return;
-
+      if (!clientesFiltradosAtuais || inicio >= clientesFiltradosAtuais.length)
+        return;
       carregandoMais = true;
       setTimeout(() => {
         renderClientesPagina();
@@ -673,55 +644,51 @@ function configurarInfiniteScrollClientes() {
   });
 }
 
-// ======== ORIGENS / APIS ========
-
+// ORIGENS / APIS
 function getCacheAtual() {
-  if (origemAtual === 'pedidos') return cachePedidosPendentes;
-  if (origemAtual === 'clientes') return cacheClientes;
-  if (origemAtual === 'carteira') return cacheCarteira;
+  if (origemAtual === "pedidos") return cachePedidosPendentes || [];
+  if (origemAtual === "clientes") return cacheClientes || [];
+  if (origemAtual === "carteira") return cacheCarteira || [];
   return [];
 }
 
 async function carregarPedidosPendentes(codvendFiltro) {
   try {
-    listaClientesDiv.classList.add('loading');
-    listaClientesDiv.innerHTML = '';
+    listaClientesDiv.classList.add("loading");
+    listaClientesDiv.innerHTML = "";
 
-    let url = `${window.API_BASE}/pedidos-pendentes`;
+    let path = "/pedidos-pendentes";
     if (codvendFiltro) {
-      const sep = url.includes('?') ? '&' : '?';
-      url += `${sep}codvend=${encodeURIComponent(codvendFiltro)}`;
+      const sep = path.includes("?") ? "&" : "?";
+      path += `${sep}codvend=${encodeURIComponent(codvendFiltro)}`;
     }
+    console.log("GET pedidos pendentes em", window.APIBASE + path);
 
-    console.log('GET pedidos pendentes em:', url);
-    const resp = await fetch(url);
-
+    const resp = await apiFetch(path);
     if (!resp.ok) {
-      console.error('Erro HTTP em pedidos pendentes:', resp.status);
+      console.error("Erro HTTP em pedidos pendentes:", resp.status);
       listaClientesDiv.innerHTML =
-        '<div style="padding:8px;font-size:12px;color:#fca5a5;">Erro ao carregar pedidos pendentes (HTTP ' +
+        '<div style="padding:8px;font-size:12px;color:#fca5a5">Erro ao carregar pedidos pendentes (HTTP ' +
         resp.status +
-        ').</div>';
+        ").</div>";
       cachePedidosPendentes = [];
       return;
     }
 
     const data = await resp.json();
-
     cachePedidosPendentes = (data.pedidos || []).map(p => {
       const endereco = montarEnderecoPadrao(p);
-
       return {
         id: p.NUNOTA,
         codigo: p.NUNOTA,
-        nome: p.NOME_CLIENTE,
+        nome: p.NOMECLIENTE,
         endereco,
-        origemTipo: 'pedido',
+        origemTipo: "pedido",
         nunota: p.NUNOTA,
         numnota: p.NUMNOTA,
         codparc: p.CODPARC,
         codvend: p.CODVEND,
-        nome_vendedor: p.NOME_VENDEDOR,
+        nomevendedor: p.NOMEVENDEDOR,
         codemp: p.CODEMP,
         logradouro: p.logradouro,
         numero: p.numero,
@@ -737,71 +704,87 @@ async function carregarPedidosPendentes(codvendFiltro) {
     idsSelecionados.clear();
     pontosManuais = [];
     limparRota();
-
     renderClientes(cachePedidosPendentes);
   } catch (e) {
-    console.error('Exception em pedidos pendentes:', e);
+    console.error("Exception em pedidos pendentes:", e);
     listaClientesDiv.innerHTML =
-      '<div style="padding:8px;font-size:12px;color:#fca5a5;">Erro inesperado ao carregar pedidos pendentes.</div>';
+      '<div style="padding:8px;font-size:12px;color:#fca5a5">Erro inesperado ao carregar pedidos pendentes.</div>';
     cachePedidosPendentes = [];
   } finally {
-    listaClientesDiv.classList.remove('loading');
+    listaClientesDiv.classList.remove("loading");
   }
 }
 
 async function carregarClientesNormais() {
   try {
-    listaClientesDiv.classList.add('loading');
-    listaClientesDiv.innerHTML = '';
-    console.log(
-      'GET clientes em:',
-      `${window.API_BASE}/logistica/clientes`
-    );
-    const resp = await fetch(
-      `${window.API_BASE}/logistica/clientes`
-    );
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    listaClientesDiv.classList.add("loading");
+    listaClientesDiv.innerHTML = "";
+
+    const path = "/logistica/clientes";
+    console.log("GET clientes em", window.APIBASE + path);
+
+    const resp = await apiFetch(path);
+    if (!resp.ok) {
+      throw new Error("HTTP " + resp.status);
+    }
     const data = await resp.json();
-    cacheClientes = (data.clientes || []).map(r => ({
-      ...r,
-      lat: normalizarLat(r.lat),
-      lng: normalizarLng(r.lng)
-    }));
+
+    cacheClientes = (data.clientes || []).map(r => {
+      const endereco = montarEnderecoPadrao(r);
+      return {
+        id: r.id,
+        codigo: r.codigo,
+        nome: r.nomecliente || r.nome,
+        endereco,
+        origemTipo: "clientes",
+        codparc: r.codparc,
+        codvend: r.codvend,
+        nomevendedor: r.nomevendedor,
+        codemp: r.codemp,
+        logradouro: r.logradouro,
+        numero: r.numero,
+        bairro: r.bairro,
+        cidade: r.cidade,
+        uf: r.uf,
+        cep: r.cep,
+        lat: normalizarLat(r.lat),
+        lng: normalizarLng(r.lng)
+      };
+    });
 
     idsSelecionados.clear();
     pontosManuais = [];
     limparRota();
-
     renderClientes(cacheClientes);
   } catch (e) {
     console.error(e);
     listaClientesDiv.innerHTML =
-      '<div style="padding:8px;font-size:12px;color:#fca5a5;">Erro ao carregar clientes.</div>';
+      '<div style="padding:8px;font-size:12px;color:#fca5a5">Erro ao carregar clientes.</div>';
     cacheClientes = [];
   } finally {
-    listaClientesDiv.classList.remove('loading');
+    listaClientesDiv.classList.remove("loading");
   }
 }
 
 async function carregarVendedores() {
   try {
-    console.log('GET vendedores em:', `${window.API_BASE}/vendedores`);
-    const resp = await fetch(`${window.API_BASE}/vendedores`);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const path = "/vendedores";
+    console.log("GET vendedores em", window.APIBASE + path);
+    const resp = await apiFetch(path);
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
     const data = await resp.json();
     cacheVendedores = data.vendedores || [];
 
-    selectVendedor.innerHTML =
-      '<option value="">Selecione um vendedor...</option>';
+    selectVendedor.innerHTML = '<option value="">Selecione um vendedor...</option>';
     cacheVendedores.forEach(v => {
-      const opt = document.createElement('option');
+      const opt = document.createElement("option");
       opt.value = v.codvend;
-      opt.textContent = `${v.codvend} - ${v.nome_vendedor}`;
+      opt.textContent = `${v.codvend} - ${v.nomevendedor}`;
       selectVendedor.appendChild(opt);
     });
   } catch (e) {
     console.error(e);
-    alert('Erro ao carregar vendedores. Veja console.');
+    alert("Erro ao carregar vendedores. Veja console.");
     cacheVendedores = [];
   }
 }
@@ -814,27 +797,27 @@ async function carregarCarteiraPorVendedor(codvend) {
   }
 
   try {
-    listaClientesDiv.classList.add('loading');
-    listaClientesDiv.innerHTML = '';
-    const url = `${window.API_BASE}/carteira?codvend=${encodeURIComponent(
-      codvend
-    )}`;
-    console.log('GET carteira em:', url);
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
+    listaClientesDiv.classList.add("loading");
+    listaClientesDiv.innerHTML = "";
 
+    const path = `/carteira?codvend=${encodeURIComponent(codvend)}`;
+    console.log("GET carteira em", window.APIBASE + path);
+
+    const resp = await apiFetch(path);
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+
+    const data = await resp.json();
     cacheCarteira = (data.carteira || []).map(c => {
       const endereco = montarEnderecoPadrao(c);
       return {
         id: c.codparc,
         codigo: c.codparc,
-        nome: c.nome_cliente,
+        nome: c.nomecliente,
         endereco,
-        origemTipo: 'carteira',
+        origemTipo: "carteira",
         codparc: c.codparc,
         codvend: c.codvend,
-        nome_vendedor: c.nome_vendedor,
+        nomevendedor: c.nomevendedor,
         codemp: c.codemp,
         logradouro: c.logradouro,
         numero: c.numero,
@@ -850,43 +833,40 @@ async function carregarCarteiraPorVendedor(codvend) {
     idsSelecionados.clear();
     pontosManuais = [];
     limparRota();
-
     renderClientes(cacheCarteira);
   } catch (e) {
     console.error(e);
     listaClientesDiv.innerHTML =
-      '<div style="padding:8px;font-size:12px;color:#fca5a5;">Erro ao carregar carteira do vendedor.</div>';
+      '<div style="padding:8px;font-size:12px;color:#fca5a5">Erro ao carregar carteira do vendedor.</div>';
     cacheCarteira = [];
   } finally {
-    listaClientesDiv.classList.remove('loading');
+    listaClientesDiv.classList.remove("loading");
   }
 }
 
-// ======== FILTRO LOCAL ========
-
+// FILTRO LOCAL
 function aplicarFiltroLocal() {
   const filtro = filtroNomeInput.value.trim().toLowerCase();
   listaClientesDiv.scrollTop = 0;
 
   const base = getCacheAtual();
-
   if (!filtro) {
     renderClientes(base);
     return;
   }
 
   const filtrados = base.filter(c => {
-    const cod = String(c.codigo || '').toLowerCase();
-    const nome = String(c.nome || '').toLowerCase();
-    const end = String(c.endereco || '').toLowerCase();
-    return cod.includes(filtro) || nome.includes(filtro) || end.includes(filtro);
+    const cod = String(c.codigo || "").toLowerCase();
+    const nome = String(c.nome || "").toLowerCase();
+    const end = String(c.endereco || "").toLowerCase();
+    return (
+      cod.includes(filtro) || nome.includes(filtro) || end.includes(filtro)
+    );
   });
-
   renderClientes(filtrados);
 }
 
-// ======== PONTOS / ROTA ========
-
+// PONTOS / ROTA
 function getClientesSelecionados() {
   const base = getCacheAtual();
   const clientes = [];
@@ -897,7 +877,7 @@ function getClientesSelecionados() {
 }
 
 function reconstruirPainelRota() {
-  rotaListaDiv.innerHTML = '';
+  rotaListaDiv.innerHTML = "";
 
   const clientesSelecionados = getClientesSelecionados();
   const pontos = [];
@@ -907,7 +887,7 @@ function reconstruirPainelRota() {
     const lng = normalizarLng(c.lng);
     if (lat == null || lng == null) return;
     pontos.push({
-      tipo: 'cliente',
+      tipo: "cliente",
       id: c.id,
       label: `${c.codigo} - ${c.nome}`,
       endereco: c.endereco,
@@ -920,56 +900,56 @@ function reconstruirPainelRota() {
 
   if (pontos.length > LIMITE_PONTOS_ROTA - 1) {
     alert(
-      `Você selecionou muitos pontos (${pontos.length}). ` +
-        `Recomenda-se dividir em duas rotas (limite atual ~${
-          LIMITE_PONTOS_ROTA - 1
-        } paradas).`
+      "Você selecionou muitos pontos (" +
+        pontos.length +
+        "). Recomenda-se dividir em duas rotas (limite atual ~" +
+        (LIMITE_PONTOS_ROTA - 1) +
+        " paradas)."
     );
   }
 
   pontos.forEach((ponto, idx) => {
-    const li = document.createElement('li');
-    li.className = 'rota-item';
-    li.setAttribute('draggable', 'true');
+    const li = document.createElement("li");
+    li.className = "rota-item";
+    li.setAttribute("draggable", "true");
     li.dataset.tipo = ponto.tipo;
     li.dataset.id = ponto.id;
 
-    const handle = document.createElement('div');
-    handle.className = 'rota-item-handle';
-    handle.innerHTML = '⋮⋮';
+    const handle = document.createElement("div");
+    handle.className = "rota-item-handle";
+    handle.innerHTML = "⋮⋮";
 
-    const num = document.createElement('div');
-    num.className = 'rota-item-num';
+    const num = document.createElement("div");
+    num.className = "rota-item-num";
     num.textContent = idx + 1;
 
-    const labelWrap = document.createElement('div');
-    labelWrap.className = 'rota-item-label';
+    const labelWrap = document.createElement("div");
+    labelWrap.className = "rota-item-label";
 
-    const main = document.createElement('div');
-    main.className = 'rota-item-label-main';
+    const main = document.createElement("div");
+    main.className = "rota-item-label-main";
     main.textContent =
-      ponto.tipo === 'cliente'
-        ? ponto.label
-        : `[Manual] ${ponto.label}`;
+      ponto.tipo === "cliente" ? ponto.label : `Manual: ${ponto.label}`;
 
-    const sub = document.createElement('div');
-    sub.className = 'rota-item-label-sub';
-    sub.textContent =
-      ponto.endereco ||
-      `${ponto.lat.toFixed(5)}, ${ponto.lng.toFixed(5)}`;
+    const sub = document.createElement("div");
+    sub.className = "rota-item-label-sub";
+    sub.textContent = `${ponto.endereco} (${ponto.lat.toFixed(
+      5
+    )}, ${ponto.lng.toFixed(5)})`;
 
     labelWrap.appendChild(main);
     labelWrap.appendChild(sub);
 
-    const remover = document.createElement('button');
-    remover.className = 'rota-item-remove';
-    remover.type = 'button';
-    remover.textContent = '×';
-    remover.title = 'Remover ponto';
-    remover.addEventListener('click', e => {
-      e.stopPropagation();
-      removerPontoDaRota(ponto);
-    });
+const remover = document.createElement("button");
+remover.className = "rota-item-remove";
+remover.type = "button";
+remover.innerHTML = "&times;"; // símbolo de X
+remover.title = "Remover ponto";
+remover.addEventListener("click", e => {
+  e.stopPropagation();
+  removerPontoDaRota(ponto);
+});
+
 
     li.appendChild(handle);
     li.appendChild(num);
@@ -985,137 +965,134 @@ function reconstruirPainelRota() {
 function configurarDragAndDropPainelRota() {
   let draggingEl = null;
 
-  rotaListaDiv.addEventListener('dragstart', e => {
-    const item = e.target.closest('.rota-item');
+  rotaListaDiv.addEventListener("dragstart", e => {
+    const item = e.target.closest(".rota-item");
     if (!item) return;
     draggingEl = item;
-    item.classList.add('dragging');
+    item.classList.add("dragging");
     if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', item.dataset.id || '');
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", item.dataset.id);
     }
   });
 
-  rotaListaDiv.addEventListener('dragover', e => {
+  rotaListaDiv.addEventListener("dragover", e => {
     e.preventDefault();
     if (!draggingEl) return;
-
     const afterElement = getDragAfterElement(
       rotaListaDiv,
       e.clientY,
-      '.rota-item:not(.dragging)'
+      ".rota-item:not(.dragging)"
     );
     limpaDropzonesRota();
 
     if (!afterElement) {
       rotaListaDiv.appendChild(draggingEl);
-      draggingEl.classList.add('rota-item-dropzone-after');
+      draggingEl.classList.add("rota-item-dropzone-after");
     } else {
       const box = afterElement.getBoundingClientRect();
       const isBefore = e.clientY < box.top + box.height / 2;
       if (isBefore) {
         rotaListaDiv.insertBefore(draggingEl, afterElement);
-        draggingEl.classList.add('rota-item-dropzone-before');
+        draggingEl.classList.add("rota-item-dropzone-before");
       } else {
         rotaListaDiv.insertBefore(draggingEl, afterElement.nextSibling);
-        draggingEl.classList.add('rota-item-dropzone-after');
+        draggingEl.classList.add("rota-item-dropzone-after");
       }
     }
   });
 
-  rotaListaDiv.addEventListener('drop', e => {
+  rotaListaDiv.addEventListener("drop", e => {
     e.preventDefault();
     if (!draggingEl) return;
-    draggingEl.classList.remove('dragging');
+    draggingEl.classList.remove("dragging");
     limpaDropzonesRota();
     draggingEl = null;
-
     renumerarPontosRota();
     gerarRotaAuto();
   });
 
-  rotaListaDiv.addEventListener('dragend', () => {
+  rotaListaDiv.addEventListener("dragend", () => {
     if (!draggingEl) return;
-    draggingEl.classList.remove('dragging');
+    draggingEl.classList.remove("dragging");
     limpaDropzonesRota();
     draggingEl = null;
   });
-}
 
-function limpaDropzonesRota() {
-  rotaListaDiv
-    .querySelectorAll(
-      '.rota-item-dropzone-before, .rota-item-dropzone-after'
-    )
-    .forEach(el => {
-      el.classList.remove(
-        'rota-item-dropzone-before',
-        'rota-item-dropzone-after'
-      );
-    });
+  function limpaDropzonesRota() {
+    rotaListaDiv
+      .querySelectorAll(".rota-item-dropzone-before, .rota-item-dropzone-after")
+      .forEach(el => {
+        el.classList.remove("rota-item-dropzone-before", "rota-item-dropzone-after");
+      });
+  }
 }
 
 function getDragAfterElement(container, y, selector) {
-  const draggableElements = [...container.querySelectorAll(selector)];
+  const draggableElements = [
+    ...container.querySelectorAll(selector)
+  ];
 
   return draggableElements.reduce(
     (closest, child) => {
       const box = child.getBoundingClientRect();
       const offset = y - box.top - box.height / 2;
       if (offset < 0 && offset > closest.offset) {
-        return { offset: offset, element: child };
+        return { offset, element: child };
       } else {
         return closest;
       }
     },
-    { offset: Number.NEGATIVE_INFINITY }
+    { offset: Number.NEGATIVE_INFINITY, element: null }
   ).element;
 }
 
 function renumerarPontosRota() {
-  rotaListaDiv.querySelectorAll('.rota-item-num').forEach((el, idx) => {
-    el.textContent = idx + 1;
-  });
+  rotaListaDiv
+    .querySelectorAll(".rota-item-num")
+    .forEach((el, idx) => (el.textContent = idx + 1));
 }
 
 function removerPontoDaRota(ponto) {
-  if (ponto.tipo === 'manual') {
+  if (ponto.tipo === "manual") {
     pontosManuais = pontosManuais.filter(p => p.id !== ponto.id);
-  } else if (ponto.tipo === 'cliente') {
+  } else if (ponto.tipo === "cliente") {
     idsSelecionados.delete(ponto.id);
-    listaClientesDiv.querySelectorAll('.cliente-item').forEach(div => {
-      const cb = div.querySelector('.cliente-checkbox');
+    listaClientesDiv.querySelectorAll(".cliente-item").forEach(div => {
+      const cb = div.querySelector(".cliente-checkbox");
       if (!cb) return;
       const id = parseInt(cb.value, 10);
-      if (id === ponto.id) cb.checked = false;
+      if (id === ponto.id) {
+        cb.checked = false;
+        div.classList.remove("selecionado");
+      }
     });
   }
 
-  atualizarContadorSelecionados();
-
-  const temSelecionados = idsSelecionados.size > 0;
-  if (!temSelecionados && pontosManuais.length === 0) {
+  const temSelecionados = idsSelecionados.size > 0 || pontosManuais.length > 0;
+  if (!temSelecionados) {
     limparRota();
-    rotaListaDiv.innerHTML = '';
+    rotaListaDiv.innerHTML = "";
     return;
   }
-
+  reconstruirPainelRota();
   gerarRotaAuto();
 }
 
 function getPontosNaOrdemPainel() {
   const pontos = [];
-  rotaListaDiv.querySelectorAll('.rota-item').forEach(div => {
+  rotaListaDiv.querySelectorAll(".rota-item").forEach(div => {
     const tipo = div.dataset.tipo;
     const id = div.dataset.id;
-    if (tipo === 'cliente') {
+
+    if (tipo === "cliente") {
       const base = getCacheAtual();
       const c = base.find(x => String(x.id) === String(id));
       const lat = normalizarLat(c?.lat);
       const lng = normalizarLng(c?.lng);
       if (c && lat != null && lng != null) {
         pontos.push({
-          tipo: 'cliente',
+          tipo: "cliente",
           id: c.id,
           label: `${c.codigo} - ${c.nome}`,
           endereco: c.endereco,
@@ -1123,33 +1100,160 @@ function getPontosNaOrdemPainel() {
           lng
         });
       }
-    } else if (tipo === 'manual') {
+    } else if (tipo === "manual") {
       const p = pontosManuais.find(x => String(x.id) === String(id));
-      if (p) pontos.push(p);
+      if (p) pontos.push({ ...p });
     }
   });
-
   return pontos;
 }
 
-// ======== ROTA AUTO (ACEITA DESTINO POR ENDEREÇO) ========
+// =======================
+// OTIMIZAR ROTA (Vizinho mais próximo)
+// =======================
 
+function distanciaEntrePontosKm(a, b) {
+  const R = 6371;
+  const dLat = (a.lat - b.lat) * Math.PI / 180;
+  const dLng = (a.lng - b.lng) * Math.PI / 180;
+  const lat1 = a.lat * Math.PI / 180;
+  const lat2 = b.lat * Math.PI / 180;
+
+  const sinDLat = Math.sin(dLat / 2);
+  const sinDLng = Math.sin(dLng / 2);
+
+  const h =
+    sinDLat * sinDLat +
+    Math.cos(lat1) * Math.cos(lat2) * sinDLng * sinDLng;
+
+  const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+  return R * c;
+}
+
+function otimizarOrdemParadasVizinhoMaisProximo() {
+  console.log("[ROTA] Otimizando ordem de paradas (vizinho mais próximo)");
+
+  const pontos = getPontosNaOrdemPainel();
+  if (!pontos || pontos.length <= 2) {
+    alert("Selecione pelo menos 3 pontos para otimizar a rota.");
+    return;
+  }
+
+  const origem = origemManual || ORIGEM_FIXA;
+
+  const naoVisitados = pontos.map(p => ({ ...p }));
+  const ordemOtima = [];
+
+  let atualIndex = 0;
+  if (origem && origem.lat != null && origem.lng != null) {
+    let melhorDist = Infinity;
+    naoVisitados.forEach((p, idx) => {
+      const d = distanciaEntrePontosKm(
+        { lat: origem.lat, lng: origem.lng },
+        { lat: p.lat, lng: p.lng }
+      );
+      if (d < melhorDist) {
+        melhorDist = d;
+        atualIndex = idx;
+      }
+    });
+  }
+
+  let atual = naoVisitados.splice(atualIndex, 1)[0];
+  ordemOtima.push(atual);
+
+  while (naoVisitados.length) {
+    let melhorIdx = 0;
+    let melhorDist = Infinity;
+
+    naoVisitados.forEach((p, idx) => {
+      const d = distanciaEntrePontosKm(
+        { lat: atual.lat, lng: atual.lng },
+        { lat: p.lat, lng: p.lng }
+      );
+      if (d < melhorDist) {
+        melhorDist = d;
+        melhorIdx = idx;
+      }
+    });
+
+    atual = naoVisitados.splice(melhorIdx, 1)[0];
+    ordemOtima.push(atual);
+  }
+
+  console.log("[ROTA] Ordem otimizada:", ordemOtima);
+
+  rotaListaDiv.innerHTML = "";
+  ordemOtima.forEach((ponto, idx) => {
+    const li = document.createElement("li");
+    li.className = "rota-item";
+    li.setAttribute("draggable", "true");
+    li.dataset.tipo = ponto.tipo;
+    li.dataset.id = ponto.id;
+
+    const handle = document.createElement("div");
+    handle.className = "rota-item-handle";
+    handle.innerHTML = "⋮⋮";
+
+    const num = document.createElement("div");
+    num.className = "rota-item-num";
+    num.textContent = idx + 1;
+
+    const labelWrap = document.createElement("div");
+    labelWrap.className = "rota-item-label";
+
+    const main = document.createElement("div");
+    main.className = "rota-item-label-main";
+    main.textContent =
+      ponto.tipo === "cliente" ? ponto.label : `Manual: ${ponto.label}`;
+
+    const sub = document.createElement("div");
+    sub.className = "rota-item-label-sub";
+    sub.textContent = `${ponto.endereco} (${ponto.lat.toFixed(
+      5
+    )}, ${ponto.lng.toFixed(5)})`;
+
+    labelWrap.appendChild(main);
+    labelWrap.appendChild(sub);
+
+const remover = document.createElement("button");
+remover.className = "rota-item-remove";
+remover.type = "button";
+remover.innerHTML = "&times;";
+remover.title = "Remover ponto";
+remover.addEventListener("click", e => {
+  e.stopPropagation();
+  removerPontoDaRota(ponto);
+});
+
+    li.appendChild(handle);
+    li.appendChild(num);
+    li.appendChild(labelWrap);
+    li.appendChild(remover);
+
+    rotaListaDiv.appendChild(li);
+  });
+
+  configurarDragAndDropPainelRota();
+  gerarRotaAuto();
+}
+
+// ROTA AUTO / OSRM
 function limparRota() {
   if (routingControl) {
     map.removeControl(routingControl);
     routingControl = null;
   }
-  ultimaRotaWaypoints = [];
+  ultimaRotaWaypoints = null;
   ultimaAnaliseRota = null;
   setLinkMapsEnabled(false);
-  linkMapsDiv.textContent = 'Nenhum link gerado ainda.';
-  setAlertasTexto('Nenhuma rota analisada ainda.');
+  linkMapsDiv.textContent = "Nenhum link gerado ainda.";
+  setAlertasTexto("Nenhuma rota analisada ainda.");
   removerTodosMarkersDoMapa();
 }
 
 async function gerarRotaAuto() {
   const selecionados = getClientesSelecionados();
-
   for (const c of selecionados) {
     c.lat = normalizarLat(c.lat);
     c.lng = normalizarLng(c.lng);
@@ -1157,19 +1261,21 @@ async function gerarRotaAuto() {
 
   const destinoStr = getDestinoCampo();
   const pontosPainel = getPontosNaOrdemPainel();
+
   if (pontosPainel.length === 0) {
     limparRota();
     return;
   }
 
   const totalParadas = pontosPainel.length;
-  const totalWaypointsPotencial = totalParadas + 1 + (destinoStr ? 1 : 0);
+  const totalWaypointsPotencial = totalParadas + (destinoStr ? 1 : 0) + 1;
   if (totalWaypointsPotencial > LIMITE_PONTOS_ROTA) {
     alert(
-      `Rota com muitos pontos (${totalParadas}). ` +
-        `Reduza para aproximadamente ${
-          LIMITE_PONTOS_ROTA - 2
-        } paradas ou divida em duas rotas.`
+      "Rota com muitos pontos (" +
+        totalParadas +
+        "). Reduza para aproximadamente " +
+        (LIMITE_PONTOS_ROTA - 2) +
+        " paradas ou divida em duas rotas."
     );
     return;
   }
@@ -1178,18 +1284,16 @@ async function gerarRotaAuto() {
     map.removeControl(routingControl);
     routingControl = null;
   }
-  ultimaRotaWaypoints = [];
+  ultimaRotaWaypoints = null;
   ultimaAnaliseRota = null;
   setLinkMapsEnabled(false);
-  linkMapsDiv.textContent = 'Nenhum link gerado ainda.';
-  setAlertasTexto('Nenhuma rota analisada ainda.');
+  linkMapsDiv.textContent = "Nenhum link gerado ainda.";
+  setAlertasTexto("Nenhuma rota analisada ainda.");
   removerTodosMarkersDoMapa();
 
   const waypoints = [];
 
-  if (!origemManual) {
-    origemManual = { ...ORIGEM_FIXA };
-  }
+  if (!origemManual) origemManual = { ...ORIGEM_FIXA };
   const origemLatLng = L.latLng(origemManual.lat, origemManual.lng);
   waypoints.push(origemLatLng);
 
@@ -1199,11 +1303,11 @@ async function gerarRotaAuto() {
       draggable: true
     })
       .addTo(map)
-      .bindPopup('Ponto de partida (arraste para ajustar)');
-
-    marcadorLocalizacao.on('dragend', e => {
+      .bindPopup("Ponto de partida (arraste para ajustar)");
+    marcadorLocalizacao.on("dragend", e => {
       const pos = e.target.getLatLng();
-      origemManual = { lat: pos.lat, lng: pos.lng };
+      origemManual.lat = pos.lat;
+      origemManual.lng = pos.lng;
       gerarRotaAuto();
     });
   } else {
@@ -1217,11 +1321,9 @@ async function gerarRotaAuto() {
     waypoints.push(L.latLng(lat, lng));
   });
 
-  // DESTINO: aceita lat,lng ou endereço (se vazio, último ponto será destino)
   if (destinoStr) {
     let destLat = null;
     let destLng = null;
-
     const parsed = parseLatLngText(destinoStr);
     if (parsed) {
       destLat = normalizarLat(parsed.lat);
@@ -1233,12 +1335,10 @@ async function gerarRotaAuto() {
         destLng = normalizarLng(geo.lng);
       }
     }
-
     if (destLat == null || destLng == null) {
-      alert('Destino inválido (não foi possível localizar).');
+      alert("Destino inválido, não foi possível localizar.");
       return;
     }
-
     waypoints.push(L.latLng(destLat, destLng));
   }
 
@@ -1249,7 +1349,6 @@ async function gerarRotaAuto() {
 
   ultimaRotaWaypoints = waypoints;
 
-  removerTodosMarkersDoMapa();
   pontosPainel.forEach((ponto, idx) => {
     const numero = idx + 1;
     const lat = normalizarLat(ponto.lat);
@@ -1260,24 +1359,27 @@ async function gerarRotaAuto() {
       lat,
       lng,
       numero,
-      `${numero}. ${ponto.label}`,
+      numero + ". " + ponto.label,
       ponto
     );
     marker.addTo(map);
     todosMarkersRota.push(marker);
-    if (ponto.tipo === 'cliente') clienteMarkers[ponto.id] = marker;
+
+    if (ponto.tipo === "cliente") {
+      clienteMarkers[ponto.id] = marker;
+    }
   });
 
   routingControl = L.Routing.control({
-    waypoints: waypoints,
+    waypoints,
     lineOptions: {
       styles: [
-        { color: '#581c87', opacity: 0.8, weight: 9 },
-        { color: '#a855f7', opacity: 1, weight: 5 }
+        { color: "#581c87", opacity: 0.8, weight: 9 },
+        { color: "#a855f7", opacity: 1, weight: 5 }
       ]
     },
     router: L.Routing.osrmv1({
-      serviceUrl: 'https://router.project-osrm.org/route/v1'
+      serviceUrl: "https://router.project-osrm.org/route/v1"
     }),
     showAlternatives: false,
     addWaypoints: false,
@@ -1289,29 +1391,29 @@ async function gerarRotaAuto() {
     show: false
   }).addTo(map);
 
-  Array.from(
-    document.getElementsByClassName('leaflet-routing-container')
-  ).forEach(el => (el.style.display = 'none'));
+  Array.from(document.getElementsByClassName("leaflet-routing-container")).forEach(
+    el => (el.style.display = "none")
+  );
 
-  routingControl.on('routesfound', function (e) {
+  routingControl.on("routesfound", function (e) {
     if (!e.routes || !e.routes.length) return;
+
     const route = e.routes[0];
     const distKm = (route.summary.totalDistance / 1000).toFixed(1);
     const durMin = Math.round(route.summary.totalTime / 60);
-    const texto = `${distKm} km • ~${durMin} min`;
-    setAlertasTexto(`Resumo da rota: ${texto}`);
+    const texto = `${distKm} km, ${durMin} min`;
+    setAlertasTexto("Resumo da rota: " + texto);
   });
 
-  routingControl.on('routingerror', function (e) {
-    console.error('Erro na rota OSRM', e);
-    setAlertasTexto('Não foi possível calcular a rota (OSRM).');
+  routingControl.on("routingerror", function (e) {
+    console.error("Erro na rota OSRM:", e);
+    setAlertasTexto("Não foi possível calcular a rota OSRM.");
   });
 
   setLinkMapsEnabled(true);
 }
 
-// ======== PONTO MANUAL / MAP CLICK (ACEITA ENDEREÇO) ========
-
+// PONTO MANUAL
 async function adicionarPontoManual() {
   const texto = novoPontoInput.value.trim();
   if (!texto) return;
@@ -1327,7 +1429,7 @@ async function adicionarPontoManual() {
   } else {
     const geo = await geocodeTexto(texto);
     if (!geo) {
-      alert('Não foi possível localizar o endereço informado.');
+      alert("Não foi possível localizar o endereço informado.");
       return;
     }
     lat = normalizarLat(geo.lat);
@@ -1336,146 +1438,141 @@ async function adicionarPontoManual() {
   }
 
   if (lat == null || lng == null) {
-    alert('Coordenada inválida após geocodificação.');
+    alert("Coordenada inválida após geocodificação.");
     return;
   }
 
   const novo = {
-    id: 'manual-' + manualIdSeq++,
-    tipo: 'manual',
+    id: "manual-" + manualIdSeq++,
+    tipo: "manual",
     label,
+    endereco: texto,
     lat,
     lng
   };
-  pontosManuais.push(novo);
-  novoPontoInput.value = '';
 
+  pontosManuais.push(novo);
+  novoPontoInput.value = "";
   reconstruirPainelRota();
   gerarRotaAuto();
 }
 
-map.on('dblclick', e => {
+map.on("dblclick", e => {
   const { lat, lng } = e.latlng;
-
   const novo = {
-    id: 'manual-' + manualIdSeq++,
-    tipo: 'manual',
+    id: "manual-" + manualIdSeq++,
+    tipo: "manual",
     label: `Ponto manual ${manualIdSeq - 1}`,
+    endereco: "",
     lat,
     lng
   };
-
   pontosManuais.push(novo);
   reconstruirPainelRota();
   gerarRotaAuto();
 });
 
-// ======== LINK GOOGLE MAPS ========
-
+// LINK GOOGLE MAPS
 async function gerarLinkGoogleMaps() {
   if (!ultimaRotaWaypoints || ultimaRotaWaypoints.length < 2) {
-    alert('Gere uma rota antes.');
+    alert("Gere uma rota antes.");
     return;
   }
 
   const origin = ultimaRotaWaypoints[0];
-  const destination =
-    ultimaRotaWaypoints[ultimaRotaWaypoints.length - 1];
-  const intermediarios = ultimaRotaWaypoints.slice(
-    1,
-    ultimaRotaWaypoints.length - 1
-  );
+  const destination = ultimaRotaWaypoints[ultimaRotaWaypoints.length - 1];
+  const intermediarios = ultimaRotaWaypoints.slice(1, -1);
 
-  const baseUrl = 'https://www.google.com/maps/dir/?api=1';
-  const originParam = `origin=${encodeURIComponent(
-    origin.lat + ',' + origin.lng
-  )}`;
-  const destParam = `destination=${encodeURIComponent(
-    destination.lat + ',' + destination.lng
-  )}`;
-  let waypointsParam = '';
+  const baseUrl = "https://www.google.com/maps/dir/?api=1";
+
+  const originParam =
+    "&origin=" + encodeURIComponent(origin.lat + "," + origin.lng);
+  const destParam =
+    "&destination=" +
+    encodeURIComponent(destination.lat + "," + destination.lng);
+
+  let waypointsParam = "";
   if (intermediarios.length > 0) {
     const wps = intermediarios
-      .map(wp => wp.lat + ',' + wp.lng)
-      .join('|');
-    waypointsParam = `&waypoints=${encodeURIComponent(wps)}`;
+      .map(wp => `${wp.lat},${wp.lng}`)
+      .join("|");
+    waypointsParam = "&waypoints=" + encodeURIComponent(wps);
   }
 
-  const travelMode = '&travelmode=driving';
-
+  const travelMode = "&travelmode=driving";
   const evitarPedagios = chkEvitarPedagios.checked;
   const avoidParams = [];
-  if (evitarPedagios) avoidParams.push('tolls');
+  if (evitarPedagios) avoidParams.push("tolls");
   const avoidStr =
-    avoidParams.length > 0 ? `&avoid=${avoidParams.join('%7C')}` : '';
+    avoidParams.length > 0 ? "&avoid=" + avoidParams.join("%7C") : "";
 
-  const finalUrl = `${baseUrl}&${originParam}&${destParam}${waypointsParam}${travelMode}${avoidStr}`;
+  const finalUrl =
+    baseUrl + originParam + destParam + waypointsParam + travelMode + avoidStr;
 
   linkMapsDiv.textContent = finalUrl;
 
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(finalUrl);
+      mostrarToastCopiarLink(
+        "Link gerado e copiado para a área de transferência."
+      );
     } else {
-      const ta = document.createElement('textarea');
+      const ta = document.createElement("textarea");
       ta.value = finalUrl;
-      ta.style.position = 'fixed';
-      ta.style.top = '0';
-      ta.style.left = '0';
+      ta.style.position = "fixed";
+      ta.style.top = "0";
+      ta.style.left = "0";
       document.body.appendChild(ta);
       ta.focus();
       ta.select();
-      document.execCommand('copy');
+      document.execCommand("copy");
       document.body.removeChild(ta);
+      mostrarToastCopiarLink(
+        "Link gerado e copiado para a área de transferência."
+      );
     }
-
-    mostrarToastCopiarLink(
-      'Link gerado e copiado para a área de transferência.'
-    );
   } catch (err) {
-    console.error('Erro ao copiar link:', err);
+    console.error("Erro ao copiar link:", err);
     mostrarToastCopiarLink(
-      'Link gerado, mas não foi possível copiar automaticamente.'
+      "Link gerado, mas não foi possível copiar automaticamente."
     );
   }
 }
 
 function mostrarToastCopiarLink(mensagem) {
-  const toast = document.getElementById('toast-copiar-link');
+  const toast = document.getElementById("toast-copiar-link");
   if (!toast) return;
   toast.textContent =
-    mensagem || 'Link copiado para a área de transferência.';
-  toast.style.display = 'block';
+    mensagem || "Link copiado para a área de transferência.";
+  toast.style.display = "block";
   void toast.offsetWidth;
-  toast.classList.add('show');
-
+  toast.classList.add("show");
   setTimeout(() => {
-    toast.classList.remove('show');
+    toast.classList.remove("show");
     setTimeout(() => {
-      toast.style.display = 'none';
+      toast.style.display = "none";
     }, 200);
   }, 2000);
 }
-// ======== PAINEL ROTA: MINIMIZAR + ARRASTAR ========
 
+// PAINEL ROTA MINIMIZAR / ARRASTAR
 function initRotaPanel() {
   if (!rotaPanel || !rotaPanelHeader || !rotaPanelMinimize) return;
 
-  // Mantém CSS inicial (top/right) dentro do #map-container
-  rotaPanel.style.position = 'absolute';
-  rotaPanel.style.zIndex = '500';
+  rotaPanel.style.position = "absolute";
+  rotaPanel.style.zIndex = "500";
 
-  // Minimizar / expandir
-  rotaPanelMinimize.addEventListener('click', () => {
-    rotaPanel.classList.toggle('rota-panel-minimized');
+  rotaPanelMinimize.addEventListener("click", () => {
+    rotaPanel.classList.toggle("rota-panel-minimized");
     rotaPanelMinimize.textContent = rotaPanel.classList.contains(
-      'rota-panel-minimized'
+      "rota-panel-minimized"
     )
-      ? '+'
-      : '−';
+      ? "▲"
+      : "▼";
   });
 
-  const mapContainer = document.getElementById('map-container');
+  const mapContainer = document.getElementById("map-container");
   if (!mapContainer) return;
 
   let isDragging = false;
@@ -1484,145 +1581,115 @@ function initRotaPanel() {
 
   function onMouseDown(e) {
     if (e.button !== 0) return;
-
     isDragging = true;
-    rotaPanel.classList.add('rota-panel-dragging');
+    rotaPanel.classList.add("rota-panel-dragging");
 
     const panelRect = rotaPanel.getBoundingClientRect();
     const containerRect = mapContainer.getBoundingClientRect();
 
-    // posição do painel RELATIVA ao container
     const panelLeft = panelRect.left - containerRect.left;
     const panelTop = panelRect.top - containerRect.top;
 
-    // diferença entre clique e canto do painel, dentro do container
     offsetX = e.clientX - panelRect.left;
     offsetY = e.clientY - panelRect.top;
 
-    // passa a usar left/top relativos ao container
-    rotaPanel.style.right = 'auto';
-    rotaPanel.style.bottom = 'auto';
-    rotaPanel.style.left = `${panelLeft}px`;
-    rotaPanel.style.top = `${panelTop}px`;
+    rotaPanel.style.right = "auto";
+    rotaPanel.style.bottom = "auto";
+    rotaPanel.style.left = panelLeft + "px";
+    rotaPanel.style.top = panelTop + "px";
 
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
     e.preventDefault();
   }
 
   function onMouseMove(e) {
     if (!isDragging) return;
-
     const containerRect = mapContainer.getBoundingClientRect();
-
-    // posição do mouse dentro do container
     const mouseXInContainer = e.clientX - containerRect.left;
     const mouseYInContainer = e.clientY - containerRect.top;
-
     const newLeft = mouseXInContainer - offsetX;
     const newTop = mouseYInContainer - offsetY;
-
-    rotaPanel.style.left = `${newLeft}px`;
-    rotaPanel.style.top = `${newTop}px`;
+    rotaPanel.style.left = newLeft + "px";
+    rotaPanel.style.top = newTop + "px";
   }
 
   function onMouseUp() {
     if (!isDragging) return;
     isDragging = false;
-    rotaPanel.classList.remove('rota-panel-dragging');
-
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
+    rotaPanel.classList.remove("rota-panel-dragging");
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
   }
 
-  rotaPanelHeader.addEventListener('mousedown', onMouseDown);
+  rotaPanelHeader.addEventListener("mousedown", onMouseDown);
 }
 
-// ======== INIT / EVENTOS ========
-
+// INIT EVENTOS
 function initLogistica() {
-  tipoOrigemSelect.addEventListener('change', () => {
+  tipoOrigemSelect.addEventListener("change", () => {
     origemAtual = tipoOrigemSelect.value;
     idsSelecionados.clear();
     pontosManuais = [];
     limparRota();
 
-    if (origemAtual === 'pedidos') {
-      grupoVendedoresDiv.style.display = 'none';
+    if (origemAtual === "pedidos") {
+      grupoVendedoresDiv.style.display = "none";
       carregarPedidosPendentes();
-    } else if (origemAtual === 'clientes') {
-      grupoVendedoresDiv.style.display = 'none';
+    } else if (origemAtual === "clientes") {
+      grupoVendedoresDiv.style.display = "none";
       carregarClientesNormais();
-    } else if (origemAtual === 'carteira') {
-      grupoVendedoresDiv.style.display = '';
+    } else if (origemAtual === "carteira") {
+      grupoVendedoresDiv.style.display = "block";
       carregarVendedores();
       renderClientes([]);
     }
   });
 
-  selectVendedor.addEventListener('change', () => {
+  selectVendedor.addEventListener("change", () => {
     const codvend = selectVendedor.value;
     carregarCarteiraPorVendedor(codvend);
   });
 
-  filtroNomeInput.addEventListener('input', () => {
-    aplicarFiltroLocal();
-  });
+  filtroNomeInput.addEventListener("input", aplicarFiltroLocal);
 
-  btnSelecionarTodos.addEventListener('click', () => {
-    marcarTodosVisiveis(true);
-  });
+  btnSelecionarTodos.addEventListener("click", () => marcarTodosVisiveis(true));
+  btnLimparSelecao.addEventListener("click", () =>
+    marcarTodosVisiveis(false)
+  );
 
-  btnLimparSelecao.addEventListener('click', () => {
-    marcarTodosVisiveis(false);
-  });
+  btnGerarRota.addEventListener("click", gerarRotaAuto);
+  btnGerarLinkMaps.addEventListener("click", gerarLinkGoogleMaps);
+  btnGerarLinkMapsSidebar.addEventListener("click", gerarLinkGoogleMaps);
 
-  btnGerarRota.addEventListener('click', () => {
-    gerarRotaAuto();
-  });
-
-  btnGerarLinkMaps.addEventListener('click', () => {
-    gerarLinkGoogleMaps();
-  });
-
-  btnGerarLinkMapsSidebar.addEventListener('click', () => {
-    gerarLinkGoogleMaps();
-  });
-
-  btnAdicionarPonto.addEventListener('click', () => {
-    adicionarPontoManual();
-  });
-
-  novoPontoInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
+  btnAdicionarPonto.addEventListener("click", adicionarPontoManual);
+  novoPontoInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
       e.preventDefault();
       adicionarPontoManual();
     }
   });
 
-  chkVerTransito.addEventListener('change', () => {
+  chkVerTransito.addEventListener("change", () => {
     toggleTraffic(chkVerTransito.checked);
     if (chkVerTransito.checked) {
       carregarIncidentesTomTom();
-      map.on('moveend', carregarIncidentesTomTom);
+      map.on("moveend", carregarIncidentesTomTom);
     } else {
       incidentMarkers.forEach(m => map.removeLayer(m));
       incidentMarkers = [];
-      map.off('moveend', carregarIncidentesTomTom);
+      map.off("moveend", carregarIncidentesTomTom);
     }
   });
 
-  btnOtimizarRota.addEventListener('click', () => {
-    otimizarOrdemParadasVizinhoMaisProximo();
-  });
+  btnOtimizarRota.addEventListener(
+    "click",
+    otimizarOrdemParadasVizinhoMaisProximo
+  );
 
   configurarInfiniteScrollClientes();
-
-  // inicia painel de rota (minimizar + arrastar)
   initRotaPanel();
-
   carregarPedidosPendentes();
 }
 
-document.addEventListener('DOMContentLoaded', initLogistica);
+document.addEventListener("DOMContentLoaded", initLogistica);
