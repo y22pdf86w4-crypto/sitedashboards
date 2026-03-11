@@ -642,16 +642,37 @@ body.logistica-page {
   overflow: hidden;
 }
 
-/* estados do painel para JS novo */
-.rota-panel-minimized .rota-body {
+/* estados do painel – minimizado vira chip horizontal */
+.rota-panel.rota-panel-minimized {
+  width: 220px;
+  max-height: 40px;
+  border-radius: 999px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.55);
+}
+
+.rota-panel.rota-panel-minimized .rota-body {
   display: none;
 }
 
-.rota-panel-minimized {
-  width: auto;
-  height: auto;
+/* header quando minimizado: verde, sem subtítulo quebrado */
+.rota-panel.rota-panel-minimized .rota-header {
+  border-bottom: none;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  padding-inline: 12px;
 }
 
+.rota-panel.rota-panel-minimized .rota-subtitle {
+  display: none;
+}
+
+.rota-panel.rota-panel-minimized .rota-title {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* arraste */
 .rota-panel-dragging {
   opacity: 0.95;
   cursor: move;
@@ -686,12 +707,13 @@ body.logistica-page {
   color: #9ca3af;
 }
 
+/* botão minimizar/maximizar */
 .rota-header-btn {
   border-radius: 999px;
-  border: 1px solid rgba(55, 65, 81, 0.95);
-  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.9);
+  background: #020617;
   color: #e5e7eb;
-  font-size: 12px;
+  font-size: 13px;
   width: 22px;
   height: 22px;
   cursor: pointer;
@@ -886,10 +908,9 @@ body.logistica-page {
 
 /* Botão remover */
 .rota-item-remove {
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   color: rgba(248, 113, 113, 0.96);
-  padding: 0 4px;
   width: 20px;
   height: 20px;
   border-radius: 999px;
@@ -898,6 +919,7 @@ body.logistica-page {
   align-items: center;
   justify-content: center;
   background: transparent;
+  padding: 0;
 }
 
 .rota-item-remove:hover {
@@ -1186,7 +1208,6 @@ body.logistica-page {
    FOOTER DA SIDEBAR PRINCIPAL – LOGOUT UIVERSE FIXO
    ========================================================== */
 
-/* Contêiner do footer fixo dentro da sidebar */
 .sidebar-footer-logistica {
   position: fixed;
   left: 0;

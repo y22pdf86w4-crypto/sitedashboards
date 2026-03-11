@@ -441,8 +441,8 @@
   <!-- JS globais -->
   <script src="../assets/js/global.js"></script>
 
-  <!-- JS da logística -->
-  <script src="../assets/js/logistica.js?v=7"></script>
+  <!-- JS da logística (VERSÃO NOVA) -->
+  <script src="../assets/js/logistica.js?v=8"></script>
 
   <script>
     function voltarLogin() {
@@ -458,7 +458,8 @@
         });
       }
 
-      const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+      const user =
+        typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
 
       // Proteção: apenas ADMIN ou LOG podem acessar
       if (!user) {
@@ -479,9 +480,7 @@
         preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
       }
 
-      if (typeof initLogistica === "function") {
-        initLogistica();
-      }
+      // NÃO chama initLogistica aqui, o próprio logistica.js já chama no DOMContentLoaded
     });
   </script>
 </body>

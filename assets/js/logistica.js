@@ -85,7 +85,7 @@ function escolherIconePorCategoria(cat) {
   });
 }
 
-function traduzirDescricaoTomTom(desc, props) {
+function traduzirDescricaoTomTom(desc) {
   if (!desc) return "Incidente de trânsito";
   const d = String(desc).toLowerCase();
   if (d.includes("queuing traffic")) return "Trânsito em fila / lento";
@@ -124,7 +124,7 @@ async function carregarIncidentesTomTom() {
       const cat = props.iconCategory;
       const evt = props.events && props.events[0];
       const descrOriginal = evt?.description || "Incidente de trânsito";
-      const descr = traduzirDescricaoTomTom(descrOriginal, props);
+      const descr = traduzirDescricaoTomTom(descrOriginal);
 
       let lat = null;
       let lon = null;
@@ -492,7 +492,9 @@ function criarItemCliente(c) {
   const spanNome = document.createElement("span");
   spanNome.className = "nome";
   const nomePrincipal =
-    c.origemTipo === "pedido" ? `${c.nunota} - ${c.nome}` : `${c.codigo} - ${c.nome}`;
+    c.origemTipo === "pedido"
+      ? `${c.nunota} - ${c.nome}`
+      : `${c.codigo} - ${c.nome}`;
   spanNome.textContent = nomePrincipal;
 
   const spanBadge = document.createElement("span");
@@ -775,7 +777,8 @@ async function carregarVendedores() {
     const data = await resp.json();
     cacheVendedores = data.vendedores || [];
 
-    selectVendedor.innerHTML = '<option value="">Selecione um vendedor...</option>';
+    selectVendedor.innerHTML =
+      '<option value="">Selecione um vendedor...</option>';
     cacheVendedores.forEach(v => {
       const opt = document.createElement("option");
       opt.value = v.codvend;
@@ -940,16 +943,15 @@ function reconstruirPainelRota() {
     labelWrap.appendChild(main);
     labelWrap.appendChild(sub);
 
-const remover = document.createElement("button");
-remover.className = "rota-item-remove";
-remover.type = "button";
-remover.innerHTML = "&times;"; // símbolo de X
-remover.title = "Remover ponto";
-remover.addEventListener("click", e => {
-  e.stopPropagation();
-  removerPontoDaRota(ponto);
-});
-
+    const remover = document.createElement("button");
+    remover.className = "rota-item-remove";
+    remover.type = "button";
+    remover.innerHTML = "&times;";
+    remover.title = "Remover ponto";
+    remover.addEventListener("click", e => {
+      e.stopPropagation();
+      removerPontoDaRota(ponto);
+    });
 
     li.appendChild(handle);
     li.appendChild(num);
@@ -1023,7 +1025,10 @@ function configurarDragAndDropPainelRota() {
     rotaListaDiv
       .querySelectorAll(".rota-item-dropzone-before, .rota-item-dropzone-after")
       .forEach(el => {
-        el.classList.remove("rota-item-dropzone-before", "rota-item-dropzone-after");
+        el.classList.remove(
+          "rota-item-dropzone-before",
+          "rota-item-dropzone-after"
+        );
       });
   }
 }
@@ -1216,15 +1221,15 @@ function otimizarOrdemParadasVizinhoMaisProximo() {
     labelWrap.appendChild(main);
     labelWrap.appendChild(sub);
 
-const remover = document.createElement("button");
-remover.className = "rota-item-remove";
-remover.type = "button";
-remover.innerHTML = "&times;";
-remover.title = "Remover ponto";
-remover.addEventListener("click", e => {
-  e.stopPropagation();
-  removerPontoDaRota(ponto);
-});
+    const remover = document.createElement("button");
+    remover.className = "rota-item-remove";
+    remover.type = "button";
+    remover.innerHTML = "&times;";
+    remover.title = "Remover ponto";
+    remover.addEventListener("click", e => {
+      e.stopPropagation();
+      removerPontoDaRota(ponto);
+    });
 
     li.appendChild(handle);
     li.appendChild(num);
@@ -1563,13 +1568,14 @@ function initRotaPanel() {
   rotaPanel.style.position = "absolute";
   rotaPanel.style.zIndex = "500";
 
+  // clique para minimizar/expandir
   rotaPanelMinimize.addEventListener("click", () => {
     rotaPanel.classList.toggle("rota-panel-minimized");
     rotaPanelMinimize.textContent = rotaPanel.classList.contains(
       "rota-panel-minimized"
     )
-      ? "▲"
-      : "▼";
+      ? "+"
+      : "−";
   });
 
   const mapContainer = document.getElementById("map-container");
@@ -1622,6 +1628,7 @@ function initRotaPanel() {
     document.removeEventListener("mouseup", onMouseUp);
   }
 
+  // arrastar pelo header
   rotaPanelHeader.addEventListener("mousedown", onMouseDown);
 }
 
