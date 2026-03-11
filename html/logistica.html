@@ -11,7 +11,8 @@
   <link rel="stylesheet" href="../assets/css/global.css" />
   <link rel="stylesheet" href="../assets/css/background.css" />
   <link rel="stylesheet" href="../assets/css/menu.css" />
-
+  <!-- sidebar padrão -->
+  <link rel="stylesheet" href="../assets/css/sidebar.css" />
   <!-- CSS específico da logística -->
   <link rel="stylesheet" href="../assets/css/logistica.css" />
 
@@ -27,6 +28,75 @@
     rel="stylesheet"
     href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"
   />
+
+  <!-- JS globais -->
+  <script src="../assets/js/global.js" defer></script>
+  <!-- sidebar compartilhado -->
+  <script src="../assets/js/sidebar.js" defer></script>
+  <!-- JS da logística -->
+  <script src="../assets/js/logistica.js?v=8" defer></script>
+
+  <script defer>
+    function voltarLogin() {
+      if (typeof deslogar === "function") {
+        deslogar();
+      } else {
+        window.location.href = "../index.html";
+      }
+    }
+
+    async function initLogisticaPagina() {
+      const user =
+        typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+
+      if (!user) {
+        window.location.href = "../index.html";
+        return;
+      }
+
+      const perfis = user.perfis || [];
+      const isAdmin = perfis.includes("ADMIN");
+      const isLog = perfis.includes("LOG") || perfis.includes("LOG_ADMIN");
+
+      if (!isAdmin && !isLog) {
+        window.location.href = "./menu.html";
+        return;
+      }
+
+      // carrega sidebar compartilhada
+      await carregarSidebar({
+        containerId: "sidebarContainer",
+        basePath: ".",
+        empresaSelectorPath: "./select-company.html",
+      });
+
+      // marca item Logística como ativo
+      const liLogistica = document.querySelector(
+        ".sidebar-item[data-key='logistica']"
+      );
+      if (liLogistica) {
+        liLogistica.classList.add("sidebar-item-active");
+      }
+
+      // preencher header do sidebar
+      if (typeof preencherHeaderUsuario === "function") {
+        preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
+      }
+
+      // nome no chip da parte de cima
+      const userNameEl = document.getElementById("userName");
+      if (userNameEl) {
+        userNameEl.textContent = user.nome || user.email || "Usuário";
+      }
+
+      // init do mapa / lógica de logística (já existente em logistica.js)
+      if (typeof initLogistica === "function") {
+        initLogistica();
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", initLogisticaPagina);
+  </script>
 </head>
 <body class="logistica-page">
   <!-- Fundo animado -->
@@ -54,51 +124,8 @@
   </button>
 
   <div class="app" id="app">
-    <!-- SIDEBAR VERTICAL -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-logo">LG</div>
-        <div class="sidebar-title-block">
-          <span class="sidebar-title" id="saudacaoSidebar">Logística</span>
-          <span class="sidebar-sub" id="userNameSidebar">Rotas e visitas</span>
-        </div>
-      </div>
-
-      <div class="sidebar-section">
-        <p class="sidebar-section-title">Navegação</p>
-        <ul class="sidebar-nav">
-          <li
-            class="sidebar-item sidebar-item-active"
-            data-key="logistica"
-          >
-            <span class="icon">⛟</span>
-            <span class="label">Painel de Logística</span>
-          </li>
-          <li
-            class="sidebar-item"
-            data-key="voltar-menu"
-            onclick="window.location.href='./menu.html'"
-          >
-            <span class="icon">⬅</span>
-            <span class="label">Voltar para o menu</span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Footer fixo com botão Logout Uiverse -->
-      <div class="sidebar-footer sidebar-footer-logistica">
-        <button class="Btn" type="button" onclick="voltarLogin()">
-          <div class="sign">
-            <svg viewBox="0 0 512 512">
-              <path
-                d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"
-              ></path>
-            </svg>
-          </div>
-          <div class="text">Logout</div>
-        </button>
-      </div>
-    </aside>
+    <!-- Sidebar compartilhada entra aqui -->
+    <div id="sidebarContainer"></div>
 
     <!-- MAIN: conteúdo da Logística -->
     <main class="main">
@@ -437,51 +464,5 @@
   ></script>
   <!-- Leaflet Routing Machine JS -->
   <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
-
-  <!-- JS globais -->
-  <script src="../assets/js/global.js"></script>
-
-  <!-- JS da logística (VERSÃO NOVA) -->
-  <script src="../assets/js/logistica.js?v=8"></script>
-
-  <script>
-    function voltarLogin() {
-      deslogar();
-    }
-
-    window.addEventListener("DOMContentLoaded", () => {
-      const app = document.getElementById("app");
-      const btnToggle = document.getElementById("btnToggleSidebar");
-      if (app && btnToggle) {
-        btnToggle.addEventListener("click", () => {
-          app.classList.toggle("sidebar-collapsed");
-        });
-      }
-
-      const user =
-        typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
-
-      // Proteção: apenas ADMIN ou LOG podem acessar
-      if (!user) {
-        window.location.href = "../index.html";
-        return;
-      }
-
-      const perfis = user.perfis || [];
-      const isAdmin = perfis.includes("ADMIN");
-      const isLog = perfis.includes("LOG");
-
-      if (!isAdmin && !isLog) {
-        window.location.href = "./menu.html";
-        return;
-      }
-
-      if (typeof preencherHeaderUsuario === "function") {
-        preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
-      }
-
-      // NÃO chama initLogistica aqui, o próprio logistica.js já chama no DOMContentLoaded
-    });
-  </script>
 </body>
 </html>

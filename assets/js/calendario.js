@@ -1569,119 +1569,168 @@ function criarCardDespesa(d) {
   const header = document.createElement("div");
   header.className = "item-dia-header";
 
+  const esquerda = document.createElement("div");
+  esquerda.style.display = "flex";
+  esquerda.style.flexDirection = "column";
+  esquerda.style.gap = "2px";
+
   const desc = document.createElement("div");
   desc.className = "item-dia-desc";
   desc.textContent = d.descricao || "Despesa";
 
   const info = document.createElement("div");
-  info.className = "item-dia-info";
+  info.className = "item-dia-email";
   info.textContent = `Vencimento: ${formatarDataBR(d.vencimento)}`;
 
-  header.appendChild(desc);
-  header.appendChild(info);
+  esquerda.appendChild(desc);
+  esquerda.appendChild(info);
 
-  const statusDiv = document.createElement("div");
-  statusDiv.className = "item-dia-status " + classeStatus(d, hojeISO);
-  statusDiv.textContent =
-    d.status === "pago"
-      ? "Pago"
-      : d.vencimento < hojeISO
-      ? "Vencida"
-      : d.vencimento === hojeISO
-      ? "Hoje"
-      : "Pendente";
+  const statusWrap = document.createElement("div");
+  statusWrap.className = "item-dia-status";
 
-  // BLOCO DE DETALHES DO FINANCEIRO
+  const dot = document.createElement("span");
+  dot.className = "item-dia-status-dot";
+
+  let label = "Pendente";
+  if (d.status === "pago") {
+    dot.classList.add("pago");
+    label = "Pago";
+  } else if (d.vencimento < hojeISO) {
+    dot.classList.add("vencido");
+    label = "Vencida";
+  } else if (d.vencimento === hojeISO) {
+    dot.classList.add("hoje");
+    label = "Vence hoje";
+  } else {
+    dot.classList.add("pago"); // cor neutra (poderia ser cinza se quiser criar)
+  }
+
+  const statusTexto = document.createElement("span");
+  statusTexto.textContent = label;
+
+  statusWrap.appendChild(dot);
+  statusWrap.appendChild(statusTexto);
+
+  header.appendChild(esquerda);
+  header.appendChild(statusWrap);
+
+  // BLOCO DE DETALHES (duas colunas)
   const detalhes = document.createElement("div");
-  detalhes.className = "item-dia-log"; // mesma classe já usada pro log, mantém visual
-  detalhes.style.marginTop = "4px";
+  detalhes.className = "item-dia-log";
 
   if (d.origem === "sankhya" && d.logDetalhado && d.logDetalhado.financeiro) {
     const f = d.logDetalhado.financeiro;
 
-    const linhas = [];
+    const colResumo = document.createElement("div");
+    const colDatas = document.createElement("div");
 
-    // Identificação básica
-    if (f.NUFIN) linhas.push(`Número da despesa: ${f.NUFIN}`);
-    if (f.Id) linhas.push(`ID interno: ${f.Id}`);
-    if (f.NOME_NATUREZA)
-      linhas.push(`Natureza: ${f.NOME_NATUREZA}`);
-    if (f.HISTORICO)
-      linhas.push(`Histórico: ${f.HISTORICO}`);
+    const tituloResumo = document.createElement("div");
+    tituloResumo.className = "item-dia-log-section-title";
+    tituloResumo.textContent = "Resumo";
 
-    // Parceiro
+    const tituloDatas = document.createElement("div");
+    tituloDatas.className = "item-dia-log-section-title";
+    tituloDatas.textContent = "Datas e documentos";
+
+    colResumo.appendChild(tituloResumo);
+    colDatas.appendChild(tituloDatas);
+
+    const addLinha = (container, label, valor) => {
+      if (valor == null || valor === "") return;
+      const linha = document.createElement("div");
+      linha.className = "item-dia-log-line";
+      linha.innerHTML = `<span>${label}: </span><span class="item-dia-log-strong">${valor}</span>`;
+      container.appendChild(linha);
+    };
+
+    // coluna resumo
+    addLinha(colResumo, "Nº despesa", f.NUFIN);
+    addLinha(colResumo, "ID interno", f.Id);
+    addLinha(colResumo, "Natureza", f.NOME_NATUREZA);
+    addLinha(colResumo, "Histórico", f.HISTORICO || "—");
+
+    let parceiro = null;
     if (f.NOMEPARC || f.CODPARC) {
-      const base = f.NOMEPARC || "Parceiro";
-      linhas.push(
-        `Fornecedor / Cliente: ${base}${
-          f.CODPARC ? ` (cód. ${f.CODPARC})` : ""
-        }`
-      );
+      parceiro = `${f.NOMEPARC || "Parceiro"}${
+        f.CODPARC ? ` (cód. ${f.CODPARC})` : ""
+      }`;
     }
+    addLinha(colResumo, "Fornecedor/Cliente", parceiro);
 
-    // Valores e classificação
+    let valorStr = null;
     if (f.VLRDESDOB != null) {
-      linhas.push(
-        `Valor da parcela: R$ ${Number(f.VLRDESDOB).toLocaleString("pt-BR", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        })}`
-      );
+      valorStr = `R$ ${Number(f.VLRDESDOB).toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}`;
     }
-    if (f.CODNAT)
-      linhas.push(`Cód. natureza financeira: ${f.CODNAT}`);
-    if (f.CODCENCUS)
-      linhas.push(`Centro de custo: ${f.CODCENCUS}`);
-    if (f.CODCTABCOINT)
-      linhas.push(`Conta bancária/contábil: ${f.CODCTABCOINT}`);
-    if (f.CODTIPTIT)
-      linhas.push(`Tipo de título: ${f.CODTIPTIT}`);
-    if (f.CODTIPOPER)
-      linhas.push(`Tipo de operação: ${f.CODTIPOPER}`);
-    if (f.RECDESP === -1)
-      linhas.push("Tipo: Despesa");
-    else if (f.RECDESP === 1)
-      linhas.push("Tipo: Receita");
+    addLinha(colResumo, "Valor da parcela", valorStr);
 
-    // Documentos
-    if (f.NUMNOTA) linhas.push(`Número da nota fiscal: ${f.NUMNOTA}`);
-    if (f.NUNOTA) linhas.push(`Nota única (Sankhya): ${f.NUNOTA}`);
-    if (f.NUFTC) linhas.push(`Número da fatura: ${f.NUFTC}`);
-    if (f.NURENEG) linhas.push(`Número da renegociação: ${f.NURENEG}`);
+    addLinha(colResumo, "Cód. natureza", f.CODNAT);
+    addLinha(colResumo, "Centro de custo", f.CODCENCUS);
+    addLinha(colResumo, "Conta bancária/contábil", f.CODCTABCOINT);
+    addLinha(colResumo, "Tipo título", f.CODTIPTIT);
+    addLinha(colResumo, "Tipo operação", f.CODTIPOPER);
+    addLinha(colResumo, "Empresa (Sankhya)", f.CODEMP);
 
-    // Datas
+    let tipo = null;
+    if (f.RECDESP === -1) tipo = "Despesa";
+    else if (f.RECDESP === 1) tipo = "Receita";
+    addLinha(colResumo, "Tipo", tipo);
+
+    addLinha(colResumo, "Provisão", f.PROVISAO === "S" ? "Sim" : "Não");
+
+    // coluna datas / docs
     if (f.DTENTSAI) {
-      linhas.push(
-        `Data de entrada/saída: ${formatarDataBR(f.DTENTSAI)}`
+      addLinha(
+        colDatas,
+        "Entrada/Saída",
+        formatarDataBR(f.DTENTSAI)
       );
     }
     if (f.DTVENC) {
-      linhas.push(
-        `Vencimento no financeiro: ${formatarDataBR(f.DTVENC)}`
+      addLinha(
+        colDatas,
+        "Vencimento financeiro",
+        formatarDataBR(f.DTVENC)
       );
     }
     if (f.DHBAIXA) {
       const dataBaixa = f.DHBAIXA.substring(0, 10);
       const horaBaixa = f.DHBAIXA.substring(11, 19);
-      linhas.push(
-        `Baixa no financeiro: ${formatarDataBR(
-          dataBaixa
-        )} ${horaBaixa}`
+      addLinha(
+        colDatas,
+        "Baixa financeira",
+        `${formatarDataBR(dataBaixa)} ${horaBaixa}`
       );
     }
-    if (f.PROVISAO)
-      linhas.push(`Provisão: ${f.PROVISAO === "S" ? "Sim" : "Não"}`);
-    if (f.CODEMP != null)
-      linhas.push(`Empresa (Sankhya): ${f.CODEMP}`);
 
-    detalhes.textContent = linhas.join(" | ");
-  } else if (Array.isArray(d.responsaveis) && d.responsaveis.length) {
-    const contatos = d.responsaveis
-      .map(r => `${r.nome || "Contato"} (${r.telefone || "-"})`)
-      .join(" • ");
-    detalhes.textContent = `Contatos: ${contatos}`;
+    addLinha(colDatas, "Nº nota fiscal", f.NUMNOTA);
+    addLinha(colDatas, "Nota única (Sankhya)", f.NUNOTA);
+    addLinha(colDatas, "Nº fatura", f.NUFTC);
+    addLinha(colDatas, "Nº renegociação", f.NURENEG);
+
+    detalhes.appendChild(colResumo);
+    detalhes.appendChild(colDatas);
   } else {
-    detalhes.textContent = "";
+    // fallback: mostrar contatos/recorrência se não for Sankhya
+    const colResumo = document.createElement("div");
+    const tituloResumo = document.createElement("div");
+    tituloResumo.className = "item-dia-log-section-title";
+    tituloResumo.textContent = "Detalhes";
+    colResumo.appendChild(tituloResumo);
+
+    if (Array.isArray(d.responsaveis) && d.responsaveis.length) {
+      const linha = document.createElement("div");
+      linha.className = "item-dia-log-line";
+      const contatos = d.responsaveis
+        .map(r => `${r.nome || "Contato"} (${r.telefone || "-"})`)
+        .join(" • ");
+      linha.innerHTML = `<span>Contatos: </span><span class="item-dia-log-strong">${contatos}</span>`;
+      colResumo.appendChild(linha);
+    }
+
+    detalhes.appendChild(colResumo);
   }
 
   const acoes = document.createElement("div");
@@ -1703,8 +1752,7 @@ function criarCardDespesa(d) {
   acoes.appendChild(btnExcluir);
 
   card.appendChild(header);
-  card.appendChild(statusDiv);
-  if (detalhes.textContent) card.appendChild(detalhes);
+  card.appendChild(detalhes);
   card.appendChild(acoes);
 
   return card;

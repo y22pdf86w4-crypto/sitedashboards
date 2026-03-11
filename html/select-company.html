@@ -2,16 +2,18 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Dashboard - Empresas, Avisos e Imagens</title>
+  <title>Dashboard - Seleção de Empresa</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <link rel="icon" href="../assets/imagem/favicon.png" type="image/png" />
 
-  <!-- CSS externo deste layout -->
+  <!-- CSS específico da tela + sidebar -->
   <link rel="stylesheet" href="../assets/css/select-company.css" />
+  <link rel="stylesheet" href="../assets/css/sidebar.css" />
 
-  <!-- JS global com login, RBAC, partículas, etc. -->
+  <!-- Scripts globais e sidebar -->
   <script src="../assets/js/global.js" defer></script>
+  <script src="../assets/js/sidebar.js" defer></script>
 
   <script defer>
     function carregarSelecaoEmpresa() {
@@ -32,32 +34,15 @@
       const perfisUser = user.perfis || [];
       const isAdmin = perfisUser.includes("ADMIN");
 
-      // NÃO redireciona mais automático.
-      // Sempre mostra a tela e esconde só o que ele não tem acesso.
-
       const cardLinhagro = document.querySelector('[data-empresa="linhagro"]');
       const cardLitho    = document.querySelector('[data-empresa="lithoplant"]');
 
-      // Admin vê tudo; não-admin vê apenas empresas às quais tem acesso
       if (!isAdmin) {
         if (cardLinhagro && !empresasUser.includes("linhagro")) {
           cardLinhagro.style.display = "none";
         }
         if (cardLitho && !empresasUser.includes("lithoplant")) {
           cardLitho.style.display = "none";
-        }
-      }
-
-      // Mostrar/ocultar item de Logística no menu lateral
-      const itensSidebar = document.querySelectorAll(".sidebar-item");
-      const itemLogistica = Array.from(itensSidebar).find(li =>
-        li.textContent && li.textContent.includes("Logística")
-      );
-      if (itemLogistica) {
-        if (!isAdmin) {
-          itemLogistica.style.display = "none";  // só ADMIN vê
-        } else {
-          itemLogistica.style.display = "";
         }
       }
     }
@@ -67,18 +52,6 @@
         sessionStorage.setItem("empresaSelecionada", empresa);
       }
       window.location.href = "./menu.html";
-    }
-
-    function abrirLogistica() {
-      const urlPrincipal = "./logistica.html";
-      window.location.href = urlPrincipal;
-    }
-
-    function voltarLogin() {
-      if (window.sessionStorage) {
-        sessionStorage.removeItem("empresaSelecionada");
-      }
-      window.location.href = "../index.html";
     }
 
     function atualizarGlow(e, card) {
@@ -122,26 +95,26 @@
       }, 8000);
     }
 
-    function initSidebarToggle() {
-      const app = document.getElementById("app");
-      const btnToggle = document.getElementById("btnToggleSidebar");
+    window.addEventListener("DOMContentLoaded", async () => {
+      const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+      if (!user) {
+        window.location.href = "../index.html";
+        return;
+      }
 
-      if (!app || !btnToggle) return;
-
-      btnToggle.addEventListener("click", () => {
-        app.classList.toggle("sidebar-collapsed");
+      // Carrega sidebar com RBAC por tela (select-company) definido em sidebar.js
+      await carregarSidebar({
+        containerId: "sidebarContainer",
+        basePath: ".",                 // ./sidebar.html (mesma pasta)
+        empresaSelectorPath: "./select-company.html",
       });
-    }
 
-    window.addEventListener("DOMContentLoaded", () => {
       carregarSelecaoEmpresa();
       initGallery();
-      initSidebarToggle();
     });
   </script>
 </head>
 <body>
-  <!-- Fundo animado -->
   <div class="bg-container">
     <div class="animated-bg"></div>
     <div class="grid-bg"></div>
@@ -158,50 +131,18 @@
     </div>
   </div>
 
-  <!-- Botão ☰ -->
-  <button class="sidebar-toggle" type="button" id="btnToggleSidebar" aria-label="Alternar menu lateral">
+  <button
+    class="sidebar-toggle"
+    type="button"
+    id="btnToggleSidebar"
+    aria-label="Alternar menu lateral"
+  >
     <span>☰</span>
   </button>
 
   <div class="app" id="app">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-logo">LG</div>
-        <div class="sidebar-title-block">
-          <span class="sidebar-title">Portal de dashboards</span>
-          <span class="sidebar-sub">Ambientes corporativos</span>
-        </div>
-      </div>
+    <div id="sidebarContainer"></div>
 
-      <div class="sidebar-section">
-        <p class="sidebar-section-title">Navegação</p>
-        <ul class="sidebar-nav">
-          <li class="sidebar-item sidebar-item-active">
-            <span class="icon">🏢</span>
-            <span class="label">Seleção de empresa</span>
-          </li>
-          <li class="sidebar-item" onclick="abrirLogistica()">
-            <span class="icon">⛟</span>
-            <span class="label">Logística</span>
-          </li>
-        </ul>
-      </div>
-
-      <div class="sidebar-footer">
-        <!-- Botão sair com layout Uiverse -->
-        <button class="Btn sidebar-logout-btn" type="button" onclick="voltarLogin()">
-          <div class="sign">
-            <svg viewBox="0 0 512 512" aria-hidden="true">
-              <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
-            </svg>
-          </div>
-          <div class="text">Sair</div>
-        </button>
-      </div>
-    </aside>
-
-    <!-- MAIN -->
     <main class="main">
       <header class="main-header">
         <div class="main-header-text">
@@ -210,13 +151,12 @@
             Selecione a <span>empresa</span> e acompanhe os avisos.
           </h1>
           <p class="main-sub">
-            Selecione a empresa para começar a visualizar seus resultados em tempo real
+            Selecione a empresa para começar a visualizar seus resultados em tempo real.
           </p>
         </div>
       </header>
 
       <section class="row-top" aria-label="Empresas e avisos">
-        <!-- CARD EMPRESAS -->
         <section class="card" aria-label="Seleção de empresas">
           <div class="flow-box">
             <p class="flow-title">Fluxo de acesso</p>
@@ -239,7 +179,6 @@
           </div>
 
           <div class="companies-grid">
-            <!-- Linhagro -->
             <article
               class="company-card"
               data-empresa="linhagro"
@@ -274,7 +213,6 @@
               </div>
             </article>
 
-            <!-- Lithoplant -->
             <article
               class="company-card"
               data-empresa="lithoplant"
@@ -311,7 +249,6 @@
           </div>
         </section>
 
-        <!-- CARD AVISOS -->
         <section class="card panel-notices" aria-label="Avisos e novidades">
           <header class="notices-header">
             <div class="notices-title-block">
@@ -364,7 +301,6 @@
         </section>
       </section>
 
-      <!-- GALERIA AVISO1 / AVISO2 (sem legendas) -->
       <section class="card-gallery" aria-label="Imagens rotativas de avisos">
         <div class="notice-gallery-header">
           <div class="notice-gallery-title">
@@ -372,9 +308,23 @@
             <span>Imagens de destaque dos avisos</span>
           </div>
           <div class="notice-gallery-controls">
-            <button class="gallery-btn" type="button" id="galleryPrev" aria-label="Imagem anterior">‹</button>
+            <button
+              class="gallery-btn"
+              type="button"
+              id="galleryPrev"
+              aria-label="Imagem anterior"
+            >
+              ‹
+            </button>
             <span class="notice-gallery-counter" id="galleryCounter">1 / 2</span>
-            <button class="gallery-btn" type="button" id="galleryNext" aria-label="Próxima imagem">›</button>
+            <button
+              class="gallery-btn"
+              type="button"
+              id="galleryNext"
+              aria-label="Próxima imagem"
+            >
+              ›
+            </button>
           </div>
         </div>
 

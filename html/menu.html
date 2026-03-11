@@ -7,7 +7,16 @@
 
   <link rel="icon" href="../assets/imagem/favicon.png" type="image/png" />
   <link rel="stylesheet" href="../assets/css/menu.css" />
+  <link rel="stylesheet" href="../assets/css/sidebar.css" />
+
   <script src="../assets/js/global.js" defer></script>
+  <script src="../assets/js/sidebar.js" defer></script>
+
+  <style>
+    .dashboard-grid[data-loading="true"] {
+      display: none;
+    }
+  </style>
 
   <script defer>
     const EMPRESAS_CONFIG = {
@@ -29,14 +38,11 @@
     let DASHBOARDS = [];
     let dashboardsFiltrados = [];
 
-    // ----------------- PERMISSÃO / RBAC NO FRONT -----------------
-
     function usuarioPodeVerDashboard(user, dash) {
       const email = (user.email || "").toLowerCase();
       const perfis = user.perfis || [];
       const isAdmin = perfis.includes("ADMIN");
 
-      // ADMIN vê tudo da empresa
       if (isAdmin) return true;
 
       const tiposPermitidos = dash.tiposPermitidos || [];
@@ -44,12 +50,10 @@
         (e || "").toLowerCase()
       );
 
-      // VIP por e-mail
-      if (usuariosPermitidos.length > 0 && !usuariosPermitidos.includes(email)) {
-        return false;
+      if (usuariosPermitidos.length > 0) {
+        return usuariosPermitidos.includes(email);
       }
 
-      // restrição por perfil
       if (tiposPermitidos.length > 0) {
         const temPerfil = perfis.some((p) => tiposPermitidos.includes(p));
         if (!temPerfil) return false;
@@ -58,19 +62,15 @@
       return true;
     }
 
-    // ----------------- CARREGAR DASHBOARDS DA API -----------------
-
     async function carregarDashboardsDaAPI(empresaApi) {
-      // empresaApi = 'LINHAGRO' ou 'LITHOPLANT'
       const data = await apiGet(
         `/dashboards?empresa=${encodeURIComponent(empresaApi)}`
       );
       const lista = data.dashboards || [];
 
-      // Normaliza para o formato usado no front
       DASHBOARDS = lista.map((d) => ({
         id: d.id,
-        empresa: (d.empresa || "").toLowerCase(), // 'linhagro' / 'lithoplant'
+        empresa: (d.empresa || "").toLowerCase(),
         titulo: d.titulo,
         descricaoCurta: d.descricaoCurta,
         descricaoLonga: d.descricaoLonga,
@@ -83,37 +83,54 @@
       }));
     }
 
-    // ----------------- CARREGAR MENU PRINCIPAL -----------------
-
     async function carregarMenu() {
+      const grid = document.getElementById("dashboardGrid");
+      if (grid) grid.setAttribute("data-loading", "true");
+
       const user = getUsuarioAtual();
       if (!user) {
         window.location.href = "../index.html";
         return;
       }
 
-      const empresa =
+      const empresaSelecionada =
         window.sessionStorage && sessionStorage.getItem("empresaSelecionada");
-      if (!empresa || !user.empresas || !user.empresas.includes(empresa)) {
+      if (
+        !empresaSelecionada ||
+        !user.empresas ||
+        !user.empresas.includes(empresaSelecionada)
+      ) {
         window.location.href = "./select-company.html";
         return;
       }
 
-      const cfg = EMPRESAS_CONFIG[empresa];
+      const empresaKey = empresaSelecionada.toLowerCase();
+      const cfg = EMPRESAS_CONFIG[empresaKey];
       if (!cfg) {
         window.location.href = "../index.html";
         return;
       }
 
-      // Carrega dashboards da API
-      const empresaApi = empresa.toUpperCase(); // 'linhagro' -> 'LINHAGRO'
+      await carregarSidebar({
+        containerId: "sidebarContainer",
+        basePath: ".",
+        empresaSelectorPath: "./select-company.html",
+      });
+
+      const liDashboards = document.querySelector(
+        ".sidebar-item[data-key='dashboards']"
+      );
+      if (liDashboards) {
+        liDashboards.classList.add("sidebar-item-active");
+      }
+
+      const empresaApi = empresaKey.toUpperCase();
       try {
         await carregarDashboardsDaAPI(empresaApi);
       } catch (e) {
         console.error("Erro ao carregar dashboards da API:", e);
       }
 
-      // saudação no sidebar
       if (typeof preencherHeaderUsuario === "function") {
         preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
       } else {
@@ -137,24 +154,15 @@
         });
       }
 
-      // Filtra por empresa + permissão
       dashboardsFiltrados = DASHBOARDS.filter(
-        (d) => d.empresa === empresa && usuarioPodeVerDashboard(user, d)
+        (d) => d.empresa === empresaKey && usuarioPodeVerDashboard(user, d)
       );
-      atualizarGridDashboards(empresa);
+      atualizarGridDashboards(empresaKey);
 
-      const app = document.getElementById("app");
-      const btnToggle = document.getElementById("btnToggleSidebar");
-      if (app && btnToggle) {
-        btnToggle.addEventListener("click", () => {
-          app.classList.toggle("sidebar-collapsed");
-        });
-      }
+      if (grid) grid.removeAttribute("data-loading");
     }
 
-    // ----------------- GRID / RENDERIZAÇÃO DOS CARDS -----------------
-
-    function atualizarGridDashboards(empresa) {
+    function atualizarGridDashboards(empresaKey) {
       const grid = document.getElementById("dashboardGrid");
       if (!grid) return;
 
@@ -171,7 +179,7 @@
             <div class="dash-card-main">
               <p class="dash-card-title">${d.titulo}</p>
               <span class="dash-card-tag">
-                ${empresa === "linhagro" ? "Linhagro" : "Lithoplant"}
+                ${empresaKey === "linhagro" ? "Linhagro" : "Lithoplant"}
               </span>
             </div>
           </div>
@@ -193,19 +201,18 @@
       });
     }
 
-    // ----------------- BUSCA / FILTRO POR TEXTO -----------------
-
     function filtrarDashboardsPorTexto(texto) {
       const termo = (texto || "").toLowerCase();
-      const empresa =
+      const empresaSelecionada =
         window.sessionStorage && sessionStorage.getItem("empresaSelecionada");
-      if (!empresa) return;
+      if (!empresaSelecionada) return;
 
+      const empresaKey = empresaSelecionada.toLowerCase();
       const user = getUsuarioAtual();
       if (!user) return;
 
       const baseEmpresa = DASHBOARDS.filter(
-        (d) => d.empresa === empresa && usuarioPodeVerDashboard(user, d)
+        (d) => d.empresa === empresaKey && usuarioPodeVerDashboard(user, d)
       );
 
       if (!termo) {
@@ -222,44 +229,8 @@
         });
       }
 
-      atualizarGridDashboards(empresa);
+      atualizarGridDashboards(empresaKey);
     }
-
-    // ----------------- SIDEBAR / NAVEGAÇÃO LATERAL -----------------
-
-    function ativarItemSidebar(chave) {
-      document.querySelectorAll(".sidebar-item").forEach((item) => {
-        item.classList.toggle(
-          "sidebar-item-active",
-          item.dataset.key === chave
-        );
-      });
-
-      const empresa =
-        window.sessionStorage && sessionStorage.getItem("empresaSelecionada");
-      if (!empresa) return;
-
-      const cfg = EMPRESAS_CONFIG[empresa];
-
-      if (chave === "dashboards") {
-        const user = getUsuarioAtual();
-        if (!user) return;
-        dashboardsFiltrados = DASHBOARDS.filter(
-          (d) => d.empresa === empresa && usuarioPodeVerDashboard(user, d)
-        );
-        atualizarGridDashboards(empresa);
-      } else if (chave === "calendario") {
-        window.location.href = cfg.calendarioPath;
-      } else if (chave === "organograma") {
-        if (empresa === "linhagro") {
-          window.location.href = "./org-linhagro.html";
-        } else if (empresa === "lithoplant") {
-          window.location.href = "./org-lithoplant.html";
-        }
-      }
-    }
-
-    // ----------------- TROCAR EMPRESA / LOGOUT -----------------
 
     function trocarEmpresa() {
       if (window.sessionStorage) {
@@ -272,13 +243,9 @@
       deslogar();
     }
 
-    // ----------------- INICIALIZAÇÃO -----------------
-
     window.addEventListener("DOMContentLoaded", carregarMenu);
 
-    // Deixa as funções globais que o HTML usa
     window.filtrarDashboardsPorTexto = filtrarDashboardsPorTexto;
-    window.ativarItemSidebar = ativarItemSidebar;
     window.trocarEmpresa = trocarEmpresa;
     window.voltarLogin = voltarLogin;
   </script>
@@ -309,54 +276,7 @@
   </button>
 
   <div class="app" id="app">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-logo">LG</div>
-        <div class="sidebar-title-block">
-          <span class="sidebar-title" id="saudacaoSidebar">Centro de navegação</span>
-          <span class="sidebar-sub" id="userNameSidebar">Dashboards corporativos</span>
-        </div>
-      </div>
-
-      <div class="sidebar-section">
-        <p class="sidebar-section-title">Navegação</p>
-        <ul class="sidebar-nav">
-          <li class="sidebar-item" data-key="voltar" onclick="trocarEmpresa()">
-            <span class="icon">⬅</span>
-            <span class="label">Voltar à seleção</span>
-          </li>
-          <li
-            class="sidebar-item sidebar-item-active"
-            data-key="dashboards"
-            onclick="ativarItemSidebar('dashboards')"
-          >
-            <span class="icon">📊</span>
-            <span class="label">Dashboards</span>
-          </li>
-          <li class="sidebar-item" data-key="calendario" onclick="ativarItemSidebar('calendario')">
-            <span class="icon">📅</span>
-            <span class="label">Calendário</span>
-          </li>
-          <li class="sidebar-item" data-key="organograma" onclick="ativarItemSidebar('organograma')">
-            <span class="icon">👥</span>
-            <span class="label">Organograma</span>
-          </li>
-        </ul>
-      </div>
-
-      <div class="sidebar-footer">
-        <button class="Btn sidebar-logout-btn" type="button" onclick="voltarLogin()">
-          <div class="sign">
-            <svg viewBox="0 0 512 512">
-              <path
-                d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"
-              ></path>
-            </svg>
-          </div>
-          <div class="text">Sair</div>
-        </button>
-      </div>
-    </aside>
+    <div id="sidebarContainer"></div>
 
     <main class="main">
       <header class="main-header">
@@ -384,6 +304,7 @@
       <section
         class="dashboard-grid"
         id="dashboardGrid"
+        data-loading="true"
         aria-label="Lista de dashboards"
       ></section>
     </main>

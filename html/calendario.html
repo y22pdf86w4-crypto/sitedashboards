@@ -6,15 +6,79 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <link rel="icon" href="../assets/imagem/favicon.png" type="image/png" />
+
+  <!-- CSS globais -->
   <link rel="stylesheet" href="../assets/css/global.css" />
   <link rel="stylesheet" href="../assets/css/background.css" />
+  <!-- layout geral (fundo, etc. se compartilhado) -->
   <link rel="stylesheet" href="../assets/css/menu.css" />
+  <!-- sidebar padrão -->
+  <link rel="stylesheet" href="../assets/css/sidebar.css" />
+  <!-- CSS específico calendário -->
   <link rel="stylesheet" href="../assets/css/calendario.css" />
 
+  <!-- JS globais -->
   <script src="../assets/js/global.js" defer></script>
+  <!-- sidebar compartilhado -->
+  <script src="../assets/js/sidebar.js" defer></script>
+  <!-- JS específico calendário -->
   <script src="../assets/js/calendario.js" defer></script>
+
+  <script defer>
+    function voltarLogin() {
+      if (typeof deslogar === "function") {
+        deslogar();
+      } else {
+        window.location.href = "../index.html";
+      }
+    }
+
+    async function initCalendarioPagina() {
+      // lógica original de init
+      if (typeof initPagina === "function") {
+        initPagina();
+      }
+
+      const user =
+        typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+
+      if (!user) {
+        window.location.href = "../index.html";
+        return;
+      }
+
+      // carrega sidebar compartilhada
+      await carregarSidebar({
+        containerId: "sidebarContainer",
+        basePath: ".",
+        empresaSelectorPath: "./select-company.html",
+      });
+
+      // marca item Calendário como ativo
+      const liCalendario = document.querySelector(
+        ".sidebar-item[data-key='calendario']"
+      );
+      if (liCalendario) {
+        liCalendario.classList.add("sidebar-item-active");
+      }
+
+      // preenche header do sidebar
+      if (typeof preencherHeaderUsuario === "function") {
+        preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
+      }
+
+      // header do chip de usuário no topo da tela
+      const userNameEl = document.getElementById("userName");
+      if (userNameEl) {
+        userNameEl.textContent = user.nome || user.email || "Usuário";
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", initCalendarioPagina);
+  </script>
 </head>
-<body class="calendario-page" onload="initPagina()">
+<body class="calendario-page">
+  <!-- Fundo animado -->
   <div class="bg-container" aria-hidden="true">
     <div class="animated-bg"></div>
     <div class="particles-container"></div>
@@ -28,6 +92,7 @@
     <div class="grid-bg"></div>
   </div>
 
+  <!-- Botão ☰ -->
   <button
     class="sidebar-toggle"
     type="button"
@@ -38,73 +103,8 @@
   </button>
 
   <div class="app" id="app">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-logo">
-          <img
-            id="logoEmpresa"
-            src="../assets/imagem/logolinhagro.png"
-            alt="Empresa"
-            style="width:24px;height:24px;border-radius:999px;"
-          />
-        </div>
-        <div class="sidebar-title-block">
-          <span class="sidebar-title" id="saudacaoSidebar">Calendário de pagamentos</span>
-          <span class="sidebar-sub" id="userNameSidebar">Empresa atual</span>
-        </div>
-      </div>
-
-      <div class="sidebar-section">
-        <p class="sidebar-section-title">Navegação</p>
-        <ul class="sidebar-nav">
-          <li
-            class="sidebar-item"
-            data-key="menu"
-            onclick="window.location.href='./menu.html'"
-          >
-            <span class="icon">⬅</span>
-            <span class="label">Voltar à seleção</span>
-          </li>
-
-          <li
-            class="sidebar-item"
-            data-key="dashboards"
-            onclick="window.location.href='./menu.html'"
-          >
-            <span class="icon">📊</span>
-            <span class="label">Dashboards</span>
-          </li>
-
-          <li
-            class="sidebar-item sidebar-item-active"
-            data-key="calendario"
-          >
-            <span class="icon">📅</span>
-            <span class="label">Calendário</span>
-          </li>
-
-          <li
-            class="sidebar-item"
-            data-key="organograma"
-            onclick="window.location.href='./org-linhagro.html'"
-          >
-            <span class="icon">👥</span>
-            <span class="label">Organograma</span>
-          </li>
-        </ul>
-      </div>
-
-      <div class="sidebar-footer">
-        <button class="Btn sidebar-logout-btn" type="button" onclick="deslogar()">
-          <div class="sign">
-            <svg viewBox="0 0 512 512">
-              <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
-            </svg>
-          </div>
-          <div class="text">Sair</div>
-        </button>
-      </div>
-    </aside>
+    <!-- Sidebar compartilhada entra aqui -->
+    <div id="sidebarContainer"></div>
 
     <main class="main">
       <header class="cal-header">
@@ -224,8 +224,6 @@
     </main>
   </div>
 
-  <!-- (mantidos todos os modais e elementos abaixo, sem alteração) -->
-
   <!-- Modal de despesas do dia -->
   <div id="modalDia" class="modal-dia" style="display:none;">
     <div class="modal-dia-backdrop" onclick="fecharModalDia()"></div>
@@ -260,23 +258,223 @@
   <div id="calTooltip" class="cal-tooltip" style="display:none;"></div>
 
   <!-- Modal filtros -->
-  <!-- ... todo o restante exatamente igual ao seu código ... -->
+  <div id="modalFiltros" class="modal-filtros" style="display:none;">
+    <div class="modal-filtros-backdrop" onclick="fecharModalFiltros()"></div>
+    <div class="modal-filtros-panel">
+      <header class="modal-filtros-header">
+        <h2>Filtros do calendário</h2>
+        <button
+          type="button"
+          class="modal-filtros-close"
+          onclick="fecharModalFiltros()"
+        >
+          ×
+        </button>
+      </header>
 
-  <script>
-    window.addEventListener("DOMContentLoaded", () => {
-      const app = document.getElementById("app");
-      const btnToggle = document.getElementById("btnToggleSidebar");
-      if (app && btnToggle) {
-        btnToggle.addEventListener("click", () => {
-          app.classList.toggle("sidebar-collapsed");
-        });
-      }
+      <div class="modal-filtros-body">
+        <div class="filtro-group">
+          <label>Período</label>
+          <div class="filtro-row">
+            <input type="date" id="dataIni" />
+            <span class="date-sep">–</span>
+            <input type="date" id="dataFim" />
+          </div>
+        </div>
 
-      const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
-      if (user && typeof preencherHeaderUsuario === "function") {
-        preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
-      }
-    });
-  </script>
+        <div class="filtro-group">
+          <label>Status</label>
+          <div class="chips-row">
+            <button
+              type="button"
+              class="chip filtro-status"
+              data-status="pendente"
+              onclick="toggleFiltroStatus('pendente', this)"
+            >
+              Pendente
+            </button>
+            <button
+              type="button"
+              class="chip filtro-status"
+              data-status="pago"
+              onclick="toggleFiltroStatus('pago', this)"
+            >
+              Pago
+            </button>
+            <button
+              type="button"
+              class="chip filtro-status"
+              data-status="atrasado"
+              onclick="toggleFiltroStatus('atrasado', this)"
+            >
+              Atrasado
+            </button>
+          </div>
+        </div>
+
+        <div class="filtro-group">
+          <label>Origem</label>
+          <div class="chips-row" id="chipsOrigem"></div>
+        </div>
+      </div>
+
+      <div class="modal-filtros-footer">
+        <button
+          type="button"
+          class="btn-secondary"
+          onclick="limparFiltros()"
+        >
+          Limpar
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          onclick="aplicarFiltros()"
+        >
+          Aplicar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal inclusão / edição de despesa -->
+  <div id="modalInclusao" class="modal-inclusao" style="display:none;">
+    <div class="modal-inclusao-backdrop" onclick="fecharModalInclusao()"></div>
+    <div class="modal-inclusao-panel">
+      <header class="modal-inclusao-header">
+        <h2 id="tituloModalInclusao">Nova despesa</h2>
+        <button
+          type="button"
+          class="modal-inclusao-close"
+          onclick="fecharModalInclusao()"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="modal-inclusao-body">
+        <form id="formDespesa">
+          <input type="hidden" id="despesaId" />
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="descDespesa">Descrição</label>
+              <input type="text" id="descDespesa" required />
+            </div>
+            <div class="form-group">
+              <label for="valorDespesa">Valor</label>
+              <input type="number" id="valorDespesa" step="0.01" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="dataVencimento">Vencimento</label>
+              <input type="date" id="dataVencimento" required />
+            </div>
+            <div class="form-group">
+              <label for="origemDespesa">Origem</label>
+              <select id="origemDespesa"></select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="obsDespesa">Observações</label>
+            <textarea id="obsDespesa" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-inclusao-footer">
+        <button
+          type="button"
+          class="btn-secondary"
+          onclick="fecharModalInclusao()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          onclick="salvarDespesa()"
+        >
+          Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal seleção de envio -->
+  <div id="modalSelecionarEnvio" class="modal-envio" style="display:none;">
+    <div class="modal-envio-backdrop" onclick="fecharModalSelecionarEnvio()"></div>
+    <div class="modal-envio-panel">
+      <header class="modal-envio-header">
+        <h2>Enviar lembretes</h2>
+        <button
+          type="button"
+          class="modal-envio-close"
+          onclick="fecharModalSelecionarEnvio()"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="modal-envio-body">
+        <div class="form-group">
+          <label>Destinatários</label>
+          <div id="listaContatosEnvio"></div>
+        </div>
+        <div class="form-group">
+          <label>Mensagem</label>
+          <textarea id="mensagemEnvio" rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-envio-footer">
+        <button
+          type="button"
+          class="btn-secondary"
+          onclick="fecharModalSelecionarEnvio()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          onclick="confirmarEnvioLembretes()"
+        >
+          Enviar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal gerenciador de contatos -->
+  <div id="modalContatos" class="modal-contatos" style="display:none;">
+    <div class="modal-contatos-backdrop" onclick="fecharGerenciadorContatos()"></div>
+    <div class="modal-contatos-panel">
+      <header class="modal-contatos-header">
+        <h2>Contatos</h2>
+        <button
+          type="button"
+          class="modal-contatos-close"
+          onclick="fecharGerenciadorContatos()"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="modal-contatos-body">
+        <div id="listaContatos"></div>
+        <button
+          type="button"
+          class="btn-primary"
+          onclick="adicionarContato()"
+        >
+          Novo contato
+        </button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

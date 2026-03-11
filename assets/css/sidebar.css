@@ -1,0 +1,375 @@
+:root {
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 80px;
+
+  --sidebar-bg: radial-gradient(circle at top, rgba(15, 23, 42, 0.96), #020617);
+  --sidebar-border: #0f172a;
+  --sidebar-text-main: #e5fdf7;
+  --sidebar-text-soft: #9ca3af;
+
+  --sidebar-accent: #22c55e;
+  --sidebar-accent-soft: rgba(34, 197, 94, 0.16);
+
+  --transition-fast: 0.22s ease;
+}
+
+/* ==========================================================
+   LAYOUT GERAL: APP + SIDEBAR + MAIN
+   ========================================================== */
+
+.app {
+  min-height: 100vh;
+  display: block;
+  padding-left: var(--sidebar-width);
+  transition: padding-left var(--transition-fast);
+  position: relative;
+  z-index: 1;
+}
+
+.app.sidebar-collapsed {
+  padding-left: var(--sidebar-width-collapsed);
+}
+
+.main {
+  min-height: 100vh;
+  padding: 1.6rem 1.8rem 1.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  box-sizing: border-box;
+}
+
+/* ==========================================================
+   SIDEBAR BASE
+   ========================================================== */
+
+.sidebar-wrapper {
+  height: 100%;
+}
+
+.sidebar {
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  padding: 1.1rem 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  z-index: 10;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.9);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Cabeçalho da sidebar */
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.4rem 0.45rem 0.3rem;
+  border-radius: 999px;
+  background: radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.35), #020617);
+  border: 1px solid rgba(34, 197, 94, 0.85);
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.95),
+    0 0 0 1px rgba(15, 23, 42, 0.9);
+}
+
+.sidebar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 0, #f9fafb, #22c55e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #022c22;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.8);
+  flex-shrink: 0;
+}
+
+.sidebar-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.sidebar-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--sidebar-text-main);
+}
+
+.sidebar-sub {
+  font-size: 0.7rem;
+  color: var(--sidebar-text-soft);
+}
+
+/* ==========================================================
+   SEÇÕES / ITENS
+   ========================================================== */
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sidebar-section-title {
+  margin: 0;
+  padding: 0 0.4rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.sidebar-nav {
+  list-style: none;
+  margin: 0 0 0.8rem 0;
+  padding: 0.1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* Item base */
+
+.sidebar-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--sidebar-text-main);
+  font-size: 0.82rem;
+  border: 1px solid transparent;
+  background: transparent;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.12s ease,
+    box-shadow 0.16s ease;
+}
+
+.sidebar-item:hover {
+  background: rgba(15, 23, 42, 0.96);
+  border-color: rgba(31, 41, 55, 0.9);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.7);
+  transform: translateY(-1px);
+}
+
+/* ícone + label */
+
+.sidebar-item .icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(31, 41, 55, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.sidebar-item .label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Item ativo */
+
+.sidebar-item.sidebar-item-active {
+  background: radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.32), #020617);
+  border-color: rgba(34, 197, 94, 0.9);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(6, 95, 70, 0.9);
+}
+
+.sidebar-item.sidebar-item-active .icon {
+  border-color: rgba(34, 197, 94, 0.9);
+  background: rgba(6, 78, 59, 0.95);
+}
+
+/* ==========================================================
+   BOTÃO TOGGLE (☰)
+   ========================================================== */
+
+.sidebar-toggle {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 50;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(45, 212, 191, 0.6);
+  background: rgba(15, 23, 42, 0.96);
+  color: #e5fdf7;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.9);
+}
+
+.sidebar-toggle:hover {
+  background: #020617;
+  border-color: #22c55e;
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.9);
+}
+
+.sidebar-toggle span {
+  font-size: 1.1rem;
+  transition: transform 0.18s ease;
+}
+
+.app.sidebar-collapsed .sidebar-toggle span {
+  transform: rotate(180deg);
+}
+
+/* Estado colapsado: só ícones */
+
+.app.sidebar-collapsed .sidebar {
+  width: var(--sidebar-width-collapsed);
+}
+
+.app.sidebar-collapsed .sidebar-title-block,
+.app.sidebar-collapsed .sidebar-item .label,
+.app.sidebar-collapsed .sidebar-section-title {
+  display: none;
+}
+
+/* ==========================================================
+   FOOTER / BOTÃO SAIR
+   ========================================================== */
+
+/* FOOTER / BOTÃO SAIR FIXO NO RODAPÉ DA SIDEBAR */
+.sidebar-footer {
+  position: absolute;
+  left: 0;
+  bottom: 0.8rem;          /* distância da borda inferior */
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: 0.3rem;
+}
+
+
+/* Botão padrão (Btn) */
+
+.Btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 45px;
+  height: 45px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition-duration: .3s;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75);
+  background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.3), #020617);
+  border: 1px solid rgba(34, 197, 94, 0.7);
+}
+
+.Btn .sign {
+  width: 100%;
+  transition-duration: .3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.Btn .sign svg {
+  width: 18px;
+}
+
+.Btn .sign svg path {
+  fill: #bbf7d0;
+}
+
+.Btn .text {
+  position: absolute;
+  right: 0%;
+  width: 0%;
+  opacity: 0;
+  color: #e5fdf7;
+  font-size: 0.82rem;
+  font-weight: 400;
+  transition-duration: .3s;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.Btn:hover {
+  width: 120px;
+  border-radius: 999px;
+  background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.45), #020617);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.9);
+}
+
+.Btn:hover .sign {
+  width: 30%;
+  padding-left: 14px;
+}
+
+.Btn:hover .text {
+  opacity: 1;
+  width: 70%;
+  padding-right: 10px;
+}
+
+.Btn:active {
+  transform: translate(2px, 2px);
+}
+
+.sidebar-logout-btn {
+  font-weight: 400;
+}
+
+/* Quando colapsado, esconde o texto do botão sair */
+
+.app.sidebar-collapsed .Btn {
+  width: 45px;
+}
+
+.app.sidebar-collapsed .Btn .text {
+  display: none;
+}
+
+/* ==========================================================
+   RESPONSIVO
+   ========================================================== */
+
+@media (max-width: 960px) {
+  /* nada especial no main, deixa rolar normal */
+}
+
+@media (max-width: 640px) {
+  .app {
+    padding-left: var(--sidebar-width-collapsed);
+  }
+}

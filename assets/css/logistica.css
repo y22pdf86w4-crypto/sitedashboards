@@ -548,7 +548,13 @@ body.logistica-page {
 
 /* checkbox cliente (visual vem do wrapper) */
 .cliente-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #007bff; /* Azul para seleção ativa */
+  cursor: pointer;
+  margin-right: 8px;
 }
+
 
 /* textos do cliente */
 .cliente-textos {

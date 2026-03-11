@@ -80,41 +80,39 @@
       <div class="sidebar-section">
         <p class="sidebar-section-title">Navegação</p>
         <ul class="sidebar-nav">
-          <li
-            class="sidebar-item"
-            onclick="window.location.href='../../menu.html'"
-          >
-            <span class="icon">⬅</span>
-            <span class="label">Voltar à seleção</span>
+          <li class="sidebar-item" data-key="selecao-empresa">
+            <span class="icon">🏢</span>
+            <span class="label">Seleção de empresa</span>
           </li>
 
-          <li
-            class="sidebar-item"
-            onclick="window.location.href='../../menu.html'"
-          >
+          <li class="sidebar-item" data-key="dashboards">
             <span class="icon">📊</span>
             <span class="label">Dashboards</span>
           </li>
 
-          <li class="sidebar-item sidebar-item-active">
-            <span class="icon">💰</span>
-            <span class="label">Inadimplência</span>
+          <li class="sidebar-item" data-key="logistica">
+            <span class="icon">⛟</span>
+            <span class="label">Logística</span>
           </li>
 
-          <li
-            class="sidebar-item"
-            onclick="window.location.href='../../calendario.html'"
-          >
+          <li class="sidebar-item" data-key="calendario">
             <span class="icon">📅</span>
             <span class="label">Calendário</span>
           </li>
 
-          <li
-            class="sidebar-item"
-            onclick="window.location.href='../../org-linhagro.html'"
-          >
+          <li class="sidebar-item" data-key="organograma">
             <span class="icon">👥</span>
             <span class="label">Organograma</span>
+          </li>
+
+          <li class="sidebar-item sidebar-item-active" data-key="inadimplencia">
+            <span class="icon">💰</span>
+            <span class="label">Inadimplência</span>
+          </li>
+
+          <li class="sidebar-item" data-key="usuarios-admin">
+            <span class="icon">👤</span>
+            <span class="label">Usuários</span>
           </li>
         </ul>
       </div>
@@ -433,9 +431,10 @@
     </div>
   </div>
 
-  <!-- Toggle painel de filtros -->
+  <!-- Toggle painel de filtros + navegação sidebar -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+      // Toggle filtros
       const btn = document.getElementById("btnToggleFilters");
       const shell = document.getElementById("filtersShell");
 
@@ -447,6 +446,27 @@
           }
         });
       }
+
+      // Navegação sidebar por data-key
+      const rotaPorKey = {
+        "selecao-empresa": "../../menu.html",
+        "dashboards": "../../menu.html",
+        "logistica": "../../logistica/logistica.html",
+        "calendario": "../../calendario.html",
+        "organograma": "../../org-linhagro.html",
+        "inadimplencia": "./inadimplencia.html",
+        "usuarios-admin": "../../usuarios-admin.html"
+      };
+
+      document.querySelectorAll(".sidebar-item[data-key]").forEach((item) => {
+        item.addEventListener("click", () => {
+          const key = item.dataset.key;
+          const destino = rotaPorKey[key];
+          if (destino) {
+            window.location.href = destino;
+          }
+        });
+      });
     });
   </script>
 </body>

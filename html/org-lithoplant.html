@@ -6,51 +6,57 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="../assets/imagem/favicon.png" type="image/png" />
 
+  <!-- CSS globais / fundo -->
+  <link rel="stylesheet" href="../assets/css/background.css" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/menu.css" />
+  <!-- sidebar padrão -->
+  <link rel="stylesheet" href="../assets/css/sidebar.css" />
+  <!-- CSS específico organograma Lithoplant -->
   <link rel="stylesheet" href="../assets/css/org-Lithoplant.css" />
+
+  <!-- JS globais -->
   <script src="../assets/js/global.js" defer></script>
+  <!-- sidebar compartilhado -->
+  <script src="../assets/js/sidebar.js" defer></script>
 
   <script defer>
-    function carregarOrganograma() {
-      const user = getUsuarioAtual();
+    function voltarLogin() {
+      if (typeof deslogar === "function") {
+        deslogar();
+      } else {
+        window.location.href = "../index.html";
+      }
+    }
+
+    async function carregarOrganogramaLitho() {
+      const user =
+        typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
+
       if (!user) {
         window.location.href = "../index.html";
         return;
       }
 
-      preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
-
-      const app = document.getElementById("app");
-      const btnToggle = document.getElementById("btnToggleSidebar");
-      if (app && btnToggle) {
-        btnToggle.addEventListener("click", () => {
-          app.classList.toggle("sidebar-collapsed");
-        });
-      }
-    }
-
-    function ativarItemSidebar(chave) {
-      document.querySelectorAll(".sidebar-item").forEach(item => {
-        item.classList.toggle("sidebar-item-active", item.dataset.key === chave);
+      await carregarSidebar({
+        containerId: "sidebarContainer",
+        basePath: ".",
+        empresaSelectorPath: "./select-company.html",
       });
 
-      if (chave === "dashboards") {
-        window.location.href = "./menu.html";
-      } else if (chave === "calendario") {
-        window.location.href = "./calendario.html";
-      } else if (chave === "organograma") {
-        // já está aqui
+      const liOrg = document.querySelector(
+        ".sidebar-item[data-key='organograma']"
+      );
+      if (liOrg) {
+        liOrg.classList.add("sidebar-item-active");
+      }
+
+      if (typeof preencherHeaderUsuario === "function") {
+        preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
       }
     }
 
-    function trocarParaMenu() {
-      window.location.href = "./menu.html";
-    }
-
-    function voltarLogin() {
-      deslogar();
-    }
-
-    window.addEventListener("DOMContentLoaded", carregarOrganograma);
+    window.addEventListener("DOMContentLoaded", carregarOrganogramaLitho);
   </script>
 </head>
 <body>
@@ -70,59 +76,18 @@
     </div>
   </div>
 
-  <button class="sidebar-toggle" type="button" id="btnToggleSidebar" aria-label="Alternar menu lateral">
+  <button
+    class="sidebar-toggle"
+    type="button"
+    id="btnToggleSidebar"
+    aria-label="Alternar menu lateral"
+  >
     <span>☰</span>
   </button>
 
   <div class="app" id="app">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-logo">OG</div>
-        <div class="sidebar-title-block">
-          <span class="sidebar-title" id="saudacaoSidebar">Organograma</span>
-          <span class="sidebar-sub" id="userNameSidebar">Linhagro</span>
-        </div>
-      </div>
-
-      <div class="sidebar-section">
-        <p class="sidebar-section-title">Navegação</p>
-        <ul class="sidebar-nav">
-          <li class="sidebar-item" onclick="trocarParaMenu()">
-            <span class="icon">⬅</span>
-            <span class="label">Voltar ao menu</span>
-          </li>
-
-          <li class="sidebar-item" data-key="dashboards"
-              onclick="ativarItemSidebar('dashboards')">
-            <span class="icon">📊</span>
-            <span class="label">Dashboards</span>
-          </li>
-
-          <li class="sidebar-item" data-key="calendario"
-              onclick="ativarItemSidebar('calendario')">
-            <span class="icon">📅</span>
-            <span class="label">Calendário</span>
-          </li>
-
-          <li class="sidebar-item sidebar-item-active" data-key="organograma"
-              onclick="ativarItemSidebar('organograma')">
-            <span class="icon">👥</span>
-            <span class="label">Organograma</span>
-          </li>
-        </ul>
-      </div>
-
-      <div class="sidebar-footer">
-        <button class="Btn sidebar-logout-btn" type="button" onclick="voltarLogin()">
-          <div class="sign">
-            <svg viewBox="0 0 512 512">
-              <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
-            </svg>
-          </div>
-          <div class="text">Sair</div>
-        </button>
-      </div>
-    </aside>
+    <!-- Sidebar compartilhada -->
+    <div id="sidebarContainer"></div>
 
     <main class="main">
       <header class="org-header">
@@ -131,7 +96,7 @@
           Organograma <span>Lithoplant</span>
         </h1>
         <p class="main-sub">
-          Visualização hierárquica das áreas, diretoria e equipes da Linhagro.
+          Visualização hierárquica das áreas, diretoria e equipes da Lithoplant.
         </p>
       </header>
 

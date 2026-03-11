@@ -1,0 +1,565 @@
+/* ==========================================================
+   ROOT / LAYOUT GERAL – TELA USUÁRIOS
+   ========================================================== */
+
+:root {
+  --usr-border: rgba(148, 163, 184, 0.35);
+  --usr-bg: #020617;
+  --usr-card: rgba(15, 23, 42, 0.96);
+  --usr-card-soft: rgba(15, 23, 42, 0.9);
+  --usr-shadow-strong: 0 18px 50px rgba(15, 23, 42, 0.95);
+  --usr-shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.8);
+  --accent-green: #22c55e;
+  --accent-blue: #3b82f6;
+  --accent-red: #f97373;
+}
+
+/* fundo/scroll do body igual ao menu */
+
+body.usuarios-page {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #e5e7eb;
+  background: #020617;
+  overflow-x: hidden;
+}
+
+/* app + main já vêm de sidebar.css, aqui só conteúdo interno */
+
+.usuarios-root {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 8px 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Card principal – aproxima do “card de menu” */
+
+.usuarios-shell {
+  flex: 1;
+  min-height: 0;
+  border-radius: 18px;
+  border: 1px solid var(--usr-border);
+  background: radial-gradient(
+      circle at 0 0,
+      rgba(59, 130, 246, 0.18) 0,
+      rgba(15, 23, 42, 0.98) 55%,
+      #020617 100%
+    );
+  padding: 12px 12px 14px;
+  box-shadow:
+    var(--usr-shadow-strong),
+    0 0 0 1px rgba(15, 23, 42, 0.75);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ==========================================================
+   HEADER TIPO DASH
+   ========================================================== */
+
+.dash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(31, 41, 55, 0.8);
+}
+
+.dash-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-logo-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.8);
+}
+
+.header-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 0, #f9fafb, #22c55e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.header-logo img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.header-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.header-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.dash-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-pill {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  color: rgba(209, 213, 219, 0.92);
+  background: linear-gradient(
+      135deg,
+      rgba(15, 23, 42, 0.95),
+      rgba(15, 23, 42, 1)
+    );
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  color: #e5e7eb;
+  font-size: 12px;
+}
+
+.user-chip .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+}
+
+/* ==========================================================
+   FILTROS / BOTÕES SUPERIORES
+   ========================================================== */
+
+.filters-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.filter-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(31, 41, 55, 0.95);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.9);
+  min-width: 180px;
+}
+
+.filter-pill label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(156, 163, 175, 0.9);
+}
+
+.filter-pill input,
+.filter-pill select {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: #e5e7eb;
+  padding: 0;
+}
+
+.filter-pill input::placeholder {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+/* Botões ações */
+
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  color: #e5e7eb;
+  transition: all 0.18s ease-out;
+  white-space: nowrap;
+}
+
+.btn-primary .icon,
+.btn-secondary .icon {
+  font-size: 13px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-green), #16a34a);
+  border-color: rgba(34, 197, 94, 0.95);
+  color: #0b1120;
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.35);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(34, 197, 94, 0.45);
+}
+
+.btn-secondary {
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(55, 65, 81, 0.95);
+  color: #e5e7eb;
+}
+
+.btn-secondary:hover {
+  border-color: rgba(59, 130, 246, 0.9);
+}
+
+/* Recarregar / Limpar */
+
+.btn-refresh,
+.btn-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid rgba(55, 65, 81, 0.95);
+  background: rgba(15, 23, 42, 0.96);
+  color: #e5e7eb;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.9);
+  transition: all 0.18s ease-out;
+}
+
+.btn-refresh .icon,
+.btn-clear .icon {
+  font-size: 13px;
+}
+
+.btn-refresh {
+  border-color: rgba(59, 130, 246, 0.9);
+}
+
+.btn-clear {
+  border-color: rgba(248, 113, 113, 0.9);
+}
+
+.btn-refresh:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(59, 130, 246, 0.45);
+}
+
+.btn-clear:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(248, 113, 113, 0.45);
+}
+
+/* ==========================================================
+   CARDS RESUMO + TABELA
+   ========================================================== */
+
+.dash-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cards-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-small {
+  flex: 1 1 160px;
+  min-width: 0;
+  border-radius: 14px;
+  padding: 8px 10px;
+  background: radial-gradient(
+      circle at 0 0,
+      rgba(96, 165, 250, 0.25),
+      transparent 60%
+    ),
+    rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(51, 65, 85, 0.95);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.9);
+}
+
+.card-small-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(148, 163, 184, 0.9);
+  margin-bottom: 4px;
+}
+
+.card-small-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+
+.card-small-tag {
+  font-size: 11px;
+  color: rgba(156, 163, 175, 0.95);
+  margin-top: 2px;
+}
+
+.pagination-info {
+  font-size: 12px;
+  color: rgba(156, 163, 175, 0.95);
+}
+
+/* TABELA */
+
+.table-wrapper {
+  flex: 1;
+  min-height: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(51, 65, 85, 0.95);
+  background: rgba(15, 23, 42, 0.96);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.9);
+  overflow: hidden;
+}
+
+.table-wrapper table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: #e5e7eb;
+}
+
+.table-wrapper thead {
+  background: radial-gradient(
+      circle at 0 0,
+      rgba(59, 130, 246, 0.25),
+      transparent 60%
+    ),
+    rgba(15, 23, 42, 0.98);
+}
+
+.table-wrapper th,
+.table-wrapper td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(30, 64, 175, 0.6);
+  text-align: left;
+}
+
+.table-wrapper th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(156, 163, 175, 0.95);
+}
+
+.table-wrapper tbody tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.96);
+}
+
+.table-wrapper tbody tr:hover {
+  background: rgba(30, 64, 175, 0.35);
+}
+
+.empty-state {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(156, 163, 175, 0.95);
+}
+
+/* Perfis */
+
+.perfil-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  margin-right: 4px;
+  margin-bottom: 2px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(55, 65, 81, 0.95);
+  color: #e5e7eb;
+}
+
+.perfil-admin {
+  background: rgba(22, 163, 74, 0.2);
+  border-color: rgba(34, 197, 94, 0.9);
+  color: #bbf7d0;
+}
+
+/* Status pill */
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  border: 1px solid rgba(55, 65, 81, 0.95);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+.status-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.status-ativo .status-pill-dot {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.9);
+}
+
+.status-inativo .status-pill-dot {
+  background: #f97316;
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.95);
+}
+
+/* Botões de ação na tabela */
+
+.acao-col {
+  white-space: nowrap;
+}
+
+.btn-action-sm {
+  border-radius: 999px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  background: rgba(15, 23, 42, 0.98);
+  color: #e5e7eb;
+  font-size: 11px;
+  padding: 3px 8px;
+  margin-right: 4px;
+  cursor: pointer;
+  transition: all 0.16s ease-out;
+}
+
+.btn-action-sm:hover {
+  border-color: rgba(59, 130, 246, 0.9);
+  background: rgba(15, 23, 42, 1);
+}
+
+.btn-acao-desativar {
+  border-color: rgba(248, 113, 113, 0.8);
+}
+
+.btn-acao-resetar {
+  border-style: dashed;
+}
+
+/* ==========================================================
+   MODAIS / LOADER / TOAST  (mantém igual)
+   ========================================================== */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 0 0, rgba(15, 23, 42, 0.9), #000000);
+  backdrop-filter: blur(10px);
+  z-index: 999;
+}
+
+/* ... aqui você mantém o resto das regras de modal,
+   loader, toast exatamente como já estavam, não afetam a barra ... */
+
+/* ==========================================================
+   RESPONSIVO
+   ========================================================== */
+
+@media (max-width: 1024px) {
+  .usuarios-root {
+    padding: 8px 6px 10px;
+  }
+
+  .usuarios-shell {
+    padding: 10px 8px 10px;
+    border-radius: 16px;
+  }
+
+  .filters-container {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dash-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dash-header-right {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+
+  .filters-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters-container > * {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .usuarios-shell {
+    padding: 8px 6px 6px;
+    border-radius: 14px;
+  }
+}
