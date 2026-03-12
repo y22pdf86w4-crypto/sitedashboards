@@ -1,17 +1,22 @@
 console.log("[CARTEIRA-ANALYTICS] carregado.");
 
+/* ==== BASE DA API ==== */
+
 function getApiBaseCarteira() {
-  if (typeof window !== "undefined" && window.APIBASE) {
-    return window.APIBASE;
+  if (typeof window !== "undefined") {
+    if (window.APIBASE) return window.APIBASE;
+    if (window.API_BASE) return window.API_BASE;
   }
-  // ajuste se o backend local usar outra base
-  return "http://localhost:3000/api/v1";
+  return "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1";
 }
 
-let dadosBrutos = [];      // tudo que veio da API (1 página)
-let dadosView  = [];       // após filtro/ordenacao
+/* ==== ESTADO ==== */
+
+let dadosBrutos = [];
+let dadosView  = [];
 let linhasRenderizadas = 0;
 let sortState = { colIndex: null, dir: "asc" };
+let selectedRowIndex = null; // índice em dadosView da linha selecionada
 
 /* ==== TOAST ==== */
 
@@ -26,6 +31,20 @@ function mostrarToastCarteira(msg) {
     toast.classList.remove("toast-ano-visible");
     toast.setAttribute("aria-hidden", "true");
   }, 3500);
+}
+
+/* ==== LOADING OVERLAY ==== */
+
+function setLoadingCarteira(ativo) {
+  const overlay = document.getElementById("overlayCarteira");
+  if (!overlay) return;
+  if (ativo) {
+    overlay.classList.add("is-visible");
+    overlay.setAttribute("aria-hidden", "false");
+  } else {
+    overlay.classList.remove("is-visible");
+    overlay.setAttribute("aria-hidden", "true");
+  }
 }
 
 /* ==== HELPERS ==== */
@@ -66,6 +85,8 @@ function getAuthHeadersCarteira() {
   return headers;
 }
 
+/* ==== CHAMADA API ==== */
+
 async function apiGetCarteira(page = 1, pageSize = 1000) {
   const base = getApiBaseCarteira();
   const qsFiltros = getFiltrosCarteiraQS();
@@ -87,6 +108,8 @@ async function apiGetCarteira(page = 1, pageSize = 1000) {
   console.log("[CARTEIRA][GET] JSON:", json);
   return json;
 }
+
+/* ==== FORMATADORES ==== */
 
 function fmtValor(v) {
   if (v == null || v === "") return "";
@@ -112,7 +135,7 @@ function trunc40(value) {
   return str.slice(0, 37) + "...";
 }
 
-/* ==== FILTROS / QS ==== */
+/* ==== FILTROS / QUERYSTRING ==== */
 
 function getFiltrosCarteiraQS() {
   const codvend = (document.getElementById("fVendedorCart")?.value || "").trim();
@@ -121,8 +144,6 @@ function getFiltrosCarteiraQS() {
   const cliente = (document.getElementById("fClienteNomeCart")?.value || "").trim();
   const cidade  = (document.getElementById("fCidadeCart")?.value || "").trim();
   const cultura = (document.getElementById("fCulturaCart")?.value || "").trim();
-  const dtIni   = (document.getElementById("fDtIniCart")?.value || "").trim();
-  const dtFim   = (document.getElementById("fDtFimCart")?.value || "").trim();
 
   const p = new URLSearchParams();
   if (codvend) p.append("codvend", codvend);
@@ -131,8 +152,6 @@ function getFiltrosCarteiraQS() {
   if (cliente) p.append("cliente", cliente);
   if (cidade) p.append("cidade", cidade);
   if (cultura) p.append("cultura", cultura);
-  if (dtIni) p.append("dtInicio", dtIni);
-  if (dtFim) p.append("dtFim", dtFim);
 
   const s = p.toString();
   return s ? "&" + s : "";
@@ -146,8 +165,6 @@ function limparFiltrosCarteira() {
     "fClienteNomeCart",
     "fCidadeCart",
     "fCulturaCart",
-    "fDtIniCart",
-    "fDtFimCart",
     "fBuscaGeral"
   ].forEach(id => {
     const el = document.getElementById(id);
@@ -166,6 +183,9 @@ async function carregarCarteira() {
     const total = pagination?.totalCount ?? dadosBrutos.length;
     info.textContent = `${total.toLocaleString("pt-BR")} registros (página ${pagination?.page || 1})`;
   }
+
+  // ao recarregar, limpa seleção
+  selectedRowIndex = null;
 
   construirView();
 }
@@ -225,13 +245,15 @@ function construirView() {
   redesenharTabelaComLazy();
 }
 
+/* ==== RENDER / LAZY ==== */
+
 function redesenharTabelaComLazy() {
   const tbody = document.getElementById("tbodyCarteira");
   if (!tbody) return;
 
   if (!dadosView.length) {
     tbody.innerHTML = `
-      <tr>
+      <tr class="empty-state-row">
         <td colspan="40" class="empty-state">
           Nenhum dado para os filtros atuais.
         </td>
@@ -257,6 +279,7 @@ function renderizarMaisLinhas(qtd) {
   for (let i = inicio; i < fim; i++) {
     const c = dadosView[i];
     const tr = document.createElement("tr");
+    tr.dataset.viewIndex = String(i); // para recuperar depois
 
     function add(field, formatter) {
       const td = document.createElement("td");
@@ -268,33 +291,34 @@ function renderizarMaisLinhas(qtd) {
       tr.appendChild(td);
     }
 
-    // Ordem igual ao HTML
+    // ORDEM EXATAMENTE IGUAL AO THEAD
     add("CODVEND");
     add("NOME_VENDEDOR");
-    add("CODPARC");
-    add("ParceiroEnderecoCompl");
-    add("NOME_CLIENTE");
-    add("CODEMP");
-    add("DTLIM", fmtDataIso);
-    add("LIMCRED");
 
-    add("ParceiroCodigo");
-    add("ParceiroNome");
+    add("CODPARC");
+    add("NOME_CLIENTE");
+
     add("ParceiroEnderecoCodigo");
+    add("ParceiroEnderecoCompl");
     add("ParceiroEnderecoNumero");
+    add("ParceiroLogradouro");
+    add("ParceiroBairro");
     add("ParceiroBairroCodigo");
+    add("ParceiroCidade");
     add("ParceiroCidadeCodigo");
-    add("ParceiroRegiaoCodigo");
+    add("ParceiroUFSigla");
+    add("ParceiroUF_NUM");
     add("ParceiroCEP");
+    add("ParceiroRegiaoCodigo");
+
     add("ParceiroTelefone");
     add("ParceiroEmail");
     add("ParceiroLatitude");
     add("ParceiroLongitude");
-    add("ParceiroLogradouro");
-    add("ParceiroBairro");
-    add("ParceiroCidade");
-    add("ParceiroUFSigla");
-    add("ParceiroUF_NUM");
+
+    add("CODEMP");
+    add("DTLIM", fmtDataIso);
+    add("LIMCRED");
 
     add("NroUnico");
     add("NumeroNota");
@@ -311,13 +335,19 @@ function renderizarMaisLinhas(qtd) {
 
     add("LTV", fmtValor);
 
+    // se essa linha estiver selecionada, aplica classe
+    if (selectedRowIndex !== null && selectedRowIndex === i) {
+      tr.classList.add("row-selected");
+      tr.setAttribute("aria-selected", "true");
+    }
+
     tbody.appendChild(tr);
   }
 
   linhasRenderizadas = fim;
 }
 
-/* ==== INFINITE SCROLL LOCAL (15 em 15) ==== */
+/* ==== INFINITE SCROLL ==== */
 
 function initInfiniteScrollLocal() {
   const wrapper = document.querySelector(".table-wrapper");
@@ -332,10 +362,49 @@ function initInfiniteScrollLocal() {
   });
 }
 
-/* ==== SORT CABEÇALHO ==== */
+/* ==== SELEÇÃO DE LINHA ==== */
+
+function initRowSelectionCarteira() {
+  const tbody = document.getElementById("tbodyCarteira");
+  if (!tbody) return;
+
+  tbody.addEventListener("click", (e) => {
+    const tr = e.target.closest("tr");
+    if (!tr || tr.classList.contains("empty-state-row")) return;
+
+    // limpa seleção visual anterior
+    tbody.querySelectorAll("tr.row-selected").forEach(row => {
+      row.classList.remove("row-selected");
+      row.removeAttribute("aria-selected");
+    });
+
+    tr.classList.add("row-selected");
+    tr.setAttribute("aria-selected", "true");
+
+    const idxStr = tr.dataset.viewIndex;
+    selectedRowIndex = idxStr != null ? Number(idxStr) : null;
+
+    // Exemplo: logar CODPARC da linha selecionada
+    const selecionado = getLinhaSelecionadaCarteira();
+    if (selecionado) {
+      console.log("[CARTEIRA] Linha selecionada CODPARC:", selecionado.CODPARC);
+    }
+  });
+}
+
+function getLinhaSelecionadaCarteira() {
+  if (selectedRowIndex == null) return null;
+  return dadosView[selectedRowIndex] || null;
+}
+
+/* ==== SORT CABEÇALHO (mantendo scroll) ==== */
 
 function sortByColumn(colIndex) {
   const ths = document.querySelectorAll("#tblCarteira thead th");
+  const wrapper = document.querySelector(".table-wrapper");
+
+  const prevScrollTop  = wrapper ? wrapper.scrollTop  : 0;
+  const prevScrollLeft = wrapper ? wrapper.scrollLeft : 0;
 
   if (sortState.colIndex === colIndex) {
     sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
@@ -352,6 +421,11 @@ function sortByColumn(colIndex) {
   });
 
   construirView();
+
+  if (wrapper) {
+    wrapper.scrollTop  = prevScrollTop;
+    wrapper.scrollLeft = prevScrollLeft;
+  }
 }
 
 /* ==== FILTRO GERAL ==== */
@@ -360,7 +434,7 @@ function aplicarFiltroGeral() {
   construirView();
 }
 
-/* ==== EXPORTAR EXCEL (todos os campos da VIEW, sem truncar) ==== */
+/* ==== EXPORT EXCEL ==== */
 
 function exportarTabelaParaExcel() {
   if (!dadosView.length) {
@@ -388,30 +462,31 @@ function exportarTabelaParaExcel() {
 
     add("CODVEND");
     add("NOME_VENDEDOR");
-    add("CODPARC");
-    add("ParceiroEnderecoCompl");
-    add("NOME_CLIENTE");
-    add("CODEMP");
-    add("DTLIM", fmtDataIso);
-    add("LIMCRED");
 
-    add("ParceiroCodigo");
-    add("ParceiroNome");
+    add("CODPARC");
+    add("NOME_CLIENTE");
+
     add("ParceiroEnderecoCodigo");
+    add("ParceiroEnderecoCompl");
     add("ParceiroEnderecoNumero");
+    add("ParceiroLogradouro");
+    add("ParceiroBairro");
     add("ParceiroBairroCodigo");
+    add("ParceiroCidade");
     add("ParceiroCidadeCodigo");
-    add("ParceiroRegiaoCodigo");
+    add("ParceiroUFSigla");
+    add("ParceiroUF_NUM");
     add("ParceiroCEP");
+    add("ParceiroRegiaoCodigo");
+
     add("ParceiroTelefone");
     add("ParceiroEmail");
     add("ParceiroLatitude");
     add("ParceiroLongitude");
-    add("ParceiroLogradouro");
-    add("ParceiroBairro");
-    add("ParceiroCidade");
-    add("ParceiroUFSigla");
-    add("ParceiroUF_NUM");
+
+    add("CODEMP");
+    add("DTLIM", fmtDataIso);
+    add("LIMCRED");
 
     add("NroUnico");
     add("NumeroNota");
@@ -447,7 +522,7 @@ function exportarTabelaParaExcel() {
   URL.revokeObjectURL(url);
 }
 
-/* ==== RESIZE COLUNAS ==== */
+/* ==== RESIZE ==== */
 
 function initColumnResize() {
   const ths = document.querySelectorAll("#tblCarteira thead th");
@@ -491,7 +566,7 @@ function initColumnResize() {
   });
 }
 
-/* ==== DRAG & DROP COLUNAS ==== */
+/* ==== DRAG & DROP ==== */
 
 function initColumnDrag() {
   const ths = document.querySelectorAll("#tblCarteira thead th");
@@ -570,11 +645,14 @@ function moveTableColumn(fromIndex, toIndex) {
 
 async function atualizarTudoCarteira() {
   console.log("========== [CARTEIRA-ANALYTICS][ATUALIZAR] ==========");
+  setLoadingCarteira(true);
   try {
     await carregarCarteira();
   } catch (e) {
     console.error("[CARTEIRA-ANALYTICS][ATUALIZAR] Erro:", e);
     mostrarToastCarteira(e.message || "Erro ao carregar carteira");
+  } finally {
+    setLoadingCarteira(false);
   }
 }
 
@@ -601,9 +679,7 @@ window.addEventListener("DOMContentLoaded", () => {
     "fClienteCart",
     "fClienteNomeCart",
     "fCidadeCart",
-    "fCulturaCart",
-    "fDtIniCart",
-    "fDtFimCart"
+    "fCulturaCart"
   ];
   const debouncedAtualizarApi = debounce(atualizarTudoCarteira, 600);
   idsFiltrosApi.forEach(id => {
@@ -630,5 +706,6 @@ window.addEventListener("DOMContentLoaded", () => {
   initColumnResize();
   initColumnDrag();
   initInfiniteScrollLocal();
+  initRowSelectionCarteira();
   atualizarTudoCarteira();
 });

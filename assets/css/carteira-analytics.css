@@ -439,7 +439,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: visible; /* importante para sticky funcionar [web:261][web:271] */
+  overflow: visible; /* importante para sticky funcionar */
 }
 
 .table-header-info {
@@ -494,7 +494,7 @@ body {
 /* CABEÇALHO STICKY – SEMPRE VISÍVEL */
 
 .carteira-table thead th {
-  position: sticky;   /* gruda em relação ao .table-wrapper [web:267][web:260] */
+  position: sticky;
   top: 0;
   z-index: 2;
 }
@@ -564,7 +564,16 @@ body {
   color: #9ca3af;
 }
 
-/* RESIZE / DRAG COLUNAS – se usar via JS */
+/* LINHA SELECIONADA */
+
+.carteira-table tbody tr.row-selected {
+  background: radial-gradient(circle at center, rgba(16,185,129,0.35), rgba(15,23,42,0.98));
+  box-shadow:
+    inset 0 0 0 1px rgba(34,197,94,0.9),
+    0 0 0 1px rgba(15,23,42,0.9);
+}
+
+/* RESIZE / DRAG COLUNAS */
 
 .carteira-table th {
   position: relative;
@@ -592,6 +601,59 @@ body {
 
 .carteira-table th.drag-over {
   box-shadow: inset 2px 0 0 #22c55e;
+}
+
+/* OVERLAY DE LOADING */
+
+.carteira-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: radial-gradient(circle at center, rgba(15,118,110,0.35), rgba(2,6,23,0.96));
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.carteira-loading-overlay.is-visible {
+  display: flex;
+}
+
+.carteira-loading-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.2rem 1.6rem;
+  border-radius: 999px;
+  background: rgba(15,23,42,0.98);
+  border: 1px solid rgba(34,197,94,0.6);
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.9),
+    0 0 0 1px rgba(15,23,42,0.9);
+}
+
+.carteira-loading-spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 3px solid rgba(148,163,184,0.35);
+  border-top-color: #22c55e;
+  animation: carteira-spin 0.7s linear infinite;
+}
+
+.carteira-loading-text {
+  font-size: 0.8rem;
+  color: #e5fdf7;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@keyframes carteira-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* RESPONSIVO */
