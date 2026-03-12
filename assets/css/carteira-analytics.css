@@ -452,7 +452,7 @@ body {
 /* WRAPPER QUE ROLA – vertical + horizontal */
 
 .table-wrapper {
-  height: calc(100vh - 230px); /* ajusta se faltar/sobrar espaço */
+  height: calc(100vh - 230px);
   overflow-x: auto;
   overflow-y: auto;
   padding: 0.3rem 0.5rem 0.6rem;
@@ -483,7 +483,7 @@ body {
 /* TABELA */
 
 .carteira-table {
-  width: max-content;   /* permite scroll horizontal */
+  width: max-content;
   min-width: 100%;
   border-collapse: collapse;
   font-size: 0.78rem;
@@ -536,6 +536,17 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* GRUPO CULTURA – destaque + largura maior */
+
+.group-cultura {
+  background: #020617;
+  color: #bbf7d0;
+}
+
+.carteira-table th[data-col="CulturasResumo"] {
+  min-width: 220px;
 }
 
 /* LINHAS DO BODY */
@@ -676,4 +687,9 @@ body {
   .dash-header {
     padding-top: 3.2rem;
   }
+}
+#btnExportExcelCart.btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
 }

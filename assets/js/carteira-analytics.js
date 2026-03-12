@@ -16,7 +16,7 @@ let dadosBrutos = [];
 let dadosView  = [];
 let linhasRenderizadas = 0;
 let sortState = { colIndex: null, dir: "asc" };
-let selectedRowIndex = null; // índice em dadosView da linha selecionada
+let selectedRowIndex = null;
 
 /* ==== TOAST ==== */
 
@@ -112,7 +112,7 @@ async function apiGetCarteira(page = 1, pageSize = 1000) {
 /* ==== FORMATADORES ==== */
 
 function fmtValor(v) {
-  if (v == null || v === "") return "";
+  if (v == null || v === "") return "-";
   const n = Number(v);
   if (Number.isNaN(n)) return v;
   return n.toLocaleString("pt-BR", {
@@ -122,17 +122,45 @@ function fmtValor(v) {
 }
 
 function fmtDataIso(d) {
-  if (!d) return "";
+  if (!d) return "-";
   const date = new Date(d);
-  if (Number.isNaN(date.getTime())) return d;
+  if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleDateString("pt-BR");
 }
 
+function fmtTextOrDash(v) {
+  if (v == null || v === "") return "-";
+  return String(v);
+}
+
 function trunc40(value) {
-  if (value == null) return "";
+  if (value == null || value === "") return "-";
   const str = String(value);
   if (str.length <= 40) return str;
   return str.slice(0, 37) + "...";
+}
+
+function montarResumoCulturas(row) {
+  const arr = Array.isArray(row?.culturas) ? row.culturas : [];
+  if (!arr.length) return "-";
+
+  const partes = arr.map(c => {
+    const nome = c.NOME_CULTURA || "CULTURA";
+    const area = c.AREA_PLANTADA;
+    let areaStr = "";
+    if (area != null && area !== "") {
+      const n = Number(area);
+      areaStr = Number.isNaN(n)
+        ? String(area)
+        : n.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+    }
+    return areaStr ? `${nome} (${areaStr} ha)` : nome;
+  });
+
+  return partes.join("; ");
 }
 
 /* ==== FILTROS / QUERYSTRING ==== */
@@ -184,9 +212,7 @@ async function carregarCarteira() {
     info.textContent = `${total.toLocaleString("pt-BR")} registros (página ${pagination?.page || 1})`;
   }
 
-  // ao recarregar, limpa seleção
   selectedRowIndex = null;
-
   construirView();
 }
 
@@ -241,7 +267,12 @@ function construirView() {
     }
   }
 
-  dadosView = ordenado;
+  dadosView = ordenado.map(reg => {
+    const clone = { ...reg };
+    clone.CulturasResumo = montarResumoCulturas(clone);
+    return clone;
+  });
+
   redesenharTabelaComLazy();
 }
 
@@ -279,15 +310,23 @@ function renderizarMaisLinhas(qtd) {
   for (let i = inicio; i < fim; i++) {
     const c = dadosView[i];
     const tr = document.createElement("tr");
-    tr.dataset.viewIndex = String(i); // para recuperar depois
+    tr.dataset.viewIndex = String(i);
 
     function add(field, formatter) {
       const td = document.createElement("td");
       let raw = c[field];
-      if (formatter) raw = formatter(raw);
+
+      if (formatter === fmtValor || formatter === fmtDataIso) {
+        raw = formatter(raw);
+      } else if (formatter) {
+        raw = formatter(raw);
+      } else {
+        raw = fmtTextOrDash(raw);
+      }
+
       const full = raw == null ? "" : String(raw);
       td.textContent = trunc40(full);
-      td.title = full;
+      td.title = full === "-" ? "" : full;
       tr.appendChild(td);
     }
 
@@ -298,44 +337,67 @@ function renderizarMaisLinhas(qtd) {
     add("CODPARC");
     add("NOME_CLIENTE");
 
-    add("ParceiroEnderecoCodigo");
     add("ParceiroEnderecoCompl");
     add("ParceiroEnderecoNumero");
     add("ParceiroLogradouro");
     add("ParceiroBairro");
-    add("ParceiroBairroCodigo");
     add("ParceiroCidade");
     add("ParceiroCidadeCodigo");
     add("ParceiroUFSigla");
-    add("ParceiroUF_NUM");
     add("ParceiroCEP");
-    add("ParceiroRegiaoCodigo");
 
+    // CULTURAS
+    add("QtdeCulturasDistintas");
+    add("CulturasResumo");
+
+    const tdDet = document.createElement("td");
+    tdDet.className = "td-culturas-detalhe";
+    if (Array.isArray(c.culturas) && c.culturas.length) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-culturas";
+      btn.textContent = "Ver";
+      btn.title = "Ver culturas";
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        abrirModalCulturas(c);
+      });
+      tdDet.appendChild(btn);
+    } else {
+      tdDet.textContent = "-";
+    }
+    tr.appendChild(tdDet);
+
+    // CONTATO
     add("ParceiroTelefone");
     add("ParceiroEmail");
     add("ParceiroLatitude");
     add("ParceiroLongitude");
 
+    // CRÉDITO
     add("CODEMP");
     add("DTLIM", fmtDataIso);
-    add("LIMCRED");
+    add("LIMCRED", fmtValor);
 
+    // ÚLTIMA VENDA
     add("NroUnico");
     add("NumeroNota");
     add("DataVenda", fmtDataIso);
     add("ValorTotalVenda", fmtValor);
+
+    // Cod Vend Vendeu: se não houver, mostrar "-"
     add("VendedorQueVendeuCodigo");
     add("VendedorQueVendeuNome");
     add("CargoVendedorQueVendeu");
 
+    // ÚLTIMA ATIVIDADE
     add("IdAtividadeUltima");
     add("DtLancamentoUltimaAtividade", fmtDataIso);
     add("DtInicialUltimaAtividade", fmtDataIso);
-    add("DtVisitaUltimaAtividade", fmtDataIso);
 
+    // LTV
     add("LTV", fmtValor);
 
-    // se essa linha estiver selecionada, aplica classe
     if (selectedRowIndex !== null && selectedRowIndex === i) {
       tr.classList.add("row-selected");
       tr.setAttribute("aria-selected", "true");
@@ -345,6 +407,91 @@ function renderizarMaisLinhas(qtd) {
   }
 
   linhasRenderizadas = fim;
+}
+
+/* ==== MODAL DE CULTURAS ==== */
+
+function abrirModalCulturas(rowData) {
+  const modal = document.getElementById("culturasModal");
+  const body  = document.getElementById("culturasModalBody");
+  const sub   = document.getElementById("culturasModalSub");
+  if (!modal || !body) return;
+
+  body.innerHTML = "";
+  const arr = Array.isArray(rowData.culturas) ? rowData.culturas : [];
+
+  const nomeCliente = rowData.NOME_CLIENTE || rowData.ParceiroNome || "";
+  const codparc = rowData.CODPARC != null ? rowData.CODPARC : rowData.ParceiroCodigo;
+  if (sub) {
+    sub.textContent = nomeCliente
+      ? `${codparc || ""} - ${nomeCliente}`
+      : "";
+  }
+
+  if (!arr.length) {
+    const p = document.createElement("p");
+    p.textContent = "Nenhuma cultura cadastrada para este cliente.";
+    p.style.fontSize = "0.8rem";
+    body.appendChild(p);
+  } else {
+    arr.forEach((cultura, idx) => {
+      const card = document.createElement("div");
+      card.className = "cultura-card";
+
+      const titulo = document.createElement("div");
+      titulo.className = "cultura-titulo";
+      titulo.textContent =
+        (idx + 1) + " - " + (cultura.NOME_CULTURA || "CULTURA");
+
+      const linhas = [];
+
+      if (cultura.AREA_PLANTADA != null) {
+        const n = Number(cultura.AREA_PLANTADA);
+        const areaStr = Number.isNaN(n)
+          ? String(cultura.AREA_PLANTADA)
+          : n.toLocaleString("pt-BR", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            });
+        linhas.push("Área: " + areaStr + " ha");
+      }
+
+      if (cultura.COD_CULTURA != null) {
+        linhas.push("Cód. cultura: " + cultura.COD_CULTURA);
+      }
+      if (cultura.CODAREA != null) {
+        linhas.push("Área código: " + cultura.CODAREA);
+      }
+      if (cultura.IRRIGACAO) {
+        linhas.push("Irrigação: " + cultura.IRRIGACAO);
+      }
+      if (cultura.LATITUDE && cultura.LONGITUDE) {
+        linhas.push("Coord.: " + cultura.LATITUDE + ", " + cultura.LONGITUDE);
+      }
+
+      const ul = document.createElement("ul");
+      ul.className = "cultura-lista";
+      linhas.forEach(txt => {
+        const li = document.createElement("li");
+        li.textContent = txt;
+        ul.appendChild(li);
+      });
+
+      card.appendChild(titulo);
+      card.appendChild(ul);
+      body.appendChild(card);
+    });
+  }
+
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function fecharModalCulturas() {
+  const modal = document.getElementById("culturasModal");
+  if (!modal) return;
+  modal.classList.remove("is-open");
+  modal.setAttribute("aria-hidden", "true");
 }
 
 /* ==== INFINITE SCROLL ==== */
@@ -372,7 +519,6 @@ function initRowSelectionCarteira() {
     const tr = e.target.closest("tr");
     if (!tr || tr.classList.contains("empty-state-row")) return;
 
-    // limpa seleção visual anterior
     tbody.querySelectorAll("tr.row-selected").forEach(row => {
       row.classList.remove("row-selected");
       row.removeAttribute("aria-selected");
@@ -384,7 +530,6 @@ function initRowSelectionCarteira() {
     const idxStr = tr.dataset.viewIndex;
     selectedRowIndex = idxStr != null ? Number(idxStr) : null;
 
-    // Exemplo: logar CODPARC da linha selecionada
     const selecionado = getLinhaSelecionadaCarteira();
     if (selecionado) {
       console.log("[CARTEIRA] Linha selecionada CODPARC:", selecionado.CODPARC);
@@ -397,7 +542,7 @@ function getLinhaSelecionadaCarteira() {
   return dadosView[selectedRowIndex] || null;
 }
 
-/* ==== SORT CABEÇALHO (mantendo scroll) ==== */
+/* ==== SORT CABEÇALHO ==== */
 
 function sortByColumn(colIndex) {
   const ths = document.querySelectorAll("#tblCarteira thead th");
@@ -434,9 +579,18 @@ function aplicarFiltroGeral() {
   construirView();
 }
 
-/* ==== EXPORT EXCEL ==== */
+/* ==== EXPORT EXCEL – bloqueio + 1 linha por cultura ==== */
 
 function exportarTabelaParaExcel() {
+  // BLOQUEIO: exige vendedor (código ou nome)
+  const vendedorCod  = (document.getElementById("fVendedorCart")?.value || "").trim();
+  const vendedorNome = (document.getElementById("fVendedorNomeCart")?.value || "").trim();
+
+  if (!vendedorCod && !vendedorNome) {
+    mostrarToastCarteira("Para exportar, informe código ou nome do vendedor.");
+    return;
+  }
+
   if (!dadosView.length) {
     mostrarToastCarteira("Não há dados para exportar.");
     return;
@@ -450,60 +604,93 @@ function exportarTabelaParaExcel() {
   clTbody.innerHTML = "";
 
   dadosView.forEach(c => {
-    const tr = document.createElement("tr");
+    const culturasArr = Array.isArray(c.culturas) && c.culturas.length
+      ? c.culturas
+      : [null];
 
-    function add(field, formatter) {
-      const td = document.createElement("td");
-      let raw = c[field];
-      if (formatter) raw = formatter(raw);
-      td.textContent = raw == null ? "" : String(raw);
-      tr.appendChild(td);
-    }
+    culturasArr.forEach(cult => {
+      const tr = document.createElement("tr");
 
-    add("CODVEND");
-    add("NOME_VENDEDOR");
+      function add(field, formatter, valueOverride) {
+        const td = document.createElement("td");
+        let raw = valueOverride !== undefined ? valueOverride : c[field];
 
-    add("CODPARC");
-    add("NOME_CLIENTE");
+        if (formatter === fmtValor || formatter === fmtDataIso) {
+          raw = formatter(raw);
+        } else if (formatter) {
+          raw = formatter(raw);
+        } else {
+          raw = fmtTextOrDash(raw);
+        }
 
-    add("ParceiroEnderecoCodigo");
-    add("ParceiroEnderecoCompl");
-    add("ParceiroEnderecoNumero");
-    add("ParceiroLogradouro");
-    add("ParceiroBairro");
-    add("ParceiroBairroCodigo");
-    add("ParceiroCidade");
-    add("ParceiroCidadeCodigo");
-    add("ParceiroUFSigla");
-    add("ParceiroUF_NUM");
-    add("ParceiroCEP");
-    add("ParceiroRegiaoCodigo");
+        td.textContent = raw == null ? "" : String(raw);
+        tr.appendChild(td);
+      }
 
-    add("ParceiroTelefone");
-    add("ParceiroEmail");
-    add("ParceiroLatitude");
-    add("ParceiroLongitude");
+      // mesma ordem do THEAD (sem botão de detalhe)
+      add("CODVEND");
+      add("NOME_VENDEDOR");
 
-    add("CODEMP");
-    add("DTLIM", fmtDataIso);
-    add("LIMCRED");
+      add("CODPARC");
+      add("NOME_CLIENTE");
 
-    add("NroUnico");
-    add("NumeroNota");
-    add("DataVenda", fmtDataIso);
-    add("ValorTotalVenda", fmtValor);
-    add("VendedorQueVendeuCodigo");
-    add("VendedorQueVendeuNome");
-    add("CargoVendedorQueVendeu");
+      add("ParceiroEnderecoCompl");
+      add("ParceiroEnderecoNumero");
+      add("ParceiroLogradouro");
+      add("ParceiroBairro");
+      add("ParceiroCidade");
+      add("ParceiroCidadeCodigo");
+      add("ParceiroUFSigla");
+      add("ParceiroCEP");
 
-    add("IdAtividadeUltima");
-    add("DtLancamentoUltimaAtividade", fmtDataIso);
-    add("DtInicialUltimaAtividade", fmtDataIso);
-    add("DtVisitaUltimaAtividade", fmtDataIso);
+      add("QtdeCulturasDistintas");
 
-    add("LTV", fmtValor);
+      if (cult) {
+        const nome = cult.NOME_CULTURA || "CULTURA";
+        let areaStr = "";
+        if (cult.AREA_PLANTADA != null) {
+          const n = Number(cult.AREA_PLANTADA);
+          areaStr = Number.isNaN(n)
+            ? String(cult.AREA_PLANTADA)
+            : n.toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              });
+        }
+        const texto = areaStr ? `${nome} (${areaStr} ha)` : nome;
+        add(null, null, texto);
+      } else {
+        add(null, null, c.CulturasResumo || "-");
+      }
 
-    clTbody.appendChild(tr);
+      // coluna de detalhe – vazia
+      add(null, null, "");
+
+      add("ParceiroTelefone");
+      add("ParceiroEmail");
+      add("ParceiroLatitude");
+      add("ParceiroLongitude");
+
+      add("CODEMP");
+      add("DTLIM", fmtDataIso);
+      add("LIMCRED", fmtValor);
+
+      add("NroUnico");
+      add("NumeroNota");
+      add("DataVenda", fmtDataIso);
+      add("ValorTotalVenda", fmtValor);
+      add("VendedorQueVendeuCodigo");
+      add("VendedorQueVendeuNome");
+      add("CargoVendedorQueVendeu");
+
+      add("IdAtividadeUltima");
+      add("DtLancamentoUltimaAtividade", fmtDataIso);
+      add("DtInicialUltimaAtividade", fmtDataIso);
+
+      add("LTV", fmtValor);
+
+      clTbody.appendChild(tr);
+    });
   });
 
   const blob = new Blob(
@@ -663,6 +850,8 @@ window.addEventListener("DOMContentLoaded", () => {
   const btnAplicar = document.getElementById("btnAplicarCart");
   const btnLimpar  = document.getElementById("btnLimparCart");
   const btnExport  = document.getElementById("btnExportExcelCart");
+  const btnCloseModal = document.getElementById("btnCloseCulturasModal");
+  const modal = document.getElementById("culturasModal");
 
   if (btnAplicar) btnAplicar.addEventListener("click", atualizarTudoCarteira);
   if (btnLimpar) {
@@ -672,6 +861,28 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
   if (btnExport) btnExport.addEventListener("click", exportarTabelaParaExcel);
+
+  if (btnCloseModal) {
+    btnCloseModal.addEventListener("click", fecharModalCulturas);
+  }
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target.classList.contains("culturas-modal-backdrop")) {
+        fecharModalCulturas();
+      }
+    });
+  }
+
+  // desabilita/habilita botão de export conforme filtro de vendedor
+  function atualizarEstadoBotaoExport() {
+    const vendedorCod  = (document.getElementById("fVendedorCart")?.value || "").trim();
+    const vendedorNome = (document.getElementById("fVendedorNomeCart")?.value || "").trim();
+    const habilita = !!(vendedorCod || vendedorNome);
+    if (btnExport) {
+      btnExport.disabled = !habilita;
+      btnExport.classList.toggle("btn-disabled", !habilita);
+    }
+  }
 
   const idsFiltrosApi = [
     "fVendedorCart",
@@ -687,6 +898,10 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!el) return;
     const evt = el.tagName === "SELECT" ? "change" : "input";
     el.addEventListener(evt, debouncedAtualizarApi);
+
+    if (id === "fVendedorCart" || id === "fVendedorNomeCart") {
+      el.addEventListener(evt, atualizarEstadoBotaoExport);
+    }
   });
 
   const fBusca = document.getElementById("fBuscaGeral");
@@ -707,5 +922,7 @@ window.addEventListener("DOMContentLoaded", () => {
   initColumnDrag();
   initInfiniteScrollLocal();
   initRowSelectionCarteira();
+
+  atualizarEstadoBotaoExport();
   atualizarTudoCarteira();
 });
