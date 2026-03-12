@@ -23,8 +23,6 @@
   <!-- CSS específico -->
   <link rel="stylesheet" href="../../../assets/css/carteira-analytics.css" />
   <style>
-    /* Extra para modal de culturas e estado do botão Excel */
-
     .btn-disabled {
       opacity: 0.4;
       cursor: not-allowed;
@@ -382,7 +380,7 @@
                 <th data-col="CODPARC" class="group-cliente"><span>Cód. Cliente</span></th>
                 <th data-col="NOME_CLIENTE" class="group-cliente"><span>Nome do Cliente</span></th>
 
-                <!-- ENDEREÇO (sem cód endereço/bairro/UF) -->
+                <!-- ENDEREÇO -->
                 <th data-col="ParceiroEnderecoCompl" class="group-endereco"><span>Complemento</span></th>
                 <th data-col="ParceiroEnderecoNumero" class="group-endereco"><span>Número</span></th>
                 <th data-col="ParceiroLogradouro" class="group-endereco"><span>Logradouro</span></th>
@@ -429,6 +427,12 @@
                 <th data-col="IdAtividadeUltima" class="group-atividade"><span>ID Atividade</span></th>
                 <th data-col="DtLancamentoUltimaAtividade" class="group-atividade"><span>Dt. Lançamento</span></th>
                 <th data-col="DtInicialUltimaAtividade" class="group-atividade"><span>Data da Visita</span></th>
+                <th data-col="AssuntoUltimaAtividade" class="group-atividade"><span>Assunto Última Atividade</span></th>
+
+                <!-- TOTAIS ANO -->
+                <th data-col="Total_2024" class="group-ltv"><span>Total 2024</span></th>
+                <th data-col="Total_2025" class="group-ltv"><span>Total 2025</span></th>
+                <th data-col="Total_2026" class="group-ltv"><span>Total 2026</span></th>
 
                 <!-- LTV -->
                 <th data-col="LTV" class="group-ltv"><span>LTV</span></th>
@@ -436,7 +440,7 @@
             </thead>
             <tbody id="tbodyCarteira">
               <tr>
-                <td colspan="40" class="empty-state">
+                <td colspan="50" class="empty-state">
                   Carregando carteira...
                 </td>
               </tr>

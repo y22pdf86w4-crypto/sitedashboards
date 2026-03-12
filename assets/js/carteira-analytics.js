@@ -285,7 +285,7 @@ function redesenharTabelaComLazy() {
   if (!dadosView.length) {
     tbody.innerHTML = `
       <tr class="empty-state-row">
-        <td colspan="40" class="empty-state">
+        <td colspan="50" class="empty-state">
           Nenhum dado para os filtros atuais.
         </td>
       </tr>
@@ -331,12 +331,16 @@ function renderizarMaisLinhas(qtd) {
     }
 
     // ORDEM EXATAMENTE IGUAL AO THEAD
+
+    // VENDEDOR
     add("CODVEND");
     add("NOME_VENDEDOR");
 
+    // CLIENTE
     add("CODPARC");
     add("NOME_CLIENTE");
 
+    // ENDEREÇO
     add("ParceiroEnderecoCompl");
     add("ParceiroEnderecoNumero");
     add("ParceiroLogradouro");
@@ -371,6 +375,8 @@ function renderizarMaisLinhas(qtd) {
     // CONTATO
     add("ParceiroTelefone");
     add("ParceiroEmail");
+
+    // COORDENADAS
     add("ParceiroLatitude");
     add("ParceiroLongitude");
 
@@ -384,8 +390,6 @@ function renderizarMaisLinhas(qtd) {
     add("NumeroNota");
     add("DataVenda", fmtDataIso);
     add("ValorTotalVenda", fmtValor);
-
-    // Cod Vend Vendeu: se não houver, mostrar "-"
     add("VendedorQueVendeuCodigo");
     add("VendedorQueVendeuNome");
     add("CargoVendedorQueVendeu");
@@ -394,6 +398,12 @@ function renderizarMaisLinhas(qtd) {
     add("IdAtividadeUltima");
     add("DtLancamentoUltimaAtividade", fmtDataIso);
     add("DtInicialUltimaAtividade", fmtDataIso);
+    add("AssuntoUltimaAtividade");
+
+    // TOTAIS POR ANO (FORMATADOS EM REAIS)
+    add("Total_2024", fmtValor);
+    add("Total_2025", fmtValor);
+    add("Total_2026", fmtValor);
 
     // LTV
     add("LTV", fmtValor);
@@ -582,7 +592,6 @@ function aplicarFiltroGeral() {
 /* ==== EXPORT EXCEL – bloqueio + 1 linha por cultura ==== */
 
 function exportarTabelaParaExcel() {
-  // BLOQUEIO: exige vendedor (código ou nome)
   const vendedorCod  = (document.getElementById("fVendedorCart")?.value || "").trim();
   const vendedorNome = (document.getElementById("fVendedorNomeCart")?.value || "").trim();
 
@@ -628,12 +637,16 @@ function exportarTabelaParaExcel() {
       }
 
       // mesma ordem do THEAD (sem botão de detalhe)
+
+      // VENDEDOR
       add("CODVEND");
       add("NOME_VENDEDOR");
 
+      // CLIENTE
       add("CODPARC");
       add("NOME_CLIENTE");
 
+      // ENDEREÇO
       add("ParceiroEnderecoCompl");
       add("ParceiroEnderecoNumero");
       add("ParceiroLogradouro");
@@ -643,6 +656,7 @@ function exportarTabelaParaExcel() {
       add("ParceiroUFSigla");
       add("ParceiroCEP");
 
+      // CULTURAS
       add("QtdeCulturasDistintas");
 
       if (cult) {
@@ -666,15 +680,20 @@ function exportarTabelaParaExcel() {
       // coluna de detalhe – vazia
       add(null, null, "");
 
+      // CONTATO
       add("ParceiroTelefone");
       add("ParceiroEmail");
+
+      // COORDENADAS
       add("ParceiroLatitude");
       add("ParceiroLongitude");
 
+      // CRÉDITO
       add("CODEMP");
       add("DTLIM", fmtDataIso);
       add("LIMCRED", fmtValor);
 
+      // ÚLTIMA VENDA
       add("NroUnico");
       add("NumeroNota");
       add("DataVenda", fmtDataIso);
@@ -683,10 +702,18 @@ function exportarTabelaParaExcel() {
       add("VendedorQueVendeuNome");
       add("CargoVendedorQueVendeu");
 
+      // ÚLTIMA ATIVIDADE
       add("IdAtividadeUltima");
       add("DtLancamentoUltimaAtividade", fmtDataIso);
       add("DtInicialUltimaAtividade", fmtDataIso);
+      add("AssuntoUltimaAtividade");
 
+      // TOTAIS POR ANO (RE)
+      add("Total_2024", fmtValor);
+      add("Total_2025", fmtValor);
+      add("Total_2026", fmtValor);
+
+      // LTV
       add("LTV", fmtValor);
 
       clTbody.appendChild(tr);
@@ -873,7 +900,6 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // desabilita/habilita botão de export conforme filtro de vendedor
   function atualizarEstadoBotaoExport() {
     const vendedorCod  = (document.getElementById("fVendedorCart")?.value || "").trim();
     const vendedorNome = (document.getElementById("fVendedorNomeCart")?.value || "").trim();

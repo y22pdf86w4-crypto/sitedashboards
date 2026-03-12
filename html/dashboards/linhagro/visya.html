@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Dashboard – Visya Operações</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="icon" href="../../../assets/imagem/favicon.png" type="image/png" />
+
+  <!-- CSS globais -->
+  <link rel="stylesheet" href="../../../assets/css/global.css" />
+  <link rel="stylesheet" href="../../../assets/css/background.css" />
+  <link rel="stylesheet" href="../../../assets/css/menu.css" />
+
+  <!-- CSS específico Visya (vamos criar inspirado no estoque.css) -->
+  <link rel="stylesheet" href="../../../assets/css/visya.css" />
+</head>
+<body class="visya-page">
+  <!-- Fundo animado -->
+  <div class="bg-container" aria-hidden="true">
+    <div class="animated-bg"></div>
+    <div class="particles-container"></div>
+    <div class="wave-container">
+      <div class="wave"></div>
+      <div class="wave"></div>
+      <div class="wave"></div>
+    </div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="grid-bg"></div>
+  </div>
+
+  <!-- Botão ☰ para colapsar sidebar -->
+  <button
+    class="sidebar-toggle"
+    type="button"
+    id="btnToggleSidebar"
+    aria-label="Alternar menu lateral"
+  >
+    <span>☰</span>
+  </button>
+
+  <div class="app" id="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <img
+            src="../../../assets/imagem/logolinhagro.png"
+            alt="Dashboard – Visya"
+          />
+        </div>
+        <div class="sidebar-title-block">
+          <span class="sidebar-title">Operações Visya</span>
+          <span class="sidebar-sub">Carregamento e descarga</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <p class="sidebar-section-title">Navegação</p>
+        <ul class="sidebar-nav">
+          <li
+            class="sidebar-item"
+            onclick="window.location.href='../../menu.html'"
+          >
+            <span class="icon">⬅</span>
+            <span class="label">Voltar à seleção</span>
+          </li>
+
+          <li
+            class="sidebar-item"
+            onclick="window.location.href='../../menu.html'"
+          >
+            <span class="icon">📊</span>
+            <span class="label">Dashboards</span>
+          </li>
+
+          <li class="sidebar-item sidebar-item-active">
+            <span class="icon">🚚</span>
+            <span class="label">Visya Operações</span>
+          </li>
+
+          <li
+            class="sidebar-item"
+            onclick="window.location.href='../../logistica.html'"
+          >
+            <span class="icon">🗺️</span>
+            <span class="label">Logística / Rotas</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="Btn" type="button" onclick="deslogar && deslogar()">
+          <div class="sign">
+            <svg viewBox="0 0 512 512">
+              <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
+            </svg>
+          </div>
+          <div class="text">Sair</div>
+        </button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="dash-header">
+        <span class="dash-kicker">Gestão de operações</span>
+        <h1 class="dash-title">
+          Dashboard <span>Visya – Operações</span>
+        </h1>
+        <p class="dash-sub">
+          Acompanhe carregamentos e descargas, tempos de separação/descarga e anexos de comprovação.
+        </p>
+      </header>
+
+      <!-- FILTROS DE PESQUISA -->
+      <section class="filters-container">
+        <div class="filter-pill">
+          <label for="fTipoOperacao">Tipo</label>
+          <select id="fTipoOperacao">
+            <option value="">Todos</option>
+            <option value="CARREGAMENTO">Carregamento</option>
+            <option value="DESCARGA">Descarga</option>
+          </select>
+        </div>
+
+        <div class="filter-pill">
+          <label for="fStatusOperacao">Status</label>
+          <select id="fStatusOperacao">
+            <option value="">Todos</option>
+            <option value="PENDENTE">Pendente</option>
+            <option value="EM_ANDAMENTO">Em andamento</option>
+            <option value="CONCLUIDO">Concluído</option>
+            <option value="CANCELADO">Cancelado</option>
+          </select>
+        </div>
+
+        <div class="filter-pill">
+          <label for="fMotoristaNome">Motorista</label>
+          <input
+            id="fMotoristaNome"
+            type="text"
+            placeholder="parte do nome"
+          />
+        </div>
+
+        <div class="filter-pill">
+          <label for="fCaminhaoPlaca">Caminhão</label>
+          <input
+            id="fCaminhaoPlaca"
+            type="text"
+            placeholder="placa ou descrição"
+          />
+        </div>
+
+        <div class="filter-pill">
+          <label for="fClienteNome">Cliente</label>
+          <input
+            id="fClienteNome"
+            type="text"
+            placeholder="código ou nome do cliente"
+          />
+        </div>
+
+        <button class="btn-refresh" type="button" id="btnFiltrarOperacoes">
+          <span class="icon">🔍</span>
+          <span>Filtrar</span>
+        </button>
+
+        <button class="btn-clear" type="button" id="btnLimparFiltros">
+          <span class="icon">✕</span>
+          <span>Limpar</span>
+        </button>
+
+        <button class="btn-refresh btn-add-op" type="button" id="btnAbrirNovaOperacao">
+          <span class="icon">＋</span>
+          <span>Adicionar operação</span>
+        </button>
+      </section>
+
+      <!-- CONTEÚDO PRINCIPAL -->
+      <section class="dash-content visya-content">
+        <!-- Painel colapsável de nova operação -->
+        <div class="visya-nova-op-panel" id="novaOperacaoPanel" style="display:none;">
+          <div class="visya-nova-op-header">
+            <div>
+              <h2>Nova operação</h2>
+              <p>Crie uma operação de carregamento ou descarga vinculada a motorista, caminhão e cliente.</p>
+            </div>
+            <button type="button" class="btn-clear visya-nova-op-close" id="btnFecharNovaOperacao">
+              <span class="icon">✕</span>
+              <span>Fechar</span>
+            </button>
+          </div>
+
+          <div class="visya-nova-op-form">
+            <div class="form-field">
+              <label for="tipoOperacao">Tipo de operação</label>
+              <select id="tipoOperacao">
+                <option value="">Selecione...</option>
+                <option value="CARREGAMENTO">Carregamento</option>
+                <option value="DESCARGA">Descarga</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="motorista">Motorista</label>
+              <select id="motorista">
+                <option value="">Carregando...</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="caminhao">Caminhão</label>
+              <select id="caminhao">
+                <option value="">Carregando...</option>
+              </select>
+            </div>
+
+            <div class="form-field form-field-full visya-cliente-search">
+              <label for="clienteBusca">Cliente</label>
+              <div class="visya-cliente-search-inner">
+                <input
+                  id="clienteBusca"
+                  type="text"
+                  placeholder="Digite código ou nome do cliente"
+                  autocomplete="off"
+                />
+                <input id="clienteId" type="hidden" />
+                <div class="visya-cliente-sugestoes" id="clienteSugestoes" style="display:none;"></div>
+              </div>
+            </div>
+
+            <div
+              id="campo-carregamento-rel"
+              class="form-field"
+              style="display:none"
+            >
+              <label for="idOperacaoCarregamentoRel">
+                Operação de carregamento relacionada (ID)
+              </label>
+              <input
+                id="idOperacaoCarregamentoRel"
+                type="number"
+                placeholder="Obrigatório apenas para DESCARGA"
+              />
+            </div>
+
+            <div class="form-field form-field-full">
+              <label for="observacoes">Observações</label>
+              <textarea
+                id="observacoes"
+                rows="2"
+                placeholder="Informações relevantes da operação"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="visya-nova-op-footer">
+            <div id="visya-status" class="vz-status"></div>
+            <button id="btnCriarOperacao" type="button" class="btn-refresh">
+              <span class="icon">✔</span>
+              <span>Criar operação</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Cards resumo (opcional, placeholder) -->
+        <div class="cards-summary">
+          <div class="card-small">
+            <div class="card-small-label">Operações hoje</div>
+            <div class="card-small-value" id="cardOpsHoje">0</div>
+            <div class="card-small-tag">Criadas na data atual</div>
+          </div>
+
+          <div class="card-small">
+            <div class="card-small-label">Pendentes</div>
+            <div class="card-small-value" id="cardOpsPendentes">0</div>
+            <div class="card-small-tag">Aguardando conclusão</div>
+          </div>
+
+          <div class="card-small">
+            <div class="card-small-label">Em andamento</div>
+            <div class="card-small-value" id="cardOpsAndamento">0</div>
+            <div class="card-small-tag">Separação/descarga em curso</div>
+          </div>
+
+          <div class="card-small">
+            <div class="card-small-label">Concluídas</div>
+            <div class="card-small-value" id="cardOpsConcluidas">0</div>
+            <div class="card-small-tag">Por filtros atuais</div>
+          </div>
+        </div>
+
+        <div class="pagination-info">
+          <span id="visyaInfoRegistros">Mostrando 0 operação(ões)</span>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tipo</th>
+                <th>Motorista</th>
+                <th>Caminhão</th>
+                <th>Cliente</th>
+                <th>Status</th>
+                <th>Separação</th>
+                <th>Descarga</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="visya-tbody">
+              <tr>
+                <td colspan="9" class="empty-state">
+                  Carregando operações...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal detalhe operação Visya (reaproveita o que você já tinha) -->
+  <div id="visyaDetalheModal" class="visya-modal">
+    <div class="visya-modal-content">
+      <div class="visya-modal-header">
+        <h2 id="visyaDetId">#--</h2>
+        <button id="visyaDetalheFechar" class="btn-clear visya-modal-close" type="button">
+          <span class="icon">✕</span>
+        </button>
+      </div>
+
+      <div class="visya-modal-body">
+        <div class="visya-det-grid">
+          <div>
+            <label>Tipo</label>
+            <div id="visyaDetTipo" class="visya-det-value"></div>
+          </div>
+          <div>
+            <label>Status</label>
+            <div id="visyaDetStatus" class="visya-det-value"></div>
+          </div>
+          <div>
+            <label>Motorista</label>
+            <div id="visyaDetMotorista" class="visya-det-value"></div>
+          </div>
+          <div>
+            <label>Caminhão</label>
+            <div id="visyaDetCaminhao" class="visya-det-value"></div>
+          </div>
+          <div>
+            <label>Cliente (ID)</label>
+            <div id="visyaDetClienteId" class="visya-det-value"></div>
+          </div>
+          <div>
+            <label>Cliente (Nome)</label>
+            <div id="visyaDetClienteNome" class="visya-det-value"></div>
+          </div>
+          <div>
+            <label>Início separação</label>
+            <div id="visyaDetInicioSep" class="visya-det-value"></div>
+          </div>
+          <div>
+            <label>Fim separação</label>
+            <div id="visyaDetFimSep" class="visya-det-value"></div>
+          </div>
+          <div>
+            <label>Início descarga</label>
+            <div id="visyaDetInicioDesc" class="visya-det-value"></div>
+          </div>
+          <div>
+            <label>Fim descarga</label>
+            <div id="visyaDetFimDesc" class="visya-det-value"></div>
+          </div>
+        </div>
+
+        <div class="visya-det-obs">
+          <label>Observações</label>
+          <div id="visyaDetObs" class="visya-det-value visya-det-obs-box"></div>
+        </div>
+
+        <div class="visya-det-fotos-bloco">
+          <div class="visya-det-fotos-header">
+            <h3>Fotos da operação</h3>
+            <div class="visya-det-fotos-actions">
+              <button id="visyaBtnCapturarFoto" type="button" class="btn-refresh">
+                <span class="icon">📷</span>
+                <span>Anexar foto</span>
+              </button>
+              <input
+                type="file"
+                id="visyaFotoInput"
+                accept="image/*"
+                style="display:none"
+              />
+            </div>
+          </div>
+
+          <div
+            id="visyaFotoPreviewWrapper"
+            class="visya-foto-preview-wrapper"
+            style="display:none"
+          >
+            <img id="visyaFotoPreview" alt="Pré-visualização da foto" />
+            <button id="visyaBtnEnviarFoto" type="button" class="btn-clear">
+              <span class="icon">⬆</span>
+              <span>Enviar foto</span>
+            </button>
+          </div>
+
+          <div id="visyaDetFotosLista" class="visya-det-fotos-lista"></div>
+        </div>
+
+        <div id="visyaDetStatusMsg" class="vz-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS globais -->
+  <script src="../../../assets/js/global.js"></script>
+
+  <!-- JS específico Visya -->
+  <script src="../../../assets/js/visya.js"></script>
+</body>
+</html>
