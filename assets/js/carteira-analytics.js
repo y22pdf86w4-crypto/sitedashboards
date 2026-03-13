@@ -399,6 +399,7 @@ function renderizarMaisLinhas(qtd) {
     add("DtLancamentoUltimaAtividade", fmtDataIso);
     add("DtInicialUltimaAtividade", fmtDataIso);
     add("AssuntoUltimaAtividade");
+    add("ObservacaoUltimaAtividade");
 
     // TOTAIS POR ANO (FORMATADOS EM REAIS)
     add("Total_2024", fmtValor);
@@ -707,6 +708,7 @@ function exportarTabelaParaExcel() {
       add("DtLancamentoUltimaAtividade", fmtDataIso);
       add("DtInicialUltimaAtividade", fmtDataIso);
       add("AssuntoUltimaAtividade");
+      add("ObservacaoUltimaAtividade");
 
       // TOTAIS POR ANO (RE)
       add("Total_2024", fmtValor);
