@@ -683,7 +683,7 @@ async function carregarPedidosPendentes(codvendFiltro) {
       return {
         id: p.NUNOTA,
         codigo: p.NUNOTA,
-        nome: p.NOMECLIENTE,
+        nome: p.NOME_CLIENTE,
         endereco,
         origemTipo: "pedido",
         nunota: p.NUNOTA,
