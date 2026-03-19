@@ -42,15 +42,17 @@ body.light-theme {
 
 /* PAGE */
 .cal-page {
+  height: 100vh;         /* ocupa exatamente a janela */
   min-height: 100vh;
-  max-height: 100vh;
   display: flex;
   flex-direction: column;
   gap: 10px;
   box-sizing: border-box;
   padding: 12px 18px 14px;
   font-size: 11px;
-  overflow: hidden;
+  overflow: hidden;      /* quem rola é conteúdo interno (grid/modais) */
+  width: 100%;
+  max-width: 100%;
 }
 
 /* HEADER */
@@ -138,25 +140,31 @@ body.light-theme .cal-btn-nav {
   color: var(--text-main-light);
 }
 
-/* FILTROS + AÇÕES */
+/* FILTROS + AÇÕES (desktop) */
 .cal-bar-filtros {
   display: grid;
-  grid-template-columns: 1.3fr 0.9fr 0.9fr 0.9fr auto;
-  gap: 6px;
+  /* Buscar descrição + Status + Data início + Data fim + Ações */
+  grid-template-columns:
+    minmax(200px, auto)
+    minmax(120px, auto)
+    minmax(120px, auto)
+    minmax(120px, auto)
+    auto;
+  column-gap: 0px;      /* espaçamento mínimo entre filtros */
+  row-gap: 4px;
   align-items: end;
+  justify-content: start;
+  justify-items: start; /* cada célula encostada à esquerda */
 }
 
 .cal-filtro-campo {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  max-width: none;      /* deixa o campo usar só o espaço natural */
 }
-.cal-filtro-campo label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-soft-dark);
-}
+
+
 body.light-theme .cal-filtro-campo label {
   color: var(--text-soft-light);
 }
@@ -177,11 +185,21 @@ body.light-theme .cal-filtro-campo select {
 }
 
 /* busca só na primeira coluna, menor */
+/* primeiro filtro: Buscar descrição */
+/* primeiro filtro: Buscar descrição */
 .cal-filtro-busca {
   grid-column: span 1;
+  margin-left: 8px;     /* afasta da borda esquerda */
+  margin-right: 4px;    /* afasta um pouco do segundo filtro */
+}
+
+/* segundo filtro: Status (ajusta se tiver outra classe) */
+.cal-filtro-status {
+  margin-left: 5px;     /* micro respiro do primeiro */
 }
 #buscaTexto {
-  max-width: 190px;
+  max-width: 145px;
+  width: 100%;
 }
 
 /* AÇÕES: LIMPAR + WHATSAPP na MESMA LINHA */
@@ -252,16 +270,18 @@ body.light-theme .cal-weekdays {
 
 /* GRID DIAS */
 .cal-grid {
-  flex: 1;
-  min-height: 0;
+  flex: 1;                     /* pega o que sobrar no flex column */
+  height: 100%;                /* ocupa o resto da altura da cal-page */
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-auto-rows: minmax(70px, 1fr);
+  grid-auto-rows: minmax(120px, 1fr);  /* linhas bem altas mesmo sem dados */
   gap: 4px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-soft-dark);
   padding: 4px;
   background: radial-gradient(circle at top, #020617, #000000);
+  width: 100%;
+  max-width: 100%;
 }
 body.light-theme .cal-grid {
   border-color: var(--border-soft-light);
@@ -280,6 +300,7 @@ body.light-theme .cal-grid {
   gap: 2px;
   cursor: pointer;
   overflow: hidden;
+  height: 100%;    /* ocupa toda a altura da linha do grid */
 }
 body.light-theme .day-cell {
   border-color: var(--border-soft-light);
@@ -655,10 +676,13 @@ body.light-theme .loader-overlay {
 @media (max-width: 980px) {
   .cal-bar-filtros {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: auto;
+    column-gap: 6px;
+    row-gap: 6px;
+    justify-content: stretch;
   }
   .cal-grid {
-    grid-auto-rows: minmax(80px, 1fr);
+    grid-auto-rows: 180px;
+    min-height: calc(100vh - 160px);
   }
 }
 @media (max-width: 720px) {
@@ -676,4 +700,17 @@ body.light-theme .loader-overlay {
   .cp-form-row {
     flex-direction: column;
   }
+  .cal-grid {
+    grid-auto-rows: 140px;
+    min-height: calc(100vh - 160px);
+  }
+}
+
+/* caso ainda use despesa fake */
+.event-pill-fake {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: transparent !important;
+  box-shadow: none !important;
+  pointer-events: none;
 }
