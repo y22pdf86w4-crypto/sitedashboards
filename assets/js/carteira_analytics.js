@@ -629,9 +629,17 @@ function exportarTabelaParaExcel() {
   const table = document.getElementById("tblCarteira");
   if (!table) return;
 
+  // Clona a tabela da tela (para aproveitar THEAD)
   const cloned = table.cloneNode(true);
   const clTbody = cloned.tBodies[0];
   clTbody.innerHTML = "";
+
+  // Helper para truncar textos grandes em QUALQUER campo de texto
+  function truncText(value, maxLen = 300) {
+    if (value == null || value === "") return "";
+    const s = String(value);
+    return s.length > maxLen ? s.slice(0, maxLen) + "..." : s;
+  }
 
   dadosView.forEach((c) => {
     const culturasArr =
@@ -640,7 +648,7 @@ function exportarTabelaParaExcel() {
     culturasArr.forEach((cult) => {
       const tr = document.createElement("tr");
 
-      function add(field, formatter, valueOverride) {
+      function add(field, formatter, valueOverride, opts = {}) {
         const td = document.createElement("td");
         let raw = valueOverride !== undefined ? valueOverride : c[field];
 
@@ -652,26 +660,42 @@ function exportarTabelaParaExcel() {
           raw = fmtTextOrDash(raw);
         }
 
+        // Truncagem genérica para campos textuais muito longos
+        if (opts.truncate) {
+          raw = truncText(raw, opts.maxLen || 300);
+        }
+
         td.textContent = raw == null ? "" : String(raw);
+
+        // Forçar sem quebra de linha e sem crescimento de linha
+        td.style.whiteSpace = "nowrap";
+        td.style.overflow = "hidden";
+
         tr.appendChild(td);
       }
 
-      // mesma ordem do THEAD (sem botão de detalhe)
+      // mesma ordem do THEAD (sem botão de detalhe clicável)
 
       // VENDEDOR
       add("CODVEND");
-      add("NOME_VENDEDOR");
+      add("NOME_VENDEDOR", null, undefined, { truncate: true, maxLen: 120 });
 
       // CLIENTE
       add("CODPARC");
-      add("NOME_CLIENTE");
+      add("NOME_CLIENTE", null, undefined, { truncate: true, maxLen: 120 });
 
       // ENDEREÇO
-      add("ParceiroEnderecoCompl");
+      add("ParceiroEnderecoCompl", null, undefined, {
+        truncate: true,
+        maxLen: 120,
+      });
       add("ParceiroEnderecoNumero");
-      add("ParceiroLogradouro");
-      add("ParceiroBairro");
-      add("ParceiroCidade");
+      add("ParceiroLogradouro", null, undefined, {
+        truncate: true,
+        maxLen: 120,
+      });
+      add("ParceiroBairro", null, undefined, { truncate: true, maxLen: 120 });
+      add("ParceiroCidade", null, undefined, { truncate: true, maxLen: 100 });
       add("ParceiroCidadeCodigo");
       add("ParceiroUFSigla");
       add("ParceiroCEP");
@@ -692,17 +716,23 @@ function exportarTabelaParaExcel() {
               });
         }
         const texto = areaStr ? `${nome} (${areaStr} ha)` : nome;
-        add(null, null, texto);
+        add(null, null, texto, { truncate: true, maxLen: 200 });
       } else {
-        add(null, null, c.CulturasResumo || "-");
+        add(null, null, c.CulturasResumo || "-", {
+          truncate: true,
+          maxLen: 200,
+        });
       }
 
-      // coluna de detalhe – vazia
+      // coluna de detalhe – vazia (não precisa botão no Excel)
       add(null, null, "");
 
       // CONTATO
-      add("ParceiroTelefone");
-      add("ParceiroEmail");
+      add("ParceiroTelefone", null, undefined, {
+        truncate: true,
+        maxLen: 60,
+      });
+      add("ParceiroEmail", null, undefined, { truncate: true, maxLen: 120 });
 
       // COORDENADAS
       add("ParceiroLatitude");
@@ -719,15 +749,29 @@ function exportarTabelaParaExcel() {
       add("DataVenda", fmtDataIso);
       add("ValorTotalVenda", fmtValor);
       add("VendedorQueVendeuCodigo");
-      add("VendedorQueVendeuNome");
-      add("CargoVendedorQueVendeu");
+      add("VendedorQueVendeuNome", null, undefined, {
+        truncate: true,
+        maxLen: 120,
+      });
+      add("CargoVendedorQueVendeu", null, undefined, {
+        truncate: true,
+        maxLen: 120,
+      });
 
       // ÚLTIMA ATIVIDADE
       add("IdAtividadeUltima");
       add("DtLancamentoUltimaAtividade", fmtDataIso);
       add("DtInicialUltimaAtividade", fmtDataIso);
-      add("AssuntoUltimaAtividade");
-      add("ObservacaoUltimaAtividade");
+      add("AssuntoUltimaAtividade", null, undefined, {
+        truncate: true,
+        maxLen: 200,
+      });
+
+      // Desc. última Atividade – principal fonte de linhas gigantes
+      add("ObservacaoUltimaAtividade", null, undefined, {
+        truncate: true,
+        maxLen: 300, // ajuste como quiser (150, 200, 300…)
+      });
 
       // TOTAIS
       add("Total_2024", fmtValor);
@@ -741,6 +785,22 @@ function exportarTabelaParaExcel() {
     });
   });
 
+  // Estilos específicos para o HTML do Excel (reforça o nowrap)
+  const styleEl = document.createElement("style");
+  styleEl.textContent = `
+    table {
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+    td, th {
+      white-space: nowrap !important;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  `;
+  cloned.appendChild(styleEl);
+
+  // Geração do arquivo Excel a partir do HTML
   const blob = new Blob(["\ufeff" + cloned.outerHTML], {
     type: "application/vnd.ms-excel;charset=utf-8",
   });
@@ -755,7 +815,6 @@ function exportarTabelaParaExcel() {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
-
 // ================== RESIZE / DRAG ==================
 
 function initColumnResize() {
