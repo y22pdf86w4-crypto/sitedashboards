@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Loader 3D</title>
+  <link rel="stylesheet" href="/assets/css/loader.css" />
+</head>
+<body>
+  <div class="loader">
+    <div class="inner one"></div>
+    <div class="inner two"></div>
+    <div class="inner three"></div>
+  </div>
+
+  <script>
+    const THEME_KEY = 'visya-sidebar-theme';
+
+    function applyLocalThemeLoader() {
+      let saved = null;
+      try {
+        saved = localStorage.getItem(THEME_KEY);
+      } catch (e) {
+        console.warn('[LOADER] erro ao ler tema do localStorage:', e);
+      }
+      const theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+    }
+
+    // 1) aplica o tema salvo na carga
+    applyLocalThemeLoader();
+
+    // 2) também ouve mensagens do app/iframe pai (se ele enviar)
+    window.addEventListener('message', (event) => {
+      if (!event.data || event.data.type !== 'visya-theme') return;
+      const theme = event.data.theme;
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      try {
+        localStorage.setItem(THEME_KEY, theme);
+      } catch (e) {
+        console.warn('[LOADER] erro ao salvar tema:', e);
+      }
+    });
+  </script>
+
+  <script src="/assets/js/loader.js"></script>
+</body>
+</html>

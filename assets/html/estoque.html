@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>VISYA - Estoque</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Mesma fonte do sidebar -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+  />
+
+  <!-- CSS específico Estoque -->
+  <link rel="stylesheet" href="../css/estoque.css" />
+
+  <!-- CSS do loader global -->
+  <link rel="stylesheet" href="../css/loader.css" />
+
+  <!-- JS global (auth, loginSistema etc.) -->
+  <script src="../js/global.js" defer></script>
+
+  <!-- JS específico Estoque -->
+  <script src="../js/estoque.js" defer></script>
+</head>
+<body>
+  <!-- CONTEÚDO ESTOQUE DENTRO DO IFRAME -->
+  <main class="estoque-page">
+    <!-- TOPO VISÍVEL -->
+    <header class="estoque-header">
+      <div class="estoque-header-left">
+        <h1 class="estoque-titulo">Estoque</h1>
+        <p class="estoque-subtitulo">
+          Visão geral do estoque por empresa, grupo de produto e item.
+        </p>
+      </div>
+      <div class="estoque-header-right">
+        <div class="estoque-user-info">
+          <span id="estoqueUserNome" class="estoque-user-nome">Carregando...</span>
+          <span id="estoqueUserEmail" class="estoque-user-email"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- FILTROS -->
+    <section class="estoque-filtros">
+      <div class="filtro-campo">
+        <label for="fEmpresaNome">Empresa</label>
+        <input
+          id="fEmpresaNome"
+          type="text"
+          placeholder="ex: Linhares, Rio Bananal"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="filtro-campo">
+        <label for="fGrupoCod">Grupo (cód)</label>
+        <input
+          id="fGrupoCod"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="ex: 2060000"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="filtro-campo">
+        <label for="fGrupoNome">Grupo (nome)</label>
+        <input
+          id="fGrupoNome"
+          type="text"
+          placeholder="parte do nome do grupo"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="filtro-campo">
+        <label for="fProdCod">Produto (cód)</label>
+        <input
+          id="fProdCod"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="CODPROD"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="filtro-campo">
+        <label for="fProdNome">Produto (nome)</label>
+        <input
+          id="fProdNome"
+          type="text"
+          placeholder="parte do nome do produto"
+          autocomplete="off"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <button type="button" class="btn-filtro btn-filtro-primario" id="btnBuscar">
+        <span>↻</span>
+        Atualizar
+      </button>
+
+      <button type="button" class="btn-filtro btn-filtro-secundario" id="btnLimpar">
+        <span>✕</span>
+        Limpar
+      </button>
+    </section>
+
+    <!-- RESUMO EM LINHA -->
+    <section class="estoque-resumo">
+      <div class="resumo-card">
+        <span class="resumo-label">Estoque total</span>
+        <strong class="resumo-valor" id="cardEstoqueTotal">0,00</strong>
+        <span class="resumo-legenda">Soma de todas as empresas e grupos</span>
+      </div>
+
+      <div class="resumo-card">
+        <span class="resumo-label">Reservado</span>
+        <strong class="resumo-valor" id="cardReservadoTotal">0,00</strong>
+        <span class="resumo-legenda">Pedidos e bloqueios</span>
+      </div>
+
+      <div class="resumo-card">
+        <span class="resumo-label">Disponível</span>
+        <strong class="resumo-valor" id="cardDisponivelTotal">0,00</strong>
+        <span class="resumo-legenda">Estoque – Reservado</span>
+      </div>
+
+      <div class="resumo-card">
+        <span class="resumo-label">Grupos distintos</span>
+        <strong class="resumo-valor" id="cardQtdeGrupos">0</strong>
+        <span class="resumo-legenda">Por filtro atual</span>
+      </div>
+    </section>
+
+    <!-- TABELA -->
+    <section class="estoque-tabela-bloco">
+      <div class="estoque-tabela-header">
+        <span id="infoRegistros">Mostrando 0 de 0 registros</span>
+      </div>
+
+      <div class="estoque-table-wrapper">
+        <table class="estoque-table">
+          <colgroup>
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>CODEMP</th>
+              <th>Empresa</th>
+              <th>Grupo</th>
+              <th>Produto</th>
+              <th>Est.</th>
+              <th>Res.</th>
+              <th>Disp.</th>
+              <th>Status</th>
+              <th>Preço</th>
+              <th>Ver</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyEstoque">
+            <tr>
+              <td colspan="10" class="estoque-empty">
+                Carregando dados de estoque...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL SENHA PREÇO -->
+  <div id="precoSenhaModal" class="preco-modal-backdrop" style="display:none;">
+    <div class="preco-modal">
+      <h2>Ver preços</h2>
+      <p>Digite a senha para visualizar os preços dos produtos.</p>
+      <input
+        type="password"
+        id="precoSenhaInput"
+        placeholder="Senha"
+        autocomplete="off"
+      />
+      <div class="preco-modal-actions">
+        <button type="button" id="precoSenhaCancelar">Cancelar</button>
+        <button type="button" id="precoSenhaConfirmar">Confirmar</button>
+      </div>
+      <p class="preco-modal-erro" id="precoSenhaErro"></p>
+    </div>
+  </div>
+
+  <!-- LOADER GLOBAL (loader.html dentro de overlay escuro) -->
+  <div class="loader-overlay" id="loaderOverlay" aria-hidden="true">
+    <iframe
+      src="loader.html"
+      class="loader-frame"
+      frameborder="0"
+      scrolling="no"
+      title="Carregando..."
+    ></iframe>
+  </div>
+
+  <!-- Sincroniza tema com o sidebar -->
+  <script>
+    const THEME_KEY = 'visya-sidebar-theme';
+
+    function applyLocalTheme() {
+      let saved = null;
+      try {
+        saved = localStorage.getItem(THEME_KEY);
+      } catch (e) {
+        console.warn('[ESTOQUE] erro ao ler tema do localStorage:', e);
+      }
+      const theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+    }
+
+    // Aplica o tema salvo assim que a página carrega
+    applyLocalTheme();
+
+    // Ouve o app.html para mudanças de tema em tempo real
+    window.addEventListener('message', (event) => {
+      if (!event.data || event.data.type !== 'visya-theme') return;
+      const theme = event.data.theme;
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      try {
+        localStorage.setItem(THEME_KEY, theme);
+      } catch (e) {
+        console.warn('[ESTOQUE] erro ao salvar tema:', e);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>VISYA - Sidebar</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="icon" type="image/x-icon" href="../logo/favicon.ico" />
+
+  <!-- IMPORTANTE: todos os links abrem no parent (fora do iframe) -->
+  <base target="_parent" />
+
+  <!-- Google Icons -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"
+  />
+
+  <!-- Fonte -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+  />
+
+  <!-- CSS do sidebar -->
+  <link rel="stylesheet" href="../css/sidebar.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <header class="sidebar-header">
+      <a href="inicio.html" class="header-logo">
+        <img
+          src="../logo/VISYALICONEBRANCO.png"
+          alt="VISYA"
+          id="sidebarLogoIcon"
+        />
+        <img
+          src="../logo/VISYALLOGOBRANCA.png"
+          alt="VISYA LOGO"
+          id="sidebarLogoText"
+        />
+      </a>
+
+      <button class="sidebar-toggler" type="button" aria-label="Recolher sidebar">
+        <span class="material-symbols-rounded">chevron_left</span>
+      </button>
+    </header>
+
+    <nav class="sidebar-nav">
+      <ul class="nav-list primary-nav">
+        <!-- Início -->
+        <li class="nav-item" id="menu-inicio">
+          <a href="inicio.html" class="nav-link">
+            <span class="material-symbols-rounded">home</span>
+            <span class="nav-label">Início</span>
+          </a>
+        </li>
+
+        <!-- Atividades -->
+        <li class="nav-item">
+          <a href="atividades.html" class="nav-link">
+            <span class="material-symbols-rounded">notifications</span>
+            <span class="nav-label">Atividades</span>
+          </a>
+        </li>
+
+        <!-- Carteira -->
+        <li class="nav-item">
+          <a href="carteira.html" class="nav-link">
+            <span class="material-symbols-rounded">account_balance_wallet</span>
+            <span class="nav-label">Carteira</span>
+          </a>
+        </li>
+
+        <!-- ESTOQUE (SUBMENU) -->
+        <li class="nav-item dropdown-container" id="menu-estoque">
+          <a href="#" class="nav-link dropdown-toggle">
+            <span class="material-symbols-rounded">inventory_2</span>
+            <span class="nav-label">Estoque</span>
+            <span class="dropdown-icon material-symbols-rounded">
+              keyboard_arrow_down
+            </span>
+          </a>
+          <ul class="dropdown-menu" id="submenu-estoque">
+            <li class="nav-item">
+              <a href="estoque.html" class="nav-link dropdown-link">
+                Visão geral de estoque
+              </a>
+            </li>
+            <!-- depois a gente pode adicionar: produtos, depósitos, etc. -->
+          </ul>
+        </li>
+
+        <!-- Financeiro -->
+        <li class="nav-item">
+          <a href="financeiro.html" class="nav-link">
+            <span class="material-symbols-rounded">payments</span>
+            <span class="nav-label">Financeiro</span>
+          </a>
+        </li>
+
+        <!-- Logística -->
+<!-- LOGÍSTICA (SUBMENU) -->
+<li class="nav-item dropdown-container" id="menu-logistica">
+  <a href="#" class="nav-link dropdown-toggle">
+    <span class="material-symbols-rounded">local_shipping</span>
+    <span class="nav-label">Logística</span>
+    <span class="dropdown-icon material-symbols-rounded">
+      keyboard_arrow_down
+    </span>
+  </a>
+  <ul class="dropdown-menu" id="submenu-logistica">
+    <li class="nav-item">
+      <a
+        href="rota.html"
+        class="nav-link dropdown-link"
+        data-frame-target="visya-frame"
+      >
+        Rotas
+      </a>
+    </li>
+    <!-- depois você pode adicionar mais itens aqui -->
+  </ul>
+</li>
+
+        <!-- Regras de Negócio -->
+        <li class="nav-item">
+          <a href="regras-negocio.html" class="nav-link">
+            <span class="material-symbols-rounded">rule</span>
+            <span class="nav-label">Regras de Negócio</span>
+          </a>
+        </li>
+
+        <!-- Usuários com submenu DINÂMICO -->
+        <li class="nav-item dropdown-container" id="menu-usuarios">
+          <a href="#" class="nav-link dropdown-toggle">
+            <span class="material-symbols-rounded">group</span>
+            <span class="nav-label">Usuários</span>
+            <span class="dropdown-icon material-symbols-rounded">
+              keyboard_arrow_down
+            </span>
+          </a>
+          <ul class="dropdown-menu" id="submenu-usuarios">
+            <!-- JS preenche com telas do módulo "Usuários" -->
+          </ul>
+        </li>
+      </ul>
+
+      <ul class="nav-list secondary-nav">
+        <li class="nav-item dropdown-container profile-container">
+          <a href="#" class="nav-link dropdown-toggle">
+            <span class="material-symbols-rounded">account_circle</span>
+            <span class="nav-label">Perfil</span>
+            <span class="dropdown-icon material-symbols-rounded">
+              keyboard_arrow_up
+            </span>
+          </a>
+          <ul class="dropdown-menu">
+            <li class="nav-item">
+              <a class="nav-link dropdown-title">Perfil</a>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link dropdown-link theme-toggle-btn">
+                <span class="material-symbols-rounded">light_mode</span>
+                <span class="nav-label">Mudar tema</span>
+              </button>
+            </li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a href="../../index.html" class="nav-link">
+            <span class="material-symbols-rounded">logout</span>
+            <span class="nav-label">Sair</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <script>
+    // ================== AUTENTICAÇÃO / CONTEXTO ==================
+    function getAuthData() {
+      try {
+        const raw = localStorage.getItem('orgdash_auth'); // salvo pelo loginSistema
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) {
+        console.warn('[SIDEBAR] erro ao ler auth do localStorage:', e);
+        return null;
+      }
+    }
+
+    function getUsuarioLogadoSidebar() {
+      const auth = getAuthData();
+      if (!auth || !auth.usuario || !auth.token) {
+        return null;
+      }
+      return auth.usuario;
+    }
+
+    // Se não tiver login, redireciona para index.html
+    (function enforceAuth() {
+      const usuario = getUsuarioLogadoSidebar();
+      if (!usuario) {
+        window.location.href = '/index.html';
+      } else {
+        window.USUARIO_LOGADO = usuario;
+      }
+    })();
+
+    // ================== SIDEBAR EXISTENTE ==================
+    const sidebarElement = document.querySelector('.sidebar');
+    const togglerButton = document.querySelector('.sidebar-toggler');
+    const themeToggleBtn = document.querySelector('.theme-toggle-btn');
+    const logoIcon = document.getElementById('sidebarLogoIcon');
+    const logoText = document.getElementById('sidebarLogoText');
+
+    const LOGO_ICON_DARK = '../logo/VISYALICONEBRANCO.png';
+    const LOGO_ICON_LIGHT = '../logo/VISYALICONEPRETO.png';
+    const LOGO_TEXT_DARK = '../logo/VISYALLOGOBRANCA.png';
+    const LOGO_TEXT_LIGHT = '../logo/VISYALLOGOPRETA.png';
+
+    function applyTheme(theme) {
+      const isLight = theme === 'light';
+      if (!sidebarElement) return;
+
+      sidebarElement.classList.toggle('light-theme', isLight);
+
+      if (logoIcon) {
+        logoIcon.src = isLight ? LOGO_ICON_LIGHT : LOGO_ICON_DARK;
+      }
+      if (logoText) {
+        logoText.src = isLight ? LOGO_TEXT_LIGHT : LOGO_TEXT_DARK;
+      }
+
+      try {
+        localStorage.setItem('visya-sidebar-theme', theme);
+      } catch (e) {
+        console.warn('[SIDEBAR] erro ao salvar tema:', e);
+      }
+
+      if (window.parent) {
+        window.parent.postMessage(
+          {
+            type: 'visya-sidebar-theme',
+            theme: theme
+          },
+          '*'
+        );
+      }
+    }
+
+    function loadSavedTheme() {
+      let saved = null;
+      try {
+        saved = localStorage.getItem('visya-sidebar-theme');
+      } catch (e) {
+        console.warn('[SIDEBAR] erro ao ler tema:', e);
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        applyTheme(saved);
+      } else {
+        applyTheme('dark');
+      }
+    }
+
+    function toggleDropdown(dropdown, menu, isOpen) {
+      dropdown.classList.toggle('open', isOpen);
+      menu.style.height = isOpen ? menu.scrollHeight + 'px' : 0;
+    }
+
+    function closeAllDropdowns() {
+      document
+        .querySelectorAll('.dropdown-container.open')
+        .forEach(openDropdown => {
+          const menu = openDropdown.querySelector('.dropdown-menu');
+          if (menu) {
+            toggleDropdown(openDropdown, menu, false);
+          }
+        });
+    }
+
+    document.querySelectorAll('.dropdown-toggle').forEach(dropdownToggle => {
+      dropdownToggle.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        const dropdown = dropdownToggle.closest('.dropdown-container');
+        if (!dropdown) return;
+
+        const menu = dropdown.querySelector('.dropdown-menu');
+        if (!menu) return;
+
+        const isOpen = dropdown.classList.contains('open');
+        closeAllDropdowns();
+        toggleDropdown(dropdown, menu, !isOpen);
+      });
+    });
+
+    if (togglerButton && sidebarElement) {
+      togglerButton.addEventListener('click', function () {
+        closeAllDropdowns();
+        sidebarElement.classList.toggle('collapsed');
+
+        if (window.parent) {
+          window.parent.postMessage(
+            {
+              type: 'visya-sidebar-toggle',
+              collapsed: sidebarElement.classList.contains('collapsed')
+            },
+            '*'
+          );
+        }
+      });
+    }
+
+    if (themeToggleBtn && sidebarElement) {
+      themeToggleBtn.addEventListener('click', function () {
+        const isLight = sidebarElement.classList.contains('light-theme');
+        const nextTheme = isLight ? 'dark' : 'light';
+        applyTheme(nextTheme);
+      });
+    }
+
+    loadSavedTheme();
+
+    // ================== MENU DINÂMICO A PARTIR DE usuario.telas ==================
+    function montarMenuDinamico() {
+      const usuario = window.USUARIO_LOGADO;
+      if (!usuario) return;
+
+      const telas = (usuario.telas || []).filter(t => t.ativo && t.podeVer);
+
+      // 1) Início (Dashboard / INICIO)
+      const telaInicio = telas.find(t => t.codigo === 'INICIO');
+      const menuInicio = document.getElementById('menu-inicio');
+      if (menuInicio && telaInicio) {
+        const link = menuInicio.querySelector('a.nav-link');
+        if (link) {
+          link.href = telaInicio.rota;
+        }
+      }
+
+      // 2) Usuários (módulo "Usuários")
+      const telasUsuarios = telas
+        .filter(t => t.modulo === 'Usuários')
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+
+      const menuContainer = document.getElementById('menu-usuarios');
+      const submenu = document.getElementById('submenu-usuarios');
+      if (!menuContainer || !submenu) {
+        console.warn('[SIDEBAR] menu de usuários não encontrado no HTML');
+        return;
+      }
+
+      submenu.innerHTML = '';
+
+      if (telasUsuarios.length) {
+        const liTitle = document.createElement('li');
+        liTitle.className = 'nav-item';
+        const aTitle = document.createElement('a');
+        aTitle.className = 'nav-link dropdown-title';
+        aTitle.textContent = 'Usuários';
+        liTitle.appendChild(aTitle);
+        submenu.appendChild(liTitle);
+      }
+
+      telasUsuarios.forEach(tela => {
+        const li = document.createElement('li');
+        li.className = 'nav-item';
+        const a = document.createElement('a');
+        a.className = 'nav-link dropdown-link';
+        a.href = tela.rota;
+        a.textContent = tela.nome;
+        li.appendChild(a);
+        submenu.appendChild(li);
+      });
+
+      if (!telasUsuarios.length) {
+        menuContainer.style.display = 'none';
+      } else {
+        menuContainer.style.display = '';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', montarMenuDinamico);
+  </script>
+</body>
+</html>

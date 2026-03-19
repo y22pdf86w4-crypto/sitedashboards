@@ -1,0 +1,1357 @@
+/* ==========================================================
+   TEMA BASE – MESMO PADRÃO DO ESTOQUE
+   ========================================================== */
+
+:root {
+  --bg-page-dark: #000000;
+  --bg-section-dark: #050505;
+  --border-soft-dark: #2f2f2f;
+  --border-light-dark: #3f3f3f;
+  --text-main-dark: #f9fafb;
+  --text-soft-dark: #e5e5e5;
+  --text-muted-dark: #a3a3a3;
+
+  --bg-page-light: #f9fafb;
+  --bg-section-light: #ffffff;
+  --border-soft-light: #e5e7eb;
+  --border-light-light: #d4d4d8;
+  --text-main-light: #111827;
+  --text-soft-light: #4b5563;
+  --text-muted-light: #6b7280;
+
+  --radius-sm: 6px;
+  --transition-fast: 140ms ease-out;
+}
+
+/* Fonte igual ao sidebar */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+}
+
+/* Body do iframe Rotas – troca com .light-theme igual Estoque */
+body {
+  background-color: var(--bg-page-dark);
+  color: var(--text-main-dark);
+  overflow: hidden;
+}
+
+body.light-theme {
+  background-color: var(--bg-page-light);
+  color: var(--text-main-light);
+}
+
+/* ==========================================================
+   LAYOUT GERAL ROTAS (compacto)
+   ========================================================== */
+
+/* Página Rotas dentro do iframe */
+.rotas-page {
+  min-height: 100vh;
+  max-height: 100vh;
+  height: 100vh; /* força ocupar viewport */
+  margin: 0;
+  padding: 10px 12px 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  overflow: hidden;
+}
+
+/* Header topo */
+.rotas-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-soft-dark);
+}
+
+body.light-theme .rotas-header {
+  border-bottom-color: var(--border-soft-light);
+}
+
+.rotas-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rotas-titulo {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.rotas-subtitulo {
+  margin: 0;
+  font-size: 10px;
+  color: var(--text-muted-dark);
+}
+
+body.light-theme .rotas-subtitulo {
+  color: var(--text-muted-light);
+}
+
+/* Card principal (container do grid) */
+.rotas-main-card {
+  position: relative; /* p/ overlay do loader */
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft-dark);
+  background: var(--bg-section-dark);
+  padding: 8px 8px 8px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+body.light-theme .rotas-main-card {
+  border-color: var(--border-soft-light);
+  background: var(--bg-section-light);
+}
+
+/* ==========================================================
+   GRID PRINCIPAL – sidebar + resizer + mapa
+   ========================================================== */
+
+.logistica-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;           /* força ocupar o card */
+  margin-top: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft-dark);
+  background: var(--bg-section-dark);
+  padding: 6px 6px 6px;
+  display: grid;
+  grid-template-columns: 320px 4px minmax(0, 1fr);
+  gap: 6px;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+body.light-theme .logistica-grid {
+  border-color: var(--border-soft-light);
+  background: var(--bg-section-light);
+}
+
+/* Wrapper da coluna de filtros */
+#sidebar-wrapper {
+  min-height: 0;
+  max-height: 100%;
+  display: flex;
+}
+
+/* Barra de resize entre sidebar e mapa */
+#sidebar-resizer {
+  width: 4px;
+  cursor: col-resize;
+  border-radius: 999px;
+  background: var(--border-soft-dark);
+}
+
+body.light-theme #sidebar-resizer {
+  background: var(--border-soft-light);
+}
+
+/* Coluna interna de filtros/clientes */
+#sidebar-logistica {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 8px 6px;
+  background: var(--bg-section-dark);
+  border-radius: 10px;
+  border: 1px solid var(--border-soft-dark);
+  min-height: 0;
+  max-height: 100%;
+  flex: 1;
+  overflow: hidden;
+}
+
+body.light-theme #sidebar-logistica {
+  background: var(--bg-section-light);
+  border-color: var(--border-soft-light);
+}
+
+/* Scroll interno da sidebar */
+.sidebar-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  padding-right: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(55, 65, 81, 0.8) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(55, 65, 81, 0.8);
+  border-radius: 999px;
+}
+
+/* ==========================================================
+   BLOCOS DA SIDEBAR (clientes, link, alertas)
+   ========================================================== */
+
+#sidebar-logistica .sidebar-section {
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: var(--bg-section-dark);
+  border: 1px solid var(--border-soft-dark);
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+body.light-theme #sidebar-logistica .sidebar-section {
+  background: var(--bg-section-light);
+  border-color: var(--border-soft-light);
+}
+
+.sidebar-section:last-child {
+  margin-bottom: 0;
+}
+
+.sidebar-section h2 {
+  font-size: 11px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--text-soft-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+body.light-theme .sidebar-section h2 {
+  color: var(--text-soft-light);
+}
+
+/* Campos / inputs */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 6px;
+}
+
+.field-group label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-soft-dark);
+}
+
+body.light-theme .field-group label {
+  color: var(--text-soft-light);
+}
+
+.field-group input[type="text"],
+.rota-destino-input {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light-dark);
+  background: var(--bg-section-dark);
+  padding: 5px 8px;
+  font-size: 11px;
+  color: var(--text-main-dark);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+body.light-theme .field-group input[type="text"],
+body.light-theme .rota-destino-input {
+  border-color: var(--border-light-light);
+  background: var(--bg-section-light);
+  color: var(--text-main-light);
+}
+
+.field-group input[type="text"]::placeholder,
+.rota-destino-input::placeholder {
+  color: var(--text-muted-dark);
+}
+
+body.light-theme .field-group input[type="text"]::placeholder,
+body.light-theme .rota-destino-input::placeholder {
+  color: var(--text-muted-light);
+}
+
+.field-group input[type="text"]:focus,
+.rota-destino-input:focus {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35);
+}
+
+/* select */
+.field-group select {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light-dark);
+  background: var(--bg-section-dark);
+  padding: 5px 8px;
+  font-size: 11px;
+  color: var(--text-main-dark);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+body.light-theme .field-group select {
+  border-color: var(--border-light-light);
+  background: var(--bg-section-light);
+  color: var(--text-main-light);
+}
+
+/* ==========================================================
+   BOTÕES (UIVERSE)
+   ========================================================== */
+
+.toolbar-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.uni-btn {
+  position: relative;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light-dark);
+  background: #0a0a0a;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  transition: background var(--transition-fast), color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+body.light-theme .uni-btn {
+  border-color: var(--border-light-light);
+  background: #ffffff;
+  color: var(--text-main-light);
+}
+
+.uni-btn-sm {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.uni-btn-full {
+  width: 100%;
+}
+
+/* fundo animado verde */
+.uni-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  aspect-ratio: 1 / 1;
+  width: 0%;
+  border-radius: 999px;
+  background: #22c55e;
+  z-index: -1;
+  transition: all 0.6s ease;
+  left: -100%;
+}
+
+.uni-btn:hover::before {
+  width: 140%;
+  left: 0;
+}
+
+.uni-btn-primary {
+  border-color: #16a34a;
+}
+
+.uni-btn-secondary {
+  border-color: var(--border-light-dark);
+}
+
+body.light-theme .uni-btn-secondary {
+  border-color: var(--border-light-light);
+}
+
+.uni-btn-ghost {
+  background: transparent;
+}
+
+.uni-btn:hover {
+  color: #020617;
+}
+
+.uni-btn-icon {
+  width: 18px;
+  height: 18px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light-dark);
+  background: #050505;
+  transform: rotate(45deg);
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+body.light-theme .uni-btn-icon {
+  border-color: var(--border-light-light);
+  background: #f9fafb;
+}
+
+.uni-btn-icon path {
+  fill: #e5e7eb;
+}
+
+.uni-btn:hover .uni-btn-icon {
+  background: #f9fafb;
+  border-color: transparent;
+  transform: rotate(90deg);
+}
+
+.uni-btn:hover .uni-btn-icon path {
+  fill: #111827;
+}
+
+.uni-btn:disabled,
+.uni-btn[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.uni-btn:disabled::before,
+.uni-btn[disabled]::before {
+  display: none;
+}
+
+/* Contadores / pílulas */
+.counters {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 3px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  border-radius: 999px;
+  padding: 1px 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  border: 1px solid var(--border-soft-dark);
+  color: var(--text-soft-dark);
+  background: var(--bg-section-dark);
+}
+
+body.light-theme .pill {
+  border-color: var(--border-soft-light);
+  color: var(--text-soft-light);
+  background: var(--bg-section-light);
+}
+
+/* Resumo selecionados */
+.resumo-selecionados {
+  font-size: 11px;
+  color: var(--text-soft-dark);
+  padding: 3px 5px;
+  border-radius: 6px;
+  background: var(--bg-section-dark);
+  border: 1px dashed var(--border-soft-dark);
+  margin-bottom: 4px;
+}
+
+body.light-theme .resumo-selecionados {
+  color: var(--text-soft-light);
+  background: var(--bg-section-light);
+  border-color: var(--border-soft-light);
+}
+
+/* Lista de clientes */
+.clientes-lista {
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(55, 65, 81, 0.8) transparent;
+}
+
+.clientes-lista::-webkit-scrollbar {
+  width: 6px;
+}
+
+.clientes-lista::-webkit-scrollbar-thumb {
+  background: rgba(55, 65, 81, 0.8);
+  border-radius: 999px;
+}
+
+.clientes-lista.loading::before {
+  content: "Carregando clientes do servidor...";
+  display: block;
+  padding: 8px;
+  font-size: 11px;
+  color: var(--text-muted-dark);
+  text-align: center;
+}
+
+body.light-theme .clientes-lista.loading::before {
+  color: var(--text-muted-light);
+}
+
+.cliente-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 5px 5px;
+  border-radius: 8px;
+  background: var(--bg-section-dark);
+  border: 1px solid var(--border-soft-dark);
+  cursor: grab;
+  transition: background var(--transition-fast), border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  font-size: 11px;
+}
+
+body.light-theme .cliente-item {
+  background: var(--bg-section-light);
+  border-color: var(--border-soft-light);
+}
+
+.cliente-item:active {
+  cursor: grabbing;
+}
+
+.cliente-item.selecionado {
+  border-color: #16a34a;
+  box-shadow:
+    0 0 0 1px rgba(22, 163, 74, 0.35),
+    0 0 8px rgba(22, 163, 74, 0.25);
+}
+
+.cliente-item.dragging {
+  opacity: 0.9;
+  background: #111827;
+  border-color: #3b82f6;
+}
+
+body.light-theme .cliente-item.dragging {
+  background: #e5e7eb;
+}
+
+/* clientes sem localização */
+.cliente-sem-localizacao {
+  border-left: 3px solid #f97316;
+  background: linear-gradient(
+      90deg,
+      rgba(248, 113, 113, 0.15),
+      transparent 60%
+    ),
+    var(--bg-section-dark);
+  opacity: 0.8;
+}
+
+body.light-theme .cliente-sem-localizacao {
+  background: linear-gradient(
+      90deg,
+      rgba(248, 113, 113, 0.1),
+      transparent 60%
+    ),
+    var(--bg-section-light);
+}
+
+.cliente-sem-localizacao .nome {
+  color: #fed7aa;
+}
+
+/* wrapper de checkbox desabilitado */
+.checkbox-desabilitado {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* checkbox cliente */
+.cliente-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #22c55e;
+  cursor: pointer;
+  margin-right: 6px;
+}
+
+/* textos do cliente */
+.cliente-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cliente-textos .nome {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-main-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.light-theme .cliente-textos .nome {
+  color: var(--text-main-light);
+}
+
+.cliente-textos .badge {
+  font-size: 10px;
+  color: var(--text-soft-dark);
+  border-radius: 999px;
+  padding: 1px 5px;
+  background: var(--bg-section-dark);
+  border: 1px solid var(--border-soft-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.light-theme .cliente-textos .badge {
+  color: var(--text-soft-light);
+  background: var(--bg-section-light);
+  border-color: var(--border-soft-light);
+}
+
+.cliente-textos .badge.alerta {
+  font-size: 10px;
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.85);
+  background: rgba(127, 29, 29, 0.85);
+}
+
+/* Link Maps */
+.link-output {
+  font-size: 11px;
+  color: var(--text-soft-dark);
+  padding: 5px;
+  border-radius: 6px;
+  background: var(--bg-section-dark);
+  border: 1px solid var(--border-soft-dark);
+  word-break: break-all;
+  max-height: 80px;
+  overflow: auto;
+}
+
+body.light-theme .link-output {
+  color: var(--text-soft-light);
+  background: var(--bg-section-light);
+  border-color: var(--border-soft-light);
+}
+
+/* ==========================================================
+   MAPA E PAINEL DE ROTA – tema-aware
+   ========================================================== */
+
+#map-container {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-section-dark);
+  border: 1px solid var(--border-soft-dark);
+  height: 100%;
+  min-height: 380px;
+}
+
+body.light-theme #map-container {
+  background: var(--bg-section-light);
+  border-color: var(--border-soft-light);
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+}
+
+/* Painel flutuante da rota */
+.rota-panel {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 300px;
+  max-height: calc(100% - 16px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  background: var(--bg-section-dark);
+  border: 1px solid var(--border-soft-dark);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.9);
+  z-index: 400;
+  overflow: hidden;
+}
+
+body.light-theme .rota-panel {
+  background: var(--bg-section-light);
+  border-color: var(--border-soft-light);
+}
+
+/* estados do painel – minimizado */
+.rota-panel.rota-panel-minimized {
+  width: 220px;
+  max-height: 36px;
+  border-radius: 999px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.55);
+}
+
+.rota-panel.rota-panel-minimized .rota-body {
+  display: none;
+}
+
+.rota-panel.rota-panel-minimized .rota-header {
+  border-bottom: none;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  padding-inline: 10px;
+}
+
+.rota-panel.rota-panel-minimized .rota-subtitle {
+  display: none;
+}
+
+.rota-panel.rota-panel-minimized .rota-title {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* arraste */
+.rota-panel-dragging {
+  opacity: 0.95;
+  cursor: move;
+}
+
+/* Cabeçalho painel */
+.rota-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-soft-dark);
+  cursor: move;
+  user-select: none;
+  background: var(--bg-section-dark);
+}
+
+body.light-theme .rota-header {
+  border-bottom-color: var(--border-soft-light);
+  background: var(--bg-section-light);
+}
+
+.rota-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rota-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rota-subtitle {
+  font-size: 11px;
+  color: var(--text-muted-dark);
+}
+
+body.light-theme .rota-subtitle {
+  color: var(--text-muted-light);
+}
+
+/* botão minimizar/maximizar */
+.rota-header-btn {
+  border-radius: 999px;
+  border: 1px solid var(--border-light-dark);
+  background: #050505;
+  color: var(--text-main-dark);
+  font-size: 13px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.light-theme .rota-header-btn {
+  border-color: var(--border-light-light);
+  background: #f9fafb;
+  color: var(--text-main-light);
+}
+
+/* Corpo do painel */
+.rota-body {
+  padding: 6px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Seções do painel */
+.rota-section {
+  padding: 5px 6px;
+  border-radius: 8px;
+  background: var(--bg-section-dark);
+  border: 1px solid var(--border-soft-dark);
+}
+
+body.light-theme .rota-section {
+  background: var(--bg-section-light);
+  border-color: var(--border-soft-light);
+}
+
+.rota-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-soft-dark);
+  margin-bottom: 3px;
+}
+
+body.light-theme .rota-section-label {
+  color: var(--text-soft-light);
+}
+
+/* Origem chip */
+.rota-origem-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--bg-section-dark);
+  border: 1px solid var(--border-soft-dark);
+  font-size: 12px;
+}
+
+body.light-theme .rota-origem-chip {
+  background: var(--bg-section-light);
+  border-color: var(--border-soft-light);
+}
+
+/* Lista de pontos */
+.rota-lista-wrapper {
+  padding-right: 3px;
+  margin-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(55, 65, 81, 0.85) transparent;
+}
+
+.rota-lista-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rota-lista-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(55, 65, 81, 0.85);
+  border-radius: 999px;
+}
+
+.rota-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Item de ponto */
+.rota-item {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: var(--bg-section-dark);
+  border: 1px solid var(--border-soft-dark);
+  font-size: 11px;
+  cursor: grab;
+  transition: background var(--transition-fast), border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+/* quando está “pegando” o item */
+.rota-item[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+/* EVITA SELECIONAR TEXTO AO ARRASTAR */
+.rota-item,
+.rota-item * {
+  user-select: none;
+}
+
+body.light-theme .rota-item {
+  background: var(--bg-section-light);
+  border-color: var(--border-soft-light);
+}
+
+.rota-item.dragging {
+  background: #111827;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.7);
+  opacity: 0.95;
+}
+
+body.light-theme .rota-item.dragging {
+  background: #e5e7eb;
+}
+
+/* Handle */
+.rota-item-handle {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--text-muted-dark);
+  cursor: grab;
+}
+
+body.light-theme .rota-item-handle {
+  color: var(--text-muted-light);
+}
+
+/* Bolinha numerada */
+.rota-item-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #facc15, #f97316);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Label do ponto */
+.rota-item-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rota-item-label-main {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rota-item-label-sub {
+  font-size: 10px;
+  color: var(--text-muted-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.light-theme .rota-item-label-sub {
+  color: var(--text-muted-light);
+}
+
+/* Botão remover */
+.rota-item-remove {
+  font-size: 13px;
+  cursor: pointer;
+  color: #fecaca;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  padding: 0;
+}
+
+.rota-item-remove:hover {
+  background: rgba(248, 113, 113, 0.15);
+}
+
+/* Linha de adicionar ponto */
+.rota-add {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.rota-add input[type="text"],
+#novoPontoInput {
+  flex: 1;
+  border-radius: 999px;
+  border: 1px solid var(--border-light-dark);
+  background: var(--bg-section-dark);
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--text-main-dark);
+}
+
+body.light-theme .rota-add input[type="text"],
+body.light-theme #novoPontoInput {
+  border-color: var(--border-light-light);
+  background: var(--bg-section-light);
+  color: var(--text-main-light);
+}
+
+/* Flags (checkboxes) */
+.rota-section-flags {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Wrapper checkbox neon */
+.checkbox-wrapper {
+  --checkbox-size: 18px;
+  --checkbox-color: #22c55e;
+  --checkbox-shadow: rgba(34, 197, 94, 0.3);
+  --checkbox-border: rgba(34, 197, 94, 0.7);
+  display: flex;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  padding: 3px 3px;
+  border-radius: 8px;
+}
+
+/* Esconde input nativo */
+.checkbox-wrapper input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Caixa */
+.checkbox-wrapper .checkmark {
+  position: relative;
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  border: 2px solid var(--checkbox-border);
+  border-radius: 6px;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #050505;
+  box-shadow: 0 0 10px var(--checkbox-shadow);
+  overflow: hidden;
+}
+
+body.light-theme .checkbox-wrapper .checkmark {
+  background: #f9fafb;
+}
+
+/* Glow interno */
+.checkbox-wrapper .checkmark::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, var(--checkbox-color), #00ffcc);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transform: scale(0) rotate(-45deg);
+}
+
+/* Ativo */
+.checkbox-wrapper input:checked ~ .checkmark::before {
+  opacity: 1;
+  transform: scale(1) rotate(0);
+}
+
+/* Ícone */
+.checkbox-wrapper .checkmark svg {
+  width: 0;
+  height: 0;
+  color: #020617;
+  z-index: 1;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+}
+
+.checkbox-wrapper input:checked ~ .checkmark svg {
+  width: 12px;
+  height: 12px;
+  transform: rotate(360deg);
+}
+
+/* Hover */
+.checkbox-wrapper:hover .checkmark {
+  border-color: var(--checkbox-color);
+  transform: scale(1.05);
+  box-shadow:
+    0 0 16px var(--checkbox-shadow),
+    inset 0 0 6px var(--checkbox-shadow);
+}
+
+/* Label ao lado */
+.checkbox-wrapper .label {
+  margin-left: 8px;
+  color: var(--checkbox-color);
+  font-size: 11px;
+  text-shadow: 0 0 6px var(--checkbox-shadow);
+  opacity: 0.9;
+  transition: all 0.2s;
+}
+
+.checkbox-wrapper:hover .label {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+/* versão compacta p/ clientes */
+.checkbox-wrapper.checkbox-sm {
+  --checkbox-size: 14px;
+  padding: 2px 2px;
+}
+
+.checkbox-wrapper.checkbox-sm .label {
+  display: none;
+}
+
+/* ==========================================================
+   RESUMO / ALERTAS
+   ========================================================== */
+
+.rota-section-acoes .uni-btn {
+  margin-top: 4px;
+}
+
+.rota-resumo {
+  font-size: 11px;
+  color: var(--text-soft-dark);
+  background: var(--bg-section-dark);
+  border-radius: 6px;
+  padding: 5px 7px;
+  border: 1px dashed var(--border-soft-dark);
+}
+
+body.light-theme .rota-resumo {
+  color: var(--text-soft-light);
+  background: var(--bg-section-light);
+  border-color: var(--border-soft-light);
+}
+
+/* Marker numerado no mapa */
+.marker-numero-wrapper {
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marker-numero {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 0, #fef9c3, #facc15);
+  box-shadow:
+    0 0 0 2px #111827,
+    0 0 14px rgba(250, 204, 21, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marker-numero-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #111827;
+}
+
+/* PIN MINHA LOCALIZAÇÃO */
+.pin-minha-localizacao {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  background: #ff5b6b;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.4);
+}
+
+.pin-minha-localizacao::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 13px;
+  height: 13px;
+  background: #e3324d;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ==========================================================
+   RESPONSIVO
+   ========================================================== */
+
+@media (max-width: 1024px) {
+  .rotas-page {
+    padding: 8px 8px 10px;
+  }
+
+  .logistica-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  #sidebar-wrapper {
+    order: 2;
+  }
+
+  #map-container {
+    order: 1;
+    min-height: 320px;
+  }
+
+  #sidebar-resizer {
+    display: none;
+  }
+
+  .rota-panel {
+    width: 260px;
+  }
+}
+
+@media (max-width: 768px) {
+  #map {
+    min-height: 260px;
+  }
+
+  .rota-panel {
+    top: 6px;
+    right: 6px;
+    width: 240px;
+  }
+}
+
+@media (max-width: 480px) {
+  .rotas-main-card {
+    padding: 6px 6px 6px;
+    border-radius: 12px;
+  }
+
+  .logistica-grid {
+    padding: 6px 6px 6px;
+  }
+
+  .rota-panel {
+    width: 220px;
+  }
+
+  .sidebar-section {
+    padding: 5px 6px;
+  }
+
+  .clientes-lista {
+    max-height: 200px;
+  }
+}
+
+/* ==========================================================
+   TOAST – LINK COPIADO
+   ========================================================== */
+
+.toast-copiar-link {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #020617;
+  color: #e5e7eb;
+  font-size: 12px;
+  border: 1px solid rgba(34, 197, 94, 0.8);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.9);
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.toast-copiar-link.show {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* some apenas o bloco da routing machine */
+.leaflet-routing-container {
+  display: none !important;
+}
+
+/* ==========================================================
+   LOADER OVERLAY DENTRO DO IFRAME
+   ========================================================== */
+
+.loader-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;              /* começa escondido */
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 500;
+}
+
+.loader-overlay.show {
+  display: flex;
+}
+
+.loader-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader-frame {
+  width: 80px;
+  height: 80px;
+  border: 0;
+  background: transparent;
+}

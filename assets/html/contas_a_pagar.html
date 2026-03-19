@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>VISYA - Calendário Contas a Pagar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Fonte -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+  />
+
+  <!-- CSS calendário -->
+  <link rel="stylesheet" href="../css/contas_a_pagar.css" />
+  <!-- CSS loader -->
+  <link rel="stylesheet" href="../css/loader.css" />
+
+  <!-- JS global -->
+  <script src="../js/global.js" defer></script>
+  <!-- JS calendário contas a pagar -->
+  <script src="../js/contas_a_pagar.js" defer></script>
+
+  <script defer>
+    window.addEventListener("DOMContentLoaded", () => {
+      if (typeof initPagina === "function") {
+        initPagina();
+      }
+    });
+  </script>
+</head>
+<body>
+  <!-- LOADER GLOBAL (overlay + iframe loader.html) -->
+  <div class="loader-overlay" id="loaderOverlay" aria-hidden="true">
+    <iframe
+      src="loader.html"
+      class="loader-frame"
+      frameborder="0"
+      scrolling="no"
+      title="Carregando..."
+    ></iframe>
+  </div>
+
+  <!-- TOOLTIP DO CALENDÁRIO -->
+  <div id="calTooltip" class="cal-tooltip" style="display:none;"></div>
+
+  <!-- TOAST -->
+  <div id="toastContasPagar" class="toast-ano" aria-hidden="true">
+    <span id="toastContasPagarMsg"></span>
+  </div>
+
+  <!-- CONTAINER PRINCIPAL -->
+  <main class="cal-page">
+    <header class="cal-header">
+      <div class="cal-header-left">
+        <span class="cal-kicker">Financeiro</span>
+        <h1 class="cal-title">Calendário de Contas a Pagar</h1>
+        <p class="cal-subtitle">
+          Vencimentos, status e lembretes integrados ao financeiro.
+        </p>
+      </div>
+    </header>
+
+    <!-- BARRA SUPERIOR: MÊS + FILTROS -->
+    <section class="cal-bar">
+      <div class="cal-bar-left">
+        <button
+          type="button"
+          class="cal-btn-nav"
+          onclick="mudarMes(-1)"
+        >
+          ‹
+        </button>
+        <div id="tituloMes" class="cal-mes-label">Mês atual</div>
+        <button
+          type="button"
+          class="cal-btn-nav"
+          onclick="mudarMes(1)"
+        >
+          ›
+        </button>
+      </div>
+
+      <div class="cal-bar-filtros">
+        <div class="cal-filtro-campo cal-filtro-busca">
+          <label for="buscaTexto">Buscar</label>
+<input
+  id="buscaTexto"
+  type="text"
+  placeholder="Descrição..."
+  maxlength="30"
+  size="30"
+  autocomplete="off"
+  autocorrect="off"
+  autocapitalize="off"
+  spellcheck="false"
+/>
+        </div>
+
+        <div class="cal-filtro-campo">
+          <label for="filtroStatus">Status</label>
+          <select id="filtroStatus" onchange="onChangeFiltroStatus(this.value)">
+            <option value="todos">Todos</option>
+            <option value="pendente">Pendente</option>
+            <option value="hoje">Vence hoje</option>
+            <option value="vencido">Vencido</option>
+            <option value="pago">Pago</option>
+          </select>
+        </div>
+
+        <div class="cal-filtro-campo">
+          <label for="filtroDataInicio">De</label>
+          <input
+            id="filtroDataInicio"
+            type="date"
+            onchange="onChangeFiltroPeriodo()"
+          />
+        </div>
+
+        <div class="cal-filtro-campo">
+          <label for="filtroDataFim">Até</label>
+          <input
+            id="filtroDataFim"
+            type="date"
+            onchange="onChangeFiltroPeriodo()"
+          />
+        </div>
+
+<div class="cal-bar-actions">
+  <button
+    type="button"
+    class="cal-btn cal-btn-secundario"
+    onclick="limparFiltros()"
+  >
+    Limpar
+  </button>
+  <button
+    type="button"
+    class="cal-btn cal-btn-primario"
+    onclick="abrirModalSelecionarEnvio()"
+  >
+    Lembretes WhatsApp
+  </button>
+</div>
+      </div>
+    </section>
+
+    <!-- CABEÇALHO DOS DIAS DA SEMANA -->
+    <section class="cal-weekdays">
+      <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div>
+      <div>Qui</div><div>Sex</div><div>Sáb</div>
+    </section>
+
+    <!-- GRID DE DIAS -->
+    <section id="gridDias" class="cal-grid"></section>
+  </main>
+
+  <!-- MODAL DIA (DETALHES) -->
+  <div id="modalDia" class="modal-dia" style="display:none;">
+    <div class="modal-dia-backdrop" onclick="fecharModalDia()"></div>
+    <div class="modal-dia-panel">
+      <header class="modal-dia-header">
+        <h2 id="tituloModalDia">Despesas do dia</h2>
+        <button
+          type="button"
+          class="modal-dia-close"
+          onclick="fecharModalDia()"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="modal-dia-body" id="listaDiaContainer"></div>
+    </div>
+  </div>
+
+  <!-- MODAL INCLUSÃO / EDIÇÃO (igual original) -->
+  <div id="modalInclusao" class="modal-inclusao" style="display:none;">
+    <div class="modal-inclusao-backdrop" onclick="fecharModalInclusao()"></div>
+    <div class="modal-inclusao-panel">
+      <header class="modal-inclusao-header">
+        <h2 id="tituloModalInclusao">Nova despesa</h2>
+        <button
+          type="button"
+          class="modal-inclusao-close"
+          onclick="fecharModalInclusao()"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="modal-inclusao-body">
+        <form id="formDespesa" onsubmit="salvarDespesa(event)">
+          <div class="cp-form-row">
+            <div class="cp-form-group">
+              <label for="descricao">Descrição</label>
+              <input type="text" id="descricao" required />
+            </div>
+            <div class="cp-form-group">
+              <label for="dataVenc">Vencimento</label>
+              <input type="date" id="dataVenc" required />
+            </div>
+          </div>
+
+          <div class="cp-form-row">
+            <div class="cp-form-group">
+              <label for="empresaDespesa">Empresa</label>
+              <input
+                type="text"
+                id="empresaDespesa"
+                placeholder="30 a 39"
+                required
+              />
+            </div>
+            <div class="cp-form-group">
+              <label for="recorrente">Recorrência</label>
+              <select id="recorrente">
+                <option value="nao">Única</option>
+                <option value="mensal">Mensal</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="cp-form-group">
+            <label>Contatos</label>
+            <div class="contatos-row">
+              <select id="contatosSelect"></select>
+              <button
+                type="button"
+                class="cal-btn"
+                onclick="adicionarContatoSelecionado()"
+              >
+                Adicionar
+              </button>
+            </div>
+            <div class="contatos-extra-row">
+              <input
+                id="extraNome"
+                type="text"
+                placeholder="Nome rápido"
+              />
+              <input
+                id="extraTelefone"
+                type="text"
+                placeholder="Telefone rápido"
+              />
+              <button
+                type="button"
+                class="cal-btn cal-btn-secundario"
+                onclick="adicionarContatoRapido()"
+              >
+                Incluir
+              </button>
+            </div>
+            <div id="contatosSelecionados" class="contatos-chips"></div>
+          </div>
+
+          <div class="cp-form-group">
+            <label>Quando avisar</label>
+            <div class="checks-avisos">
+              <label><input type="checkbox" id="aviso7" /> 7 dias antes</label>
+              <label><input type="checkbox" id="aviso5" /> 5 dias antes</label>
+              <label><input type="checkbox" id="aviso3" checked /> 3 dias antes</label>
+              <label><input type="checkbox" id="aviso1" /> 1 dia antes</label>
+              <label><input type="checkbox" id="aviso0" /> No dia</label>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-inclusao-footer">
+        <button
+          type="button"
+          class="cal-btn cal-btn-secundario"
+          onclick="fecharModalInclusao()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="cal-btn cal-btn-primario"
+          onclick="salvarDespesa(event)"
+        >
+          Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SELEÇÃO ENVIO -->
+  <div id="modalSelecionarEnvio" class="modal-envio" style="display:none;">
+    <div class="modal-envio-backdrop" onclick="fecharModalSelecionarEnvio()"></div>
+    <div class="modal-envio-panel">
+      <header class="modal-envio-header">
+        <h2>Enviar lembretes</h2>
+        <button
+          type="button"
+          class="modal-envio-close"
+          onclick="fecharModalSelecionarEnvio()"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="modal-envio-body">
+        <div id="listaSelecionarEnvio"></div>
+      </div>
+
+      <div class="modal-envio-footer">
+        <button
+          type="button"
+          class="cal-btn cal-btn-secundario"
+          onclick="fecharModalSelecionarEnvio()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="cal-btn cal-btn-primario"
+          onclick="confirmarEnvioSelecionado()"
+        >
+          Enviar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL RESULTADO ENVIO -->
+  <div id="modalResultadoEnvio" class="modal-envio" style="display:none;">
+    <div class="modal-envio-backdrop" onclick="fecharModalResultadoEnvio()"></div>
+    <div class="modal-envio-panel">
+      <header class="modal-envio-header">
+        <h2>Resultado dos envios</h2>
+        <button
+          type="button"
+          class="modal-envio-close"
+          onclick="fecharModalResultadoEnvio()"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="modal-envio-body" id="resultadoEnvioLista"></div>
+
+      <div class="modal-envio-footer">
+        <button
+          type="button"
+          class="cal-btn cal-btn-primario"
+          onclick="fecharModalResultadoEnvio()"
+        >
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIRMAR EXCLUSÃO -->
+  <div id="modalConfirmarExclusao" class="modal-envio" style="display:none;">
+    <div class="modal-envio-backdrop" onclick="fecharModalExclusao()"></div>
+    <div class="modal-envio-panel">
+      <header class="modal-envio-header">
+        <h2>Excluir despesa</h2>
+        <button
+          type="button"
+          class="modal-envio-close"
+          onclick="fecharModalExclusao()"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="modal-envio-body">
+        <div class="cp-form-group">
+          <label for="motivoExclusao">Motivo</label>
+          <textarea id="motivoExclusao" rows="3"></textarea>
+          <span id="erroMotivoExclusao" class="erro-msg"></span>
+        </div>
+
+        <div id="blocoRecorrencia" class="cp-form-group" style="display:none;">
+          <label>Excluir</label>
+          <label><input type="radio" name="modoExclusao" value="unico" checked /> Apenas esta parcela</label>
+          <label><input type="radio" name="modoExclusao" value="futuras" /> Esta e futuras</label>
+        </div>
+
+        <div id="blocoSenhaExclusao" class="cp-form-group" style="display:none;">
+          <label for="senhaExclusao">Senha de administrador</label>
+          <input type="password" id="senhaExclusao" />
+          <span id="erroSenhaExclusao" class="erro-msg"></span>
+        </div>
+      </div>
+
+      <div class="modal-envio-footer">
+        <button
+          type="button"
+          class="cal-btn cal-btn-secundario"
+          onclick="fecharModalExclusao()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="cal-btn cal-btn-primario"
+          onclick="confirmarExclusaoDespesa()"
+        >
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tema sincronizado com app.html -->
+  <script>
+    const THEME_KEY = "visya-sidebar-theme";
+    function applyLocalThemeContas() {
+      let saved = null;
+      try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
+      const theme = saved === "light" || saved === "dark" ? saved : "dark";
+      const isLight = theme === "light";
+      document.body.classList.toggle("light-theme", isLight);
+    }
+    applyLocalThemeContas();
+    window.addEventListener("message", event => {
+      if (!event.data || event.data.type !== "visya-theme") return;
+      const theme = event.data.theme;
+      const isLight = theme === "light";
+      document.body.classList.toggle("light-theme", isLight);
+      try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+    });
+  </script>
+</body>
+</html>

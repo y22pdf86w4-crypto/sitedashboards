@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>VISYA - Início</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Fonte -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+  />
+
+  <!-- CSS específico da tela -->
+  <link rel="stylesheet" href="../css/inicio.css" />
+
+  <!-- JS global -->
+  <script src="../js/global.js" defer></script>
+  <!-- JS da página início -->
+  <script src="../js/inicio.js" defer></script>
+</head>
+<body>
+  <!-- SEM LOADER -->
+
+  <!-- TOAST -->
+  <div id="toastInicio" class="toast-ano" aria-hidden="true">
+    <span id="toastInicioMsg"></span>
+  </div>
+
+  <main class="inicio-page">
+    <!-- HERO / BOAS-VINDAS -->
+    <section class="inicio-hero">
+      <div class="inicio-hero-left">
+        <h1 class="inicio-hero-title">
+          Bom dia,
+          <span id="inicioHeroNome">Carregando...</span>.
+        </h1>
+        <p class="inicio-hero-sub">
+          Bem-vindo(a) à sua visão geral. Use os atalhos abaixo e acompanhe os avisos mais importantes do dia.
+        </p>
+
+        <div class="inicio-hero-chips">
+          <span class="inicio-chip">Gamificação</span>
+          <span class="inicio-chip">Carteira analytics</span>
+          <span class="inicio-chip">Rotas</span>
+          <span class="inicio-chip">Contas a receber</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ÁREA CENTRAL: ATALHOS + AVISOS, mesmíssima altura -->
+    <section class="inicio-center">
+      <!-- Atalhos -->
+      <section class="inicio-panel inicio-panel-left" aria-label="Atalhos rápidos">
+        <header class="inicio-section-header">
+          <div>
+            <p class="inicio-section-kicker">Atalhos</p>
+            <h2 class="inicio-section-title">Entre direto nos módulos</h2>
+          </div>
+        </header>
+
+        <div class="inicio-shortcuts-grid">
+          <!-- GAMIFICAÇÃO -->
+          <a href="gamificacao.html" class="shortcut-card">
+            <div class="shortcut-badge">Atividades</div>
+            <h3 class="shortcut-title">Gamificação</h3>
+            <p class="shortcut-text">
+              Ranking, metas e conquistas para acompanhar o desempenho da equipe.
+            </p>
+            <span class="shortcut-pill">Abrir gamificação</span>
+          </a>
+
+          <!-- ROTAS -->
+          <a href="rotas.html" class="shortcut-card">
+            <div class="shortcut-badge">Logística</div>
+            <h3 class="shortcut-title">Rotas</h3>
+            <p class="shortcut-text">
+              Consulta de rotas, percurso planejado e acompanhamento das entregas.
+            </p>
+            <span class="shortcut-pill">Abrir rotas</span>
+          </a>
+
+          <!-- CARTEIRA ANALYTICS -->
+          <a href="carteira-analytics.html" class="shortcut-card">
+            <div class="shortcut-badge">Clientes</div>
+            <h3 class="shortcut-title">Carteira (Analytics)</h3>
+            <p class="shortcut-text">
+              Visão analítica da carteira de clientes, posições e histórico.
+            </p>
+            <span class="shortcut-pill">Abrir carteira</span>
+          </a>
+
+          <!-- CONTAS A RECEBER -->
+          <a href="contas_a_receber.html" class="shortcut-card">
+            <div class="shortcut-badge">Financeiro</div>
+            <h3 class="shortcut-title">Contas a receber</h3>
+            <p class="shortcut-text">
+              Acompanhe recebimentos, faixas de atraso e previsões de entrada.
+            </p>
+            <span class="shortcut-pill">Abrir CR</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Avisos -->
+      <section class="inicio-panel inicio-panel-right" aria-label="Avisos recentes">
+        <header class="inicio-section-header">
+          <div>
+            <p class="inicio-section-kicker">Avisos</p>
+            <h2 class="inicio-section-title">Atualizações recentes</h2>
+          </div>
+          <span class="inicio-section-badge">Últimos 7 dias</span>
+        </header>
+
+        <ul class="inicio-avisos-lista">
+          <li class="inicio-avisos-item">
+            <div class="inicio-avisos-top">
+              <p class="inicio-avisos-nome">Gamificação por grupo</p>
+              <span class="inicio-avisos-tag">Gamificação</span>
+            </div>
+            <p class="inicio-avisos-texto">
+              Novo ranking por grupo de usuários para destacar equipes de alta performance.
+            </p>
+            <span class="inicio-avisos-meta">há 1 dia</span>
+          </li>
+
+          <li class="inicio-avisos-item">
+            <div class="inicio-avisos-top">
+              <p class="inicio-avisos-nome">Filtros extras na carteira</p>
+              <span class="inicio-avisos-tag">Carteira Analytics</span>
+            </div>
+            <p class="inicio-avisos-texto">
+              Filtros por faixa de risco, região e segmento liberados no painel de carteira.
+            </p>
+            <span class="inicio-avisos-meta">há 3 dias</span>
+          </li>
+
+          <li class="inicio-avisos-item">
+            <div class="inicio-avisos-top">
+              <p class="inicio-avisos-nome">Visão de rotas diária</p>
+              <span class="inicio-avisos-tag">Rotas</span>
+            </div>
+            <p class="inicio-avisos-texto">
+              Visão consolidada das rotas do dia com status de saída, em trânsito e finalizadas.
+            </p>
+            <span class="inicio-avisos-meta">há 5 dias</span>
+          </li>
+        </ul>
+      </section>
+    </section>
+
+    <!-- BANNER FINAL: APENAS IMAGEM, encaixado no rodapé -->
+    <section class="inicio-banner" aria-label="Imagem de destaque">
+      <div class="inicio-banner-image">
+        <img src="../imagem/aviso1.png" alt="Painel em destaque" />
+      </div>
+    </section>
+  </main>
+
+  <!-- Tema sincronizado com app.html -->
+  <script>
+    const THEME_KEY = "visya-sidebar-theme";
+    function applyLocalThemeInicio() {
+      let saved = null;
+      try {
+        saved = localStorage.getItem(THEME_KEY);
+      } catch (e) {}
+      const theme = saved === "light" || saved === "dark" ? saved : "dark";
+      const isLight = theme === "light";
+      document.body.classList.toggle("light-theme", isLight);
+    }
+    applyLocalThemeInicio();
+    window.addEventListener("message", (event) => {
+      if (!event.data || event.data.type !== "visya-theme") return;
+      const theme = event.data.theme;
+      const isLight = theme === "light";
+      document.body.classList.toggle("light-theme", isLight);
+      try {
+        localStorage.setItem(THEME_KEY, theme);
+      } catch (e) {}
+    });
+  </script>
+</body>
+</html>

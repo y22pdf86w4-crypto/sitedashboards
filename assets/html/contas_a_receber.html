@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>VISYA - Contas a Receber</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Fonte -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+  />
+
+  <!-- CSS específico -->
+  <link rel="stylesheet" href="../css/contas_a_receber.css" />
+
+  <!-- Loader global -->
+  <link rel="stylesheet" href="../css/loader.css" />
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+  <!-- JS global -->
+  <script src="../js/global.js" defer></script>
+
+  <!-- JS Contas a Receber -->
+  <script src="../js/contas_a_receber.js" defer></script>
+</head>
+<body>
+  <main class="cr-page">
+    <!-- HEADER enxuto -->
+    <header class="dash-header">
+      <div class="dash-header-left">
+        <span class="dash-kicker">Financeiro</span>
+        <h1 class="dash-title">
+          Contas a Receber <span>Linhagro</span>
+        </h1>
+      </div>
+      <div class="dash-header-right">
+        <div class="cr-user-info">
+          <span id="crUserNome" class="cr-user-nome">Carregando...</span>
+          <span id="crUserEmail" class="cr-user-email"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- BARRA DE FILTROS HORIZONTAL (sem filtros de cliente) -->
+    <section class="filters-bar">
+      <div class="filter-item filter-item--xs">
+        <label for="fAno">Ano</label>
+        <input
+          type="text"
+          id="fAno"
+          maxlength="4"
+          placeholder="2024"
+        />
+      </div>
+
+      <div class="filter-item filter-item--xs">
+        <label for="fMes">Mês</label>
+        <select id="fMes">
+          <option value="">Ano todo</option>
+          <option value="01">Jan</option>
+          <option value="02">Fev</option>
+          <option value="03">Mar</option>
+          <option value="04">Abr</option>
+          <option value="05">Mai</option>
+          <option value="06">Jun</option>
+          <option value="07">Jul</option>
+          <option value="08">Ago</option>
+          <option value="09">Set</option>
+          <option value="10">Out</option>
+          <option value="11">Nov</option>
+          <option value="12">Dez</option>
+        </select>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <label for="fRegiao">Região</label>
+        <input
+          type="text"
+          id="fRegiao"
+          placeholder="Todas"
+        />
+      </div>
+
+      <div class="filter-item filter-item--xs">
+        <label for="fVendedor">Cód. vend.</label>
+        <input
+          type="text"
+          id="fVendedor"
+          placeholder="10"
+        />
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <label for="fVendedorNome">Vendedor</label>
+        <input
+          type="text"
+          id="fVendedorNome"
+          placeholder="Nome contém..."
+        />
+      </div>
+
+      <div class="filters-bar-actions">
+        <button type="button" class="btn-filters-primary" id="btnAplicar">
+          Aplicar
+        </button>
+        <button type="button" class="btn-filters-secondary" id="btnLimpar">
+          Limpar
+        </button>
+      </div>
+    </section>
+
+    <!-- TOAST ANO -->
+    <div
+      class="toast-ano"
+      id="toastAno"
+      aria-live="assertive"
+      aria-hidden="true"
+    >
+      <span id="toastAnoMsg"></span>
+    </div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <section class="dash-content">
+      <!-- CARDS RESUMO colados nos filtros -->
+      <div class="cards-summary">
+        <article class="card-small">
+          <div class="card-small-label">Receita total (período)</div>
+          <div class="card-small-value" id="cardReceitaTotal">R$ 0,00</div>
+          <div class="card-small-tag">
+            Somatório das vendas no período filtrado
+          </div>
+        </article>
+
+        <article class="card-small">
+          <div class="card-small-label">Total em aberto</div>
+          <div class="card-small-value" id="cardInad">R$ 0,00</div>
+          <div class="card-small-tag">
+            Títulos em atraso + vencendo (inadimplência)
+          </div>
+        </article>
+
+        <article
+          class="card-small card-clickable"
+          id="cardClientesInadWrapper"
+        >
+          <div class="card-small-label">Clientes inadimplentes</div>
+          <div class="card-small-value" id="cardClientesInad">0</div>
+          <div class="card-small-tag">
+            Clique para ver a lista detalhada por cliente
+          </div>
+        </article>
+
+        <article class="card-small">
+          <div class="card-small-label">Ticket médio inadimplente</div>
+          <div class="card-small-value" id="cardTicket">R$ 0,00</div>
+          <div class="card-small-tag">
+            Valor médio por cliente com atraso
+          </div>
+        </article>
+      </div>
+
+      <!-- GRID MAPA + RANKING -->
+      <div class="content-grid">
+        <article class="card-block map-block">
+          <header class="block-header block-header-tight">
+            <h2 class="block-title">Mapa de inadimplência</h2>
+          </header>
+          <div class="map-area">
+            <div id="leafletMap"></div>
+          </div>
+        </article>
+
+        <article class="card-block ranking-block">
+          <header class="block-header block-header-tight">
+            <h2 class="block-title">Ranking por vendedor</h2>
+          </header>
+          <div class="ranking-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Vendedor</th>
+                  <th>Clientes</th>
+                  <th>Valor inadimplente</th>
+                  <th>% do total</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyRanking">
+                <tr>
+                  <td colspan="4" class="empty-state">
+                    Carregando dados...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL CLIENTES -->
+  <div class="clientes-modal" id="clientesModal" aria-hidden="true">
+    <div class="clientes-modal-backdrop" id="clientesModalBackdrop"></div>
+    <div class="clientes-modal-panel">
+      <header class="clientes-modal-header">
+        <h2 id="clientesModalTitulo">Clientes inadimplentes</h2>
+        <button
+          type="button"
+          class="clientes-modal-close"
+          id="clientesModalClose"
+        >
+          ×
+        </button>
+      </header>
+      <div class="clientes-modal-body">
+        <div
+          class="clientes-modal-info"
+          id="clientesModalInfo"
+        ></div>
+        <div class="clientes-modal-table-wrapper">
+          <table class="clientes-modal-table">
+            <thead>
+              <tr>
+                <th>Cód. Cliente</th>
+                <th>Cliente</th>
+                <th>Vendedor</th>
+                <th>Região</th>
+                <th>Valor em aberto</th>
+              </tr>
+            </thead>
+            <tbody id="clientesModalTbody">
+              <tr>
+                <td colspan="5">Nenhum cliente para exibir.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <footer class="clientes-modal-footer">
+        <button
+          type="button"
+          class="clientes-modal-close-btn"
+          id="clientesModalCloseFooter"
+        >
+          Fechar
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- LOADER -->
+  <div class="loader-overlay" id="loaderOverlay" aria-hidden="true">
+    <iframe
+      src="loader.html"
+      class="loader-frame"
+      frameborder="0"
+      scrolling="no"
+      title="Carregando..."
+    ></iframe>
+  </div>
+
+  <!-- Tema -->
+  <script>
+    const THEME_KEY = 'visya-sidebar-theme';
+
+    function applyLocalThemeCR() {
+      let saved = null;
+      try {
+        saved = localStorage.getItem(THEME_KEY);
+      } catch (e) {
+        console.warn('[CR] erro ao ler tema do localStorage:', e);
+      }
+      const theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+    }
+
+    applyLocalThemeCR();
+
+    window.addEventListener('message', (event) => {
+      if (!event.data || event.data.type !== 'visya-theme') return;
+      const theme = event.data.theme;
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      try {
+        localStorage.setItem(THEME_KEY, theme);
+      } catch (e) {
+        console.warn('[CR] erro ao salvar tema:', e);
+      }
+    });
+  </script>
+</body>
+</html>

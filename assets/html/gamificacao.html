@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>VISYA - Gamificação</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Fonte -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+  />
+
+  <!-- CSS específico -->
+  <link rel="stylesheet" href="../css/gamificacao.css" />
+
+  <!-- Loader global -->
+  <link rel="stylesheet" href="../css/loader.css" />
+
+  <!-- JS globais -->
+  <script src="../js/global.js" defer></script>
+
+  <!-- JS específico -->
+  <script src="../js/gamificacao.js" defer></script>
+</head>
+<body>
+  <main class="gamif-page">
+    <!-- HEADER -->
+    <header class="dash-header">
+      <div class="dash-header-left">
+        <span class="dash-kicker">Gestão de performance</span>
+        <h1 class="dash-title">
+          Dashboard <span>Gamificação</span>
+        </h1>
+      </div>
+      <div class="dash-header-right">
+        <div class="gamif-user-info">
+          <span id="gamifUserNome" class="gamif-user-nome">Carregando...</span>
+          <span id="gamifUserEmail" class="gamif-user-email"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- FILTROS -->
+    <section class="gamif-filtros">
+      <div class="filtro-campo filtro-campo-curto">
+        <label for="fMes">Mês</label>
+        <select id="fMes">
+          <option value="">Mês</option>
+          <option value="1">Janeiro</option>
+          <option value="2">Fevereiro</option>
+          <option value="3">Março</option>
+          <option value="4">Abril</option>
+          <option value="5">Maio</option>
+          <option value="6">Junho</option>
+          <option value="7">Julho</option>
+          <option value="8">Agosto</option>
+          <option value="9">Setembro</option>
+          <option value="10">Outubro</option>
+          <option value="11">Novembro</option>
+          <option value="12">Dezembro</option>
+        </select>
+      </div>
+
+      <div class="filtro-campo filtro-campo-curto">
+        <label for="fAno">Ano</label>
+        <input
+          id="fAno"
+          type="number"
+          min="2000"
+          step="1"
+          placeholder="ex: 2026"
+        />
+      </div>
+
+      <div class="filtro-campo filtro-campo-curto">
+        <label for="fVendedorId">Vendedor (ID)</label>
+        <input
+          id="fVendedorId"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="ID interno"
+        />
+      </div>
+
+      <div class="filtro-campo filtro-campo-longo">
+        <label for="fVendedorNome">Vendedor (nome)</label>
+        <input
+          id="fVendedorNome"
+          type="text"
+          placeholder="parte do nome para filtrar localmente"
+        />
+      </div>
+
+      <div class="filtro-acoes">
+        <button class="btn-filtro" type="button" id="btnBuscar">
+          <span>Atualizar</span>
+        </button>
+
+        <button
+          class="btn-filtro btn-filtro-secundario"
+          type="button"
+          id="btnLimpar"
+        >
+          <span>Limpar</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- CONTEÚDO -->
+    <section class="dash-content">
+      <!-- CARDS -->
+      <div class="cards-summary">
+        <div class="card-small">
+          <div class="card-small-label">Pontuação média</div>
+          <div class="card-small-value" id="cardPontuacaoMedia">0,0</div>
+          <div class="card-small-tag">Média dos vendedores filtrados</div>
+        </div>
+
+        <div class="card-small">
+          <div class="card-small-label">Melhor pontuação</div>
+          <div class="card-small-value" id="cardPontuacaoMax">0,0</div>
+          <div class="card-small-tag" id="cardMelhorVendedor">—</div>
+        </div>
+
+        <div class="card-small">
+          <div class="card-small-label">Pior pontuação</div>
+          <div class="card-small-value" id="cardPontuacaoMin">0,0</div>
+          <div class="card-small-tag" id="cardPiorVendedor">—</div>
+        </div>
+
+        <div class="card-small">
+          <div class="card-small-label">Vendedores no filtro</div>
+          <div class="card-small-value" id="cardQtdeVendedores">0</div>
+          <div class="card-small-tag">Total de linhas retornadas</div>
+        </div>
+      </div>
+
+      <!-- INFO PERÍODO / REGISTROS -->
+      <div class="gamif-info-bar">
+        <span id="infoRegistros">Mostrando 0 de 0 vendedores</span>
+        <span id="infoPeriodo" class="gamif-info-periodo">
+          Período não definido
+        </span>
+      </div>
+
+      <!-- TABELA (sem limitador, só scroll da área) -->
+      <div class="table-wrapper">
+        <table class="gamif-table">
+          <thead>
+            <tr>
+              <th>ID Vendedor</th>
+              <th>Vendedor</th>
+              <th>Dias sem rota</th>
+              <th>Ativ. ruins</th>
+              <th>Dias com ativ. ruim</th>
+              <th>Ativ. pendentes</th>
+              <th>Dias com pendência</th>
+              <th>Total pts perdidos</th>
+              <th>Pontuação final</th>
+              <th>Classificação</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyGamificacao">
+            <tr>
+              <td colspan="10" class="empty-state">
+                Selecione mês/ano e clique em Atualizar.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- LOADER GLOBAL -->
+  <div class="loader-overlay" id="loaderOverlay" aria-hidden="true">
+    <iframe
+      src="loader.html"
+      class="loader-frame"
+      frameborder="0"
+      scrolling="no"
+      title="Carregando..."
+    ></iframe>
+  </div>
+
+  <!-- Tema sincronizado com sidebar/app principal -->
+  <script>
+    const THEME_KEY = 'visya-sidebar-theme';
+
+    function applyLocalThemeGamif() {
+      let saved = null;
+      try {
+        saved = localStorage.getItem(THEME_KEY);
+      } catch (e) {
+        console.warn('[GAMIF] erro ao ler tema do localStorage:', e);
+      }
+      const theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+    }
+
+    applyLocalThemeGamif();
+
+    window.addEventListener('message', (event) => {
+      if (!event.data || event.data.type !== 'visya-theme') return;
+      const theme = event.data.theme;
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      try {
+        localStorage.setItem(THEME_KEY, theme);
+      } catch (e) {
+        console.warn('[GAMIF] erro ao salvar tema:', e);
+      }
+    });
+  </script>
+</body>
+</html>

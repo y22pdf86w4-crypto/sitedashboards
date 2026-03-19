@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>VISYA - Carteira Analytics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Fonte padrão -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+  />
+
+  <!-- CSS específico Carteira -->
+  <link rel="stylesheet" href="../css/carteira_analytics.css" />
+
+  <!-- CSS do loader global (compartilhado) -->
+  <link rel="stylesheet" href="../css/loader.css" />
+
+  <!-- JS global (auth etc.) -->
+  <script src="../js/global.js" defer></script>
+
+  <!-- JS específico Carteira -->
+  <script src="../js/carteira_analytics.js" defer></script>
+</head>
+<body>
+  <!-- TOAST -->
+  <div id="toastCarteira" class="toast-ano" aria-hidden="true">
+    <span id="toastCarteiraMsg"></span>
+  </div>
+
+  <!-- PÁGINA DENTRO DO IFRAME -->
+  <main class="carteira-page">
+    <!-- HEADER -->
+    <header class="dash-header">
+      <div class="dash-header-left">
+        <span class="dash-kicker">Gestão comercial</span>
+        <h1 class="dash-title">
+          Carteira <span>Analytics</span>
+        </h1>
+      </div>
+      <div class="dash-header-right">
+        <div class="cr-user-info">
+          <span id="carteiraUserNome" class="cr-user-nome">Carregando...</span>
+          <span id="carteiraUserEmail" class="cr-user-email"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- FILTROS HORIZONTAIS -->
+    <section class="carteira-filtros">
+      <!-- Vendedor -->
+      <div class="filtro-campo">
+        <label for="fVendedorNomeCart">Vendedor (nome)</label>
+        <input
+          id="fVendedorNomeCart"
+          type="text"
+          placeholder="parte do nome"
+        />
+      </div>
+
+      <div class="filtro-campo filtro-campo-curto">
+        <label for="fVendedorCart">Vendedor (código)</label>
+        <input
+          id="fVendedorCart"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="ex: 163"
+        />
+      </div>
+
+      <!-- Cliente -->
+      <div class="filtro-campo">
+        <label for="fClienteNomeCart">Cliente</label>
+        <input
+          id="fClienteNomeCart"
+          type="text"
+          placeholder="nome do cliente"
+        />
+      </div>
+
+      <div class="filtro-campo filtro-campo-curto">
+        <label for="fClienteCart">Cód. cliente</label>
+        <input
+          id="fClienteCart"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="CODPARC"
+        />
+      </div>
+
+      <!-- Cidade -->
+      <div class="filtro-campo">
+        <label for="fCidadeCart">Cidade</label>
+        <input
+          id="fCidadeCart"
+          type="text"
+          placeholder="parte do nome"
+        />
+      </div>
+
+      <!-- Cultura -->
+      <div class="filtro-campo">
+        <label for="fCulturaCart">Cultura</label>
+        <input
+          id="fCulturaCart"
+          type="text"
+          placeholder="ex: CAFE, SOJA"
+        />
+      </div>
+
+      <!-- Busca geral -->
+      <div class="filtro-campo filtro-campo-busca">
+        <label for="fBuscaGeral">Busca geral</label>
+        <input
+          id="fBuscaGeral"
+          type="text"
+          placeholder="filtra em todas as colunas"
+        />
+      </div>
+
+      <!-- Ações -->
+      <div class="filtro-acoes">
+        <button class="btn-filtro" type="button" id="btnAplicarCart">
+          <span>Aplicar</span>
+        </button>
+
+        <button class="btn-filtro" type="button" id="btnLimparCart">
+          <span>Limpar</span>
+        </button>
+
+        <button
+          class="btn-filtro btn-filtro-secundario btn-disabled"
+          type="button"
+          id="btnExportExcelCart"
+          disabled
+        >
+          <span>Excel</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <section class="dash-content">
+      <div class="table-header-info">
+        <span id="infoQtdeRegistros">– registros</span>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="tblCarteira" class="carteira-table">
+          <thead>
+            <tr>
+              <!-- VENDEDOR -->
+              <th data-col="CODVEND" class="group-vendedor"><span>Cód. Vendedor</span></th>
+              <th data-col="NOME_VENDEDOR" class="group-vendedor"><span>Nome do Vendedor</span></th>
+
+              <!-- CLIENTE -->
+              <th data-col="CODPARC" class="group-cliente"><span>Cód. Cliente</span></th>
+              <th data-col="NOME_CLIENTE" class="group-cliente"><span>Nome do Cliente</span></th>
+
+              <!-- ENDEREÇO -->
+              <th data-col="ParceiroEnderecoCompl" class="group-endereco"><span>Complemento</span></th>
+              <th data-col="ParceiroEnderecoNumero" class="group-endereco"><span>Número</span></th>
+              <th data-col="ParceiroLogradouro" class="group-endereco"><span>Logradouro</span></th>
+              <th data-col="ParceiroBairro" class="group-endereco"><span>Bairro</span></th>
+              <th data-col="ParceiroCidade" class="group-endereco"><span>Cidade</span></th>
+              <th data-col="ParceiroCidadeCodigo" class="group-endereco"><span>Cód. Cidade</span></th>
+              <th data-col="ParceiroUFSigla" class="group-endereco"><span>UF</span></th>
+              <th data-col="ParceiroCEP" class="group-endereco"><span>CEP</span></th>
+
+              <!-- CULTURA -->
+              <th data-col="QtdeCulturasDistintas" class="group-cultura">
+                <span>Qtde Culturas</span>
+              </th>
+              <th data-col="CulturasResumo" class="group-cultura">
+                <span>Culturas / Áreas</span>
+              </th>
+              <th data-col="CulturasDetalhe" class="group-cultura">
+                <span>Detalhe</span>
+              </th>
+
+              <!-- CONTATO -->
+              <th data-col="ParceiroTelefone" class="group-contato"><span>Telefone</span></th>
+              <th data-col="ParceiroEmail" class="group-contato"><span>E-mail</span></th>
+
+              <!-- COORDENADAS -->
+              <th data-col="ParceiroLatitude" class="group-coord"><span>Latitude</span></th>
+              <th data-col="ParceiroLongitude" class="group-coord"><span>Longitude</span></th>
+
+              <!-- CRÉDITO -->
+              <th data-col="CODEMP" class="group-credito"><span>Cód. Empresa</span></th>
+              <th data-col="DTLIM" class="group-credito"><span>Data Limite</span></th>
+              <th data-col="LIMCRED" class="group-credito"><span>Limite Crédito</span></th>
+
+              <!-- ÚLTIMA VENDA -->
+              <th data-col="NroUnico" class="group-venda"><span>Nro. Único</span></th>
+              <th data-col="NumeroNota" class="group-venda"><span>Nº Nota</span></th>
+              <th data-col="DataVenda" class="group-venda"><span>Data Venda</span></th>
+              <th data-col="ValorTotalVenda" class="group-venda"><span>Valor Total</span></th>
+              <th data-col="VendedorQueVendeuCodigo" class="group-venda"><span>Cod Vend Vendeu</span></th>
+              <th data-col="VendedorQueVendeuNome" class="group-venda"><span>Quem Vendeu</span></th>
+              <th data-col="CargoVendedorQueVendeu" class="group-venda"><span>Cargo</span></th>
+
+              <!-- ÚLTIMA ATIVIDADE -->
+              <th data-col="IdAtividadeUltima" class="group-atividade"><span>ID Atividade</span></th>
+              <th data-col="DtLancamentoUltimaAtividade" class="group-atividade"><span>Dt. Lançamento</span></th>
+              <th data-col="DtInicialUltimaAtividade" class="group-atividade"><span>Data da última Visita</span></th>
+              <th data-col="AssuntoUltimaAtividade" class="group-atividade"><span>Assunto Última Atividade</span></th>
+              <th data-col="ObservacaoUltimaAtividade" class="group-atividade"><span>Desc. última Atividade</span></th>
+
+              <!-- TOTAIS ANO -->
+              <th data-col="Total_2024" class="group-ltv"><span>Total 2024</span></th>
+              <th data-col="Total_2025" class="group-ltv"><span>Total 2025</span></th>
+              <th data-col="Total_2026" class="group-ltv"><span>Total 2026</span></th>
+
+              <!-- LTV -->
+              <th data-col="LTV" class="group-ltv"><span>LTV</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbodyCarteira">
+            <tr>
+              <td colspan="50" class="empty-state">
+                Carregando carteira...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL DE CULTURAS -->
+  <div id="culturasModal" class="culturas-modal" aria-hidden="true">
+    <div class="culturas-modal-backdrop"></div>
+    <div class="culturas-modal-content">
+      <button
+        type="button"
+        class="culturas-modal-close"
+        id="btnCloseCulturasModal"
+        aria-label="Fechar"
+      >
+        ✕
+      </button>
+      <h2 class="culturas-modal-title">Culturas do cliente</h2>
+      <p class="culturas-modal-sub" id="culturasModalSub"></p>
+      <div id="culturasModalBody" class="culturas-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- LOADER GLOBAL CENTRALIZADO -->
+  <div class="loader-overlay" id="loaderOverlay" aria-hidden="true">
+    <iframe
+      src="loader.html"
+      class="loader-frame"
+      frameborder="0"
+      scrolling="no"
+      title="Carregando..."
+    ></iframe>
+  </div>
+
+  <!-- Tema sincronizado com sidebar -->
+  <script>
+    const THEME_KEY = 'visya-sidebar-theme';
+
+    function applyLocalThemeCarteira() {
+      let saved = null;
+      try {
+        saved = localStorage.getItem(THEME_KEY);
+      } catch (e) {
+        console.warn('[CARTEIRA] erro ao ler tema do localStorage:', e);
+      }
+      const theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+    }
+
+    applyLocalThemeCarteira();
+
+    window.addEventListener('message', (event) => {
+      if (!event.data || event.data.type !== 'visya-theme') return;
+      const theme = event.data.theme;
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      try {
+        localStorage.setItem(THEME_KEY, theme);
+      } catch (e) {
+        console.warn('[CARTEIRA] erro ao salvar tema:', e);
+      }
+    });
+  </script>
+</body>
+</html>

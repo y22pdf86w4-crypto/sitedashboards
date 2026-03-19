@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Visya</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="icon" type="image/x-icon" href="../logo/favicon.ico" />
+
+  <!-- Google Icons -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"
+  />
+
+  <!-- Fonte -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+  />
+
+  <!-- CSS do sidebar -->
+  <link rel="stylesheet" href="../css/sidebar.css" />
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #000;
+    }
+
+    body {
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Área de conteúdo à direita do sidebar */
+    .app-main-content {
+      position: relative;
+      flex: 1;
+      height: 100vh;
+      overflow: hidden;
+      background: radial-gradient(circle at top, #020617 0, #000 70%);
+    }
+
+    .app-main-frame {
+      border: none;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Quando sidebar colapsar (80px) vamos ajustar via classe no body */
+    body.sidebar-collapsed {
+      --sidebar-width: 80px;
+    }
+
+    body:not(.sidebar-collapsed) {
+      --sidebar-width: 260px;
+    }
+
+    .sidebar {
+      width: var(--sidebar-width, 260px);
+    }
+
+    .app-main-content {
+      margin-left: var(--sidebar-width, 260px);
+    }
+
+    @media (max-width: 720px) {
+      .app-main-content {
+        margin-left: 80px; /* forçar sidebar estreito em telas pequenas */
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- =============== SIDEBAR FIXO =============== -->
+  <aside class="sidebar">
+    <header class="sidebar-header">
+      <a href="inicio.html" class="header-logo" data-frame-target="visya-frame">
+        <img
+          src="../logo/VISYALICONEBRANCO.png"
+          alt="VISYA"
+          id="sidebarLogoIcon"
+        />
+        <img
+          src="../logo/VISYALLOGOBRANCA.png"
+          alt="VISYA LOGO"
+          id="sidebarLogoText"
+        />
+      </a>
+
+      <button class="sidebar-toggler" type="button" aria-label="Recolher sidebar">
+        <span class="material-symbols-rounded">chevron_left</span>
+      </button>
+    </header>
+
+    <nav class="sidebar-nav">
+      <ul class="nav-list primary-nav">
+        <!-- Início (sempre primeiro) -->
+        <li class="nav-item" id="menu-inicio">
+          <a href="inicio.html" class="nav-link" data-frame-target="visya-frame">
+            <span class="material-symbols-rounded">home</span>
+            <span class="nav-label">Início</span>
+          </a>
+        </li>
+
+        <!-- Atividades -->
+        <li class="nav-item dropdown-container" id="menu-atividades">
+          <a href="#" class="nav-link dropdown-toggle">
+            <span class="material-symbols-rounded">notifications</span>
+            <span class="nav-label">Atividades</span>
+            <span class="dropdown-icon material-symbols-rounded">
+              keyboard_arrow_down
+            </span>
+          </a>
+          <ul class="dropdown-menu" id="submenu-atividades">
+            <!-- Dualforce removido aqui -->
+            <li class="nav-item">
+              <a href="gamificacao.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+                Gamificação
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Carteira -->
+        <li class="nav-item">
+          <a href="construcao.html" class="nav-link" data-frame-target="visya-frame">
+            <span class="material-symbols-rounded">account_balance_wallet</span>
+            <span class="nav-label">Carteira</span>
+          </a>
+        </li>
+
+        <!-- Clientes -->
+        <li class="nav-item dropdown-container" id="menu-clientes">
+          <a href="#" class="nav-link dropdown-toggle">
+            <span class="material-symbols-rounded">person_search</span>
+            <span class="nav-label">Clientes</span>
+            <span class="dropdown-icon material-symbols-rounded">
+              keyboard_arrow_down
+            </span>
+          </a>
+          <ul class="dropdown-menu" id="submenu-clientes">
+            <li class="nav-item">
+              <a href="carteira-analytics.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+                Carteira (Analytics)
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Estoque -->
+        <li class="nav-item dropdown-container" id="menu-estoque">
+          <a href="#" class="nav-link dropdown-toggle">
+            <span class="material-symbols-rounded">inventory_2</span>
+            <span class="nav-label">Estoque</span>
+            <span class="dropdown-icon material-symbols-rounded">
+              keyboard_arrow_down
+            </span>
+          </a>
+          <ul class="dropdown-menu" id="submenu-estoque">
+            <li class="nav-item">
+              <a href="estoque.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+                Visão Geral de Estoque
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Extras -->
+        <li class="nav-item dropdown-container" id="menu-extras">
+          <a href="#" class="nav-link dropdown-toggle">
+            <span class="material-symbols-rounded">extension</span>
+            <span class="nav-label">Extras</span>
+            <span class="dropdown-icon material-symbols-rounded">
+              keyboard_arrow_down
+            </span>
+          </a>
+          <ul class="dropdown-menu" id="submenu-extras">
+            <li class="nav-item">
+              <a href="construcao.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+                Organograma Linhagro
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="construcao.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+                Organograma Lithoplant
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Financeiro -->
+        <li class="nav-item dropdown-container" id="menu-financeiro">
+          <a href="#" class="nav-link dropdown-toggle">
+            <span class="material-symbols-rounded">payments</span>
+            <span class="nav-label">Financeiro</span>
+            <span class="dropdown-icon material-symbols-rounded">
+              keyboard_arrow_down
+            </span>
+          </a>
+          <ul class="dropdown-menu" id="submenu-financeiro">
+            <!-- Visão Geral removido aqui -->
+            <li class="nav-item">
+              <a href="contas_a_receber.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+                Contas a Receber
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="contas_a_pagar.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+                Contas a Pagar
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Logística -->
+        <li class="nav-item dropdown-container" id="menu-logistica">
+          <a href="#" class="nav-link dropdown-toggle">
+            <span class="material-symbols-rounded">local_shipping</span>
+            <span class="nav-label">Logística</span>
+            <span class="dropdown-icon material-symbols-rounded">
+              keyboard_arrow_down
+            </span>
+          </a>
+          <ul class="dropdown-menu" id="submenu-logistica">
+            <li class="nav-item">
+              <a
+                href="construcao.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+              >
+                Cadastro Caminhão
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                href="construcao.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+              >
+                Cadastro Motorista
+              </a>
+            </li>
+            <!-- Carregamento removido aqui -->
+            <li class="nav-item">
+              <a
+                href="controle_horas_log.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+              >
+                Controle de Carregamento
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                href="rotas.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+              >
+                Rotas
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Usuários com submenu FIXO -->
+        <li class="nav-item dropdown-container" id="menu-usuarios">
+          <a href="#" class="nav-link dropdown-toggle">
+            <span class="material-symbols-rounded">group</span>
+            <span class="nav-label">Usuários</span>
+            <span class="dropdown-icon material-symbols-rounded">
+              keyboard_arrow_down
+            </span>
+          </a>
+          <ul class="dropdown-menu" id="submenu-usuarios">
+            <li class="nav-item">
+              <a href="construcao.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+                Usuários
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="construcao.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+                Grupo de Usuários
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="construcao.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+                Regras de Usuários
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+
+      <ul class="nav-list secondary-nav">
+        <li class="nav-item dropdown-container profile-container">
+          <a href="#" class="nav-link dropdown-toggle">
+            <span class="material-symbols-rounded">account_circle</span>
+            <span class="nav-label">Perfil</span>
+            <span class="dropdown-icon material-symbols-rounded">
+              keyboard_arrow_up
+            </span>
+          </a>
+          <ul class="dropdown-menu">
+            <li class="nav-item">
+              <a class="nav-link dropdown-title">Perfil</a>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link dropdown-link theme-toggle-btn">
+                <span class="material-symbols-rounded">light_mode</span>
+                <span class="nav-label">Mudar tema</span>
+              </button>
+            </li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a href="../../index.html" class="nav-link">
+            <span class="material-symbols-rounded">logout</span>
+            <span class="nav-label">Sair</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- =============== CONTEÚDO À DIREITA (IFRAME) =============== -->
+  <main class="app-main-content">
+    <iframe
+      src="inicio.html"
+      name="visya-frame"
+      class="app-main-frame"
+    ></iframe>
+  </main>
+
+  <!-- =============== SCRIPT LAYOUT + SIDEBAR =============== -->
+  <script>
+    // ================== AUTENTICAÇÃO / CONTEXTO ==================
+    function getAuthData() {
+      try {
+        const raw = localStorage.getItem('orgdash_auth');
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) {
+        console.warn('[APP] erro ao ler auth do localStorage:', e);
+        return null;
+      }
+    }
+
+    function getUsuarioLogadoSidebar() {
+      const auth = getAuthData();
+      if (!auth || !auth.usuario || !auth.token) {
+        return null;
+      }
+      return auth.usuario;
+    }
+
+    (function enforceAuth() {
+      const usuario = getUsuarioLogadoSidebar();
+      if (!usuario) {
+        window.location.href = '../../index.html';
+      } else {
+        window.USUARIO_LOGADO = usuario;
+      }
+    })();
+
+    const bodyElement = document.body;
+    const sidebarElement = document.querySelector('.sidebar');
+    const mainFrame = document.querySelector('.app-main-frame');
+    const togglerButton = document.querySelector('.sidebar-toggler');
+    const themeToggleBtn = document.querySelector('.theme-toggle-btn');
+    const logoIcon = document.getElementById('sidebarLogoIcon');
+    const logoText = document.getElementById('sidebarLogoText');
+
+    const LOGO_ICON_DARK = '../logo/VISYALICONEBRANCO.png';
+    const LOGO_ICON_LIGHT = '../logo/VISYALICONEPRETO.png';
+    const LOGO_TEXT_DARK = '../logo/VISYALLOGOBRANCA.png';
+    const LOGO_TEXT_LIGHT = '../logo/VISYALLOGOPRETA.png';
+
+    const STORAGE_THEME_KEY = 'visya-sidebar-theme';
+    const STORAGE_PAGE_KEY  = 'visya-current-page';
+
+    // ========== TEMA ==========
+
+    function applyTheme(theme) {
+      const isLight = theme === 'light';
+      if (!sidebarElement) return;
+
+      sidebarElement.classList.toggle('light-theme', isLight);
+      bodyElement.classList.toggle('light-theme', isLight);
+
+      if (logoIcon) {
+        logoIcon.src = isLight ? LOGO_ICON_LIGHT : LOGO_ICON_DARK;
+      }
+      if (logoText) {
+        logoText.src = isLight ? LOGO_TEXT_LIGHT : LOGO_TEXT_DARK;
+      }
+
+      try {
+        localStorage.setItem(STORAGE_THEME_KEY, theme);
+      } catch (e) {
+        console.warn('[APP] erro ao salvar tema:', e);
+      }
+
+      // propaga tema para o iframe
+      if (mainFrame && mainFrame.contentWindow) {
+        try {
+          mainFrame.contentWindow.postMessage(
+            { type: 'visya-theme', theme },
+            '*'
+          );
+        } catch (e) {
+          console.warn('[APP] erro ao enviar tema para iframe:', e);
+        }
+      }
+    }
+
+    function loadSavedTheme() {
+      let saved = null;
+      try {
+        saved = localStorage.getItem(STORAGE_THEME_KEY);
+      } catch (e) {
+        console.warn('[APP] erro ao ler tema:', e);
+      }
+
+      if (saved === 'light' || saved === 'dark') {
+        applyTheme(saved);
+      } else {
+        applyTheme('dark');
+      }
+    }
+
+    // ========== PÁGINA ATUAL ==========
+
+    function setCurrentPage(href) {
+      try {
+        localStorage.setItem(STORAGE_PAGE_KEY, href);
+      } catch (e) {
+        console.warn('[APP] erro ao salvar página atual:', e);
+      }
+    }
+
+    function loadCurrentPage() {
+      let page = 'inicio.html';
+      try {
+        const saved = localStorage.getItem(STORAGE_PAGE_KEY);
+        if (saved) page = saved;
+      } catch (e) {
+        console.warn('[APP] erro ao ler página atual:', e);
+      }
+      if (mainFrame) {
+        mainFrame.src = page;
+      }
+    }
+
+    // ========== DROPDOWNS, COLAPSE, LINKS ==========
+
+    function toggleDropdown(dropdown, menu, isOpen) {
+      dropdown.classList.toggle('open', isOpen);
+      menu.style.height = isOpen ? menu.scrollHeight + 'px' : 0;
+    }
+
+    function closeAllDropdowns() {
+      document
+        .querySelectorAll('.dropdown-container.open')
+        .forEach(openDropdown => {
+          const menu = openDropdown.querySelector('.dropdown-menu');
+          if (menu) {
+            toggleDropdown(openDropdown, menu, false);
+          }
+        });
+    }
+
+    document.querySelectorAll('.dropdown-toggle').forEach(dropdownToggle => {
+      dropdownToggle.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        const dropdown = dropdownToggle.closest('.dropdown-container');
+        if (!dropdown) return;
+
+        const menu = dropdown.querySelector('.dropdown-menu');
+        if (!menu) return;
+
+        const isOpen = dropdown.classList.contains('open');
+        closeAllDropdowns();
+        toggleDropdown(dropdown, menu, !isOpen);
+      });
+    });
+
+    if (togglerButton && sidebarElement) {
+      togglerButton.addEventListener('click', function () {
+        closeAllDropdowns();
+        sidebarElement.classList.toggle('collapsed');
+        bodyElement.classList.toggle('sidebar-collapsed');
+      });
+    }
+
+    if (themeToggleBtn && sidebarElement) {
+      themeToggleBtn.addEventListener('click', function () {
+        const isLight = sidebarElement.classList.contains('light-theme');
+        const nextTheme = isLight ? 'dark' : 'light';
+        applyTheme(nextTheme);
+      });
+    }
+
+    // Links do sidebar que devem carregar dentro do iframe
+    document.querySelectorAll('a[data-frame-target]').forEach(link => {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        const href = link.getAttribute('href');
+        if (!href || !mainFrame) return;
+        mainFrame.src = href;
+        setCurrentPage(href);
+      });
+    });
+
+    // ========= MENU DINÂMICO USUÁRIOS =========
+    function montarMenuDinamico() {
+      const usuario = window.USUARIO_LOGADO;
+      if (!usuario) return;
+
+      const telas = (usuario.telas || []).filter(t => t.ativo && t.podeVer);
+
+      const telaInicio = telas.find(t => t.codigo === 'INICIO');
+      const menuInicio = document.getElementById('menu-inicio');
+      if (menuInicio && telaInicio) {
+        const link = menuInicio.querySelector('a.nav-link');
+        if (link) {
+          link.dataset.frameTarget = 'visya-frame';
+          link.href = telaInicio.rota;
+        }
+      }
+
+      const telasUsuarios = telas
+        .filter(t => t.modulo === 'Usuários')
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+
+      const submenu = document.getElementById('submenu-usuarios');
+      if (!submenu) return;
+
+      telasUsuarios.forEach(tela => {
+        const li = document.createElement('li');
+        li.className = 'nav-item';
+        const a = document.createElement('a');
+        a.className = 'nav-link dropdown-link';
+        a.href = tela.rota;
+        a.dataset.frameTarget = 'visya-frame';
+        a.textContent = tela.nome;
+        li.appendChild(a);
+        submenu.appendChild(li);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSavedTheme();
+      montarMenuDinamico();
+      loadCurrentPage();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>VISYA - Controle de Horas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Mesma fonte do sidebar -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+  />
+
+  <!-- CSS específico Controle Horas -->
+  <link rel="stylesheet" href="../css/controle_horas_log.css" />
+
+  <!-- CSS do loader global (mesmo usado no estoque) -->
+  <link rel="stylesheet" href="../css/loader.css" />
+
+  <!-- JS global (auth, loginSistema etc.) -->
+  <script src="../js/global.js" defer></script>
+
+  <!-- JS específico Controle Horas -->
+  <script src="../js/controle_horas_log.js" defer></script>
+</head>
+<body>
+  <!-- CONTEÚDO CONTROLE DENTRO DO IFRAME -->
+  <main class="controle-page">
+    <!-- TOPO -->
+    <header class="controle-header">
+      <div class="controle-header-left">
+        <h1 class="controle-titulo">Controle de Horas</h1>
+        <p class="controle-subtitulo">
+          Registro de operações, tempos de separação e descarga.
+        </p>
+      </div>
+      <div class="controle-header-right">
+        <div class="controle-user-info">
+<span id="controleUserNome" class="controle-user-nome"></span>          <span id="controleUserEmail" class="controle-user-email"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- FILTROS (GRID IGUAL ESTOQUE) -->
+    <section class="controle-filtros">
+      <div class="filtro-campo">
+        <label for="fTipoOperacao">Tipo</label>
+        <select id="fTipoOperacao">
+          <option value="">Todos</option>
+          <option value="CARREGAMENTO">Carregamento</option>
+          <option value="DESCARGA">Descarga</option>
+        </select>
+      </div>
+
+      <div class="filtro-campo">
+        <label for="fStatusOperacao">Status</label>
+        <select id="fStatusOperacao">
+          <option value="">Todos</option>
+          <option value="PENDENTE">Pendente</option>
+          <option value="EM_ANDAMENTO">Em andamento</option>
+          <option value="CONCLUIDO">Concluído</option>
+          <option value="CANCELADO">Cancelado</option>
+        </select>
+      </div>
+
+      <div class="filtro-campo">
+        <label for="fMotoristaNome">Motorista</label>
+        <input
+          id="fMotoristaNome"
+          type="text"
+          placeholder="parte do nome"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="filtro-campo">
+        <label for="fCaminhaoPlaca">Caminhão</label>
+        <input
+          id="fCaminhaoPlaca"
+          type="text"
+          placeholder="placa ou apelido"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="filtro-campo">
+        <label for="fClienteNome">Cliente</label>
+        <input
+          id="fClienteNome"
+          type="text"
+          placeholder="código ou nome do cliente"
+          autocomplete="off"
+        />
+      </div>
+
+      <button
+        type="button"
+        class="btn-filtro btn-filtro-primario"
+        id="btnFiltrarOperacoes"
+      >
+        <span>🔍</span>
+        Filtrar
+      </button>
+
+      <button
+        type="button"
+        class="btn-filtro btn-filtro-secundario"
+        id="btnLimparFiltros"
+      >
+        <span>✕</span>
+        Limpar
+      </button>
+    </section>
+
+    <!-- TABELA (CARD ÚNICO) -->
+    <section class="controle-tabela-bloco">
+      <div class="controle-tabela-header">
+        <span id="controleInfoRegistros">Mostrando 0 operação(ões)</span>
+        <button
+          type="button"
+          class="btn-filtro btn-filtro-secundario"
+          id="btnAbrirNovaOperacao"
+        >
+          <span>＋</span>
+          Nova operação
+        </button>
+      </div>
+
+      <div class="controle-table-wrapper">
+        <table class="controle-table">
+          <colgroup>
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Motorista</th>
+              <th>Caminhão</th>
+              <th>Cliente</th>
+              <th>Status</th>
+              <th>Separação</th>
+              <th>Descarga</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="controle-tbody">
+            <tr>
+              <td colspan="9" class="controle-empty">
+                Carregando operações...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL NOVA OPERAÇÃO -->
+  <div id="novaOperacaoPanel" class="controle-modal" style="display:none;">
+    <div class="controle-modal-content">
+      <div class="controle-modal-header">
+        <h2>Nova operação</h2>
+        <button
+          type="button"
+          class="btn-filtro btn-filtro-secundario controle-modal-close"
+          id="btnFecharNovaOperacao"
+        >
+          <span>✕</span>
+          Fechar
+        </button>
+      </div>
+      <div class="controle-modal-body">
+        <div class="controle-det-grid">
+          <div class="filtro-campo">
+            <label for="tipoOperacao">Tipo de operação</label>
+            <select id="tipoOperacao">
+              <option value="">Selecione...</option>
+              <option value="CARREGAMENTO">Carregamento</option>
+              <option value="DESCARGA">Descarga</option>
+            </select>
+          </div>
+
+          <div class="filtro-campo">
+            <label for="motorista">Motorista</label>
+            <select id="motorista">
+              <option value="">Carregando...</option>
+            </select>
+          </div>
+
+          <div class="filtro-campo">
+            <label for="caminhao">Caminhão</label>
+            <select id="caminhao">
+              <option value="">Carregando...</option>
+            </select>
+          </div>
+
+          <div class="filtro-campo" style="grid-column:1/-1;">
+            <label for="clienteBusca">Cliente</label>
+            <div class="controle-cliente-search-inner">
+              <input
+                id="clienteBusca"
+                type="text"
+                placeholder="Digite código ou nome"
+                autocomplete="off"
+              />
+              <input id="clienteId" type="hidden" />
+              <div
+                id="clienteSugestoes"
+                class="controle-cliente-sugestoes"
+                style="display:none;"
+              ></div>
+            </div>
+          </div>
+
+          <div class="filtro-campo" id="campo-carregamento-rel" style="display:none;">
+            <label for="idOperacaoCarregamentoRel">
+              Carregamento relacionado (ID)
+            </label>
+            <input
+              id="idOperacaoCarregamentoRel"
+              type="number"
+              placeholder="Só para DESCARGA"
+            />
+          </div>
+
+          <div class="filtro-campo" style="grid-column:1/-1;">
+            <label for="observacoes">Observações</label>
+            <textarea
+              id="observacoes"
+              rows="2"
+              style="resize:vertical;"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="controle-nova-op-footer">
+          <div id="controle-status" class="vz-status"></div>
+          <button
+            type="button"
+            class="btn-filtro btn-filtro-primario"
+            id="btnCriarOperacao"
+          >
+            <span>✔</span>
+            Criar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DETALHE OPERAÇÃO -->
+  <div id="controleDetalheModal" class="controle-modal" style="display:none;">
+    <div class="controle-modal-content">
+      <div class="controle-modal-header">
+        <h2 id="controleDetId">#--</h2>
+        <button
+          type="button"
+          class="btn-filtro btn-filtro-secundario controle-modal-close"
+          id="controleDetalheFechar"
+        >
+          <span>✕</span>
+          Fechar
+        </button>
+      </div>
+      <div class="controle-modal-body">
+        <div class="controle-det-grid">
+          <div>
+            <label>Tipo</label>
+            <div id="controleDetTipo" class="controle-det-value"></div>
+          </div>
+          <div>
+            <label>Status</label>
+            <div id="controleDetStatus" class="controle-det-value"></div>
+          </div>
+          <div>
+            <label>Motorista</label>
+            <div id="controleDetMotorista" class="controle-det-value"></div>
+          </div>
+          <div>
+            <label>Caminhão</label>
+            <div id="controleDetCaminhao" class="controle-det-value"></div>
+          </div>
+          <div>
+            <label>Cliente (ID)</label>
+            <div id="controleDetClienteId" class="controle-det-value"></div>
+          </div>
+          <div>
+            <label>Cliente (Nome)</label>
+            <div id="controleDetClienteNome" class="controle-det-value"></div>
+          </div>
+          <div>
+            <label>Início separação</label>
+            <div id="controleDetInicioSep" class="controle-det-value"></div>
+          </div>
+          <div>
+            <label>Fim separação</label>
+            <div id="controleDetFimSep" class="controle-det-value"></div>
+          </div>
+          <div>
+            <label>Início descarga</label>
+            <div id="controleDetInicioDesc" class="controle-det-value"></div>
+          </div>
+          <div>
+            <label>Fim descarga</label>
+            <div id="controleDetFimDesc" class="controle-det-value"></div>
+          </div>
+        </div>
+
+        <div>
+          <label>Observações</label>
+          <div id="controleDetObs" class="controle-det-obs-box"></div>
+        </div>
+
+        <div class="controle-det-fotos-bloco">
+          <div class="controle-det-fotos-header">
+            <h3 style="margin:0;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;">
+              Fotos
+            </h3>
+            <div class="controle-det-fotos-actions">
+              <button
+                type="button"
+                class="btn-filtro btn-filtro-primario"
+                id="controleBtnCapturarFoto"
+              >
+                <span>📷</span>
+                Foto
+              </button>
+              <input
+                type="file"
+                id="controleFotoInput"
+                accept="image/*"
+                style="display:none"
+              />
+            </div>
+          </div>
+
+          <div
+            id="controleFotoPreviewWrapper"
+            class="controle-foto-preview-wrapper"
+            style="display:none;"
+          >
+            <img id="controleFotoPreview" alt="Pré-visualização" />
+            <button
+              type="button"
+              class="btn-filtro btn-filtro-secundario"
+              id="controleBtnEnviarFoto"
+            >
+              <span>⬆</span>
+              Enviar
+            </button>
+          </div>
+
+          <div id="controleDetFotosLista" class="controle-det-fotos-lista"></div>
+        </div>
+
+        <div id="controleDetStatusMsg" class="vz-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADER GLOBAL (igual estoque, com CSS compartilhado) -->
+  <div class="loader-overlay" id="loaderOverlay" aria-hidden="true">
+    <iframe
+      src="loader.html"
+      class="loader-frame"
+      frameborder="0"
+      scrolling="no"
+      title="Carregando..."
+    ></iframe>
+  </div>
+
+  <!-- Sincroniza tema com o sidebar -->
+  <script>
+    const THEME_KEY_CONTROLE = 'visya-sidebar-theme';
+
+    function applyLocalThemeControle() {
+      let saved = null;
+      try {
+        saved = localStorage.getItem(THEME_KEY_CONTROLE);
+      } catch (e) {
+        console.warn('[CONTROLE] erro ao ler tema do localStorage:', e);
+      }
+      const theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+    }
+
+    applyLocalThemeControle();
+
+    window.addEventListener('message', (event) => {
+      if (!event.data || event.data.type !== 'visya-theme') return;
+      const theme = event.data.theme;
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      try {
+        localStorage.setItem(THEME_KEY_CONTROLE, theme);
+      } catch (e) {
+        console.warn('[CONTROLE] erro ao salvar tema:', e);
+      }
+    });
+  </script>
+</body>
+</html>
