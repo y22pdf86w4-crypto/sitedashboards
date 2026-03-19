@@ -1,191 +1,196 @@
-// assets/js/sidebar.js
-
-function obterTipoTelaAtual() {
-  const path = window.location.pathname.toLowerCase();
-  if (path.includes("select-company.html")) return "select-company";
-  return "default";
+// ================== AUTENTICAÇÃO / CONTEXTO ==================
+function getAuthData() {
+  try {
+    const raw = localStorage.getItem('orgdash_auth'); // <-- chave padrão
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('[SIDEBAR] erro ao ler auth do localStorage:', e);
+    return null;
+  }
 }
 
-async function carregarSidebar(options) {
-  const {
-    containerId = "sidebarContainer",
-    basePath = ".",
-    empresaSelectorPath = "./select-company.html",
-  } = options || {};
+function getUsuarioLogado() {
+  const auth = getAuthData();
+  if (!auth || !auth.usuario || !auth.token) {
+    return null;
+  }
+  return auth.usuario;
+}
 
-  const container = document.getElementById(containerId);
-  if (!container) return;
+// Se não tiver login, redireciona para index.html
+(function enforceAuth() {
+  const usuario = getUsuarioLogado();
+  if (!usuario) {
+    window.location.href = '/index.html';
+  } else {
+    window.USUARIO_LOGADO = usuario; // deixa disponível para o resto do script
+  }
+})();
+
+// ================== SIDEBAR EXISTENTE ==================
+const sidebarElement = document.querySelector('.sidebar');
+const togglerButton = document.querySelector('.sidebar-toggler');
+const themeToggleBtn = document.querySelector('.theme-toggle-btn');
+const logoIcon = document.getElementById('sidebarLogoIcon');
+const logoText = document.getElementById('sidebarLogoText');
+
+const LOGO_ICON_DARK = '../logo/VISYALICONEBRANCO.png';
+const LOGO_ICON_LIGHT = '../logo/VISYALICONEPRETO.png';
+const LOGO_TEXT_DARK = '../logo/VISYALLOGOBRANCA.png';
+const LOGO_TEXT_LIGHT = '../logo/VISYALLOGOPRETA.png';
+
+function applyTheme(theme) {
+  const isLight = theme === 'light';
+  if (!sidebarElement) return;
+
+  sidebarElement.classList.toggle('light-theme', isLight);
+
+  if (logoIcon) {
+    logoIcon.src = isLight ? LOGO_ICON_LIGHT : LOGO_ICON_DARK;
+  }
+  if (logoText) {
+    logoText.src = isLight ? LOGO_TEXT_LIGHT : LOGO_TEXT_DARK;
+  }
 
   try {
-    const resp = await fetch(`${basePath}/sidebar.html`);
-    if (!resp.ok) throw new Error("Erro ao carregar sidebar HTML");
-
-    const html = await resp.text();
-    container.innerHTML = html;
-
-    const user = typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
-    aplicarRBACSidebar(user);
-    ligarEventosSidebar(user, empresaSelectorPath);
-    configurarToggleSidebar();
+    localStorage.setItem('visya-sidebar-theme', theme);
   } catch (e) {
-    console.error("Falha ao carregar sidebar:", e);
+    console.warn('[SIDEBAR] erro ao salvar tema:', e);
+  }
+
+  // avisa o parent para sincronizar tema do conteúdo
+  if (window.parent) {
+    window.parent.postMessage(
+      {
+        type: 'visya-sidebar-theme',
+        theme: theme
+      },
+      '*'
+    );
   }
 }
 
-function aplicarRBACSidebar(user) {
-  const perfis = (user && user.perfis) || [];
-  const isAdmin = perfis.includes("ADMIN");
-  const ehVendedor = perfis.some((p) => p.startsWith("VENDEDOR_"));
-  const ehGestor = perfis.some((p) => p.startsWith("GESTOR_"));
-
-  const saud = document.getElementById("saudacaoSidebar");
-  const nome = document.getElementById("userNameSidebar");
-  if (saud && !saud.textContent) saud.textContent = "Centro de navegação";
-  if (nome && !nome.textContent) {
-    nome.textContent = (user && (user.nome || user.email)) || "Usuário";
+function loadSavedTheme() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem('visya-sidebar-theme');
+  } catch (e) {
+    console.warn('[SIDEBAR] erro ao ler tema:', e);
   }
 
-  const tipoTela = obterTipoTelaAtual();
+  if (saved === 'light' || saved === 'dark') {
+    applyTheme(saved);
+  } else {
+    applyTheme('dark');
+  }
+}
 
-  document.querySelectorAll(".sidebar-item").forEach((item) => {
-    const key = item.getAttribute("data-key");
-    let mostrar = false;
+function toggleDropdown(dropdown, menu, isOpen) {
+  dropdown.classList.toggle('open', isOpen);
+  menu.style.height = isOpen ? menu.scrollHeight + 'px' : 0;
+}
 
-    if (tipoTela === "select-company") {
-      if (isAdmin) {
-        if (key === "selecao-empresa" || key === "logistica" || key === "usuarios-admin") {
-          mostrar = true;
-        }
-      } else if (ehVendedor) {
-        if (key === "selecao-empresa") {
-          mostrar = true;
-        }
-      } else if (ehGestor) {
-        if (key === "selecao-empresa" || key === "logistica" || key === "usuarios-admin") {
-          mostrar = true;
-        }
+function closeAllDropdowns() {
+  document
+    .querySelectorAll('.dropdown-container.open')
+    .forEach(openDropdown => {
+      const menu = openDropdown.querySelector('.dropdown-menu');
+      if (menu) {
+        toggleDropdown(openDropdown, menu, false);
       }
-    } else {
-      if (isAdmin) {
-        if (
-          key === "logistica" ||
-          key === "dashboards" ||
-          key === "calendario" ||
-          key === "organograma" ||
-          key === "usuarios-admin" ||
-          key === "selecao-empresa"
-        ) {
-          mostrar = true;
-        }
-      } else if (ehVendedor) {
-        if (key === "dashboards" || key === "organograma") {
-          mostrar = true;
-        }
-      } else if (ehGestor) {
-        if (
-          key === "logistica" ||
-          key === "dashboards" ||
-          key === "calendario" ||
-          key === "organograma" ||
-          key === "usuarios-admin" ||
-          key === "selecao-empresa"
-        ) {
-          mostrar = true;
-        }
-      }
+    });
+}
+
+// dropdowns
+document.querySelectorAll('.dropdown-toggle').forEach(dropdownToggle => {
+  dropdownToggle.addEventListener('click', function (e) {
+    e.preventDefault();
+
+    const dropdown = dropdownToggle.closest('.dropdown-container');
+    if (!dropdown) return;
+
+    const menu = dropdown.querySelector('.dropdown-menu');
+    if (!menu) return;
+
+    const isOpen = dropdown.classList.contains('open');
+    closeAllDropdowns();
+    toggleDropdown(dropdown, menu, !isOpen);
+  });
+});
+
+// collapse
+if (togglerButton && sidebarElement) {
+  togglerButton.addEventListener('click', function () {
+    closeAllDropdowns();
+    sidebarElement.classList.toggle('collapsed');
+
+    if (window.parent) {
+      window.parent.postMessage(
+        {
+          type: 'visya-sidebar-toggle',
+          collapsed: sidebarElement.classList.contains('collapsed')
+        },
+        '*'
+      );
     }
-
-    item.style.display = mostrar ? "" : "none";
   });
 }
 
-function ligarEventosSidebar(user, empresaSelectorPath) {
-  const empresaSelecionada =
-    window.sessionStorage && sessionStorage.getItem("empresaSelecionada");
-  const empresaKey = (empresaSelecionada || "").toLowerCase();
+// toggle tema
+if (themeToggleBtn && sidebarElement) {
+  themeToggleBtn.addEventListener('click', function () {
+    const isLight = sidebarElement.classList.contains('light-theme');
+    const nextTheme = isLight ? 'dark' : 'light';
+    applyTheme(nextTheme);
+  });
+}
 
-  const cfgEmpresa = {
-    linhagro: { calendarioPath: "./calendario.html" },
-    lithoplant: { calendarioPath: "./calendario.html" },
-  };
-  const cfg = cfgEmpresa[empresaKey] || cfgEmpresa["linhagro"];
+// tema inicial
+loadSavedTheme();
 
-  const liSelecao = document.querySelector(
-    ".sidebar-item[data-key='selecao-empresa']"
-  );
-  if (liSelecao) {
-    liSelecao.onclick = () => {
-      window.location.href = empresaSelectorPath;
-    };
+// ================== MENU DINÂMICO A PARTIR DE usuario.telas ==================
+function montarMenuUsuarios() {
+  const usuario = window.USUARIO_LOGADO;
+  if (!usuario) return;
+
+  const telas = (usuario.telas || []).filter(t => t.ativo && t.podeVer);
+
+  // Filtra só módulo "Usuários"
+  const telasUsuarios = telas
+    .filter(t => t.modulo === 'Usuários')
+    .sort((a, b) => a.nome.localeCompare(b.nome));
+
+  // Ajusta IDs conforme seu HTML:
+  // <li class="dropdown-container" id="menu-usuarios">
+  //   <a href="#" class="dropdown-toggle">...</a>
+  //   <ul class="dropdown-menu" id="submenu-usuarios"></ul>
+  // </li>
+  const menuContainer = document.getElementById('menu-usuarios');
+  const submenu = document.getElementById('submenu-usuarios');
+  if (!menuContainer || !submenu) {
+    console.warn('[SIDEBAR] menu de usuários não encontrado no HTML');
+    return;
   }
 
-  const liDash = document.querySelector(
-    ".sidebar-item[data-key='dashboards']"
-  );
-  if (liDash) {
-    liDash.onclick = () => {
-      window.location.href = "./menu.html";
-    };
-  }
+  submenu.innerHTML = '';
 
-  const liLogistica = document.querySelector(
-    ".sidebar-item[data-key='logistica']"
-  );
-  if (liLogistica) {
-    liLogistica.onclick = () => {
-      window.location.href = "./logistica.html";
-    };
-  }
+  telasUsuarios.forEach(tela => {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = tela.rota;
+    a.textContent = tela.nome;
+    li.appendChild(a);
+    submenu.appendChild(li);
+  });
 
-  const liCalendario = document.querySelector(
-    ".sidebar-item[data-key='calendario']"
-  );
-  if (liCalendario) {
-    liCalendario.onclick = () => {
-      window.location.href = cfg.calendarioPath;
-    };
-  }
-
-  const liOrganograma = document.querySelector(
-    ".sidebar-item[data-key='organograma']"
-  );
-  if (liOrganograma) {
-    liOrganograma.onclick = () => {
-      if (empresaKey === "linhagro") {
-        window.location.href = "./org-linhagro.html";
-      } else if (empresaKey === "lithoplant") {
-        window.location.href = "./org-lithoplant.html";
-      } else {
-        window.location.href = "./org-linhagro.html";
-      }
-    };
-  }
-
-  const liUsuarios = document.querySelector(
-    ".sidebar-item[data-key='usuarios-admin']"
-  );
-  if (liUsuarios) {
-    liUsuarios.onclick = () => {
-      window.location.href = "./cadastro_usuarios.html";
-    };
-  }
-
-  const btnLogout = document.querySelector(".sidebar-logout-btn");
-  if (btnLogout) {
-    btnLogout.onclick = () => {
-      if (typeof deslogar === "function") deslogar();
-    };
+  // Esconde o item "Usuários" inteiro se não tiver nenhuma tela
+  if (!telasUsuarios.length) {
+    menuContainer.style.display = 'none';
+  } else {
+    menuContainer.style.display = '';
   }
 }
 
-function configurarToggleSidebar() {
-  const app = document.getElementById("app");
-  const btnToggle = document.getElementById("btnToggleSidebar");
-  if (app && btnToggle) {
-    btnToggle.addEventListener("click", () => {
-      app.classList.toggle("sidebar-collapsed");
-    });
-  }
-}
-
-window.carregarSidebar = carregarSidebar;
+// chama depois que o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', montarMenuUsuarios);

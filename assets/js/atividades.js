@@ -1,56 +1,46 @@
-// assets/js/atividades.js
-
-async function carregarPaginaAtividades() {
-  const user = getUsuarioAtual();
-  if (!user) {
-    window.location.href = "../../index.html";
-    return;
+// Aplica tema inicial no layout com base no localStorage (mesma chave do sidebar)
+function applyInitialThemeFromStorage() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem("visya-sidebar-theme");
+  } catch (e) {
+    console.warn("[LAYOUT] erro ao ler tema:", e);
   }
 
-  const empresaSelecionada =
-    window.sessionStorage && sessionStorage.getItem("empresaSelecionada");
+  const layout = document.querySelector(".layout");
+  if (!layout) return;
 
-  if (
-    !empresaSelecionada ||
-    !user.empresas ||
-    !user.empresas.includes(empresaSelecionada)
-  ) {
-    window.location.href = "../select-company.html";
-    return;
-  }
+  const theme = saved === "light" || saved === "dark" ? saved : "dark";
 
-  const empresaKey = empresaSelecionada.toLowerCase();
-  if (empresaKey !== "linhagro") {
-    window.location.href = "../../menu.html";
-    return;
-  }
-
-  if (typeof carregarSidebar === "function") {
-    await carregarSidebar({
-      containerId: "sidebarContainer",
-      basePath: "..",
-      empresaSelectorPath: "../select-company.html",
-    });
-  }
-
-  if (typeof preencherHeaderUsuario === "function") {
-    preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
-  }
-
-  const liDashboards = document.querySelector(
-    ".sidebar-item[data-key='dashboards']"
-  );
-  if (liDashboards) {
-    liDashboards.classList.add("sidebar-item-active");
-  }
-
-  const app = document.getElementById("app");
-  const btnToggle = document.getElementById("btnToggleSidebar");
-  if (app && btnToggle) {
-    btnToggle.addEventListener("click", () => {
-      app.classList.toggle("sidebar-collapsed");
-    });
-  }
+  layout.classList.remove("theme-light", "theme-dark");
+  layout.classList.add(theme === "light" ? "theme-light" : "theme-dark");
 }
 
-window.addEventListener("DOMContentLoaded", carregarPaginaAtividades);
+// Escuta mensagens vindas do iframe da sidebar
+window.addEventListener("message", function (event) {
+  const data = event.data;
+  if (!data) return;
+
+  const layout = document.querySelector(".layout");
+  if (!layout) return;
+
+  // Collapse / expand
+  if (data.type === "visya-sidebar-toggle") {
+    if (data.collapsed) {
+      layout.classList.add("sidebar-collapsed");
+    } else {
+      layout.classList.remove("sidebar-collapsed");
+    }
+  }
+
+  // Mudança de tema disparada pelo sidebar
+  if (data.type === "visya-sidebar-theme") {
+    const theme = data.theme === "light" ? "light" : "dark";
+    layout.classList.remove("theme-light", "theme-dark");
+    layout.classList.add(theme === "light" ? "theme-light" : "theme-dark");
+  }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  applyInitialThemeFromStorage();
+});

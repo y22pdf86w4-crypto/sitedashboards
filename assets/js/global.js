@@ -1,7 +1,4 @@
-﻿// ===================== USUÁRIOS / LOGIN =====================
-
-// IMPORTANTE: o array USERS original não será mais usado para validar login.
-// Toda validação vem da API /auth/login, que consulta o banco e os perfis/empresas do usuário.
+// ===================== USUÁRIOS / LOGIN =====================
 
 // Login centralizado (chamado pelo index.html)
 async function loginSistema(usuarioInput, senhaInput) {
@@ -25,8 +22,7 @@ async function loginSistema(usuarioInput, senhaInput) {
 
     const data = await resp.json(); // { token, usuario }
 
-    // usuario: { sub, email, nome, empresas: [...], perfis: [...] }
-
+    // sessionStorage (compatibilidade)
     if (window.sessionStorage) {
       sessionStorage.setItem("authToken", data.token);
       sessionStorage.setItem("usuarioNome", data.usuario.nome);
@@ -41,13 +37,16 @@ async function loginSistema(usuarioInput, senhaInput) {
       );
     }
 
-    // Para manter compatibilidade com o restante do código:
+    // localStorage (para sidebar e outras telas usarem tudo)
+    if (window.localStorage) {
+      localStorage.setItem("orgdash_auth", JSON.stringify(data));
+    }
+
+    // Compatibilidade com código antigo
     const userCompat = {
       email: data.usuario.email,
       nome: data.usuario.nome,
       empresas: data.usuario.empresas || [],
-      // Se você ainda usa "tipo" em alguns lugares (ex: montarHubGenerico),
-      // pegamos o primeiro perfil como "tipo".
       tipo: (data.usuario.perfis && data.usuario.perfis[0]) || "",
       perfis: data.usuario.perfis || [],
     };
@@ -83,7 +82,6 @@ function getUsuarioAtual() {
 
   const token = sessionStorage.getItem("authToken") || "";
 
-  // Para compatibilidade com o resto do código que usa "tipo"
   const tipoCompat = perfis && perfis.length ? perfis[0] : "";
 
   return { email, nome, empresas, tipo: tipoCompat, perfis, token };
@@ -105,18 +103,6 @@ function deslogar() {
   // Sempre volta para o index da raiz da aplicação
   window.location.href = "/index.html";
 }
-
-// ================= MENUS / RBAC / HEADER ====================
-
-// A partir daqui, mantenha as funções que você já tinha:
-// - validarAcessoEmpresa
-// - preencherHeaderUsuario
-// - gerarParticulasSelector
-// - montarHubGenerico
-// - validarAcessoDashboardEmpresa
-// - validarAcessoDashboardVip
-// (não vou repetir aqui para não bagunçar; você pode deixar exatamente como está)
-
 
 // ================== CONFIG E HELPERS DE API ==================
 

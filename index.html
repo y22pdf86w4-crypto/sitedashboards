@@ -1,233 +1,87 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <title>Visya - Portal de Dashboards</title>
+  <meta charset="UTF-8" />
+  <title>VISYA - Login</title>
 
-  <!-- Responsivo -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Favicon -->
-  <link rel="icon" href="assets/imagem/favicon.png" type="image/png" />
+  <!-- IMPORTMAP THREE PARA O FUNDO 3D DO LOGIN -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+        "jsm/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+      }
+    }
+  </script>
 
-  <!-- CSS global (tema base) -->
-  <link rel="stylesheet" href="assets/css/global.css" />
-  <!-- CSS de fundo animado compartilhado (login + select company) -->
-  <link rel="stylesheet" href="assets/css/background.css" />
-  <!-- CSS específico da tela de login -->
+  <!-- CSS da tela de login (em assets/css) -->
+  <!-- Caminho RELATIVO, funciona bem em ambiente local e em subpastas -->
   <link rel="stylesheet" href="assets/css/login.css" />
 
-  <!-- JS global -->
+  <!-- JS global com API_BASE, loginSistema, getUsuarioAtual, apiGet/Post/etc -->
   <script src="assets/js/global.js" defer></script>
 </head>
-<body class="login-page">
-  <!-- Fundo animado -->
-  <div class="bg-container" aria-hidden="true">
-    <div class="animated-bg"></div>
-    <div class="particles-container"></div>
-    <div class="wave-container">
-      <div class="wave"></div>
-      <div class="wave"></div>
-      <div class="wave"></div>
-    </div>
-    <div class="glow-orb orb-1"></div>
-    <div class="glow-orb orb-2"></div>
-    <div class="grid-bg"></div>
+<body>
+  <!-- TEXTO VISYA + FORM -->
+  <div class="title">
+    <h1>
+      <span>VI</span>
+      <span>SY</span>
+      <span>A</span>
+    </h1>
+
+    <form class="login-form" id="visyaLoginForm" autocomplete="on">
+      <input
+        type="text"
+        class="login-line-input"
+        id="loginUser"
+        name="username"
+        placeholder="Login"
+        autocomplete="username"
+      />
+      <input
+        type="password"
+        class="login-line-input"
+        id="loginPass"
+        name="current-password"
+        placeholder="Senha"
+        autocomplete="current-password"
+      />
+
+      <button type="submit" class="uiverse" id="loginButton">
+        <div class="wrapper">
+          <span>LOGIN</span>
+          <div class="circle circle-12"></div>
+          <div class="circle circle-11"></div>
+          <div class="circle circle-10"></div>
+          <div class="circle circle-9"></div>
+          <div class="circle circle-8"></div>
+          <div class="circle circle-7"></div>
+          <div class="circle circle-6"></div>
+          <div class="circle circle-5"></div>
+          <div class="circle circle-4"></div>
+          <div class="circle circle-3"></div>
+          <div class="circle circle-2"></div>
+          <div class="circle circle-1"></div>
+        </div>
+      </button>
+    </form>
   </div>
 
-  <!-- Overlay de loading de login -->
-  <div id="login-loading-overlay" class="login-loading-overlay" style="display:none;">
-    <div class="login-loading-content">
-      <svg height="128px" width="128px" viewBox="0 0 128 128" class="pl1">
-        <defs>
-          <linearGradient y2="1" x2="1" y1="0" x1="0" id="pl-grad">
-            <stop stop-color="#000" offset="0%"></stop>
-            <stop stop-color="#fff" offset="100%"></stop>
-          </linearGradient>
-          <mask id="pl-mask">
-            <rect fill="url(#pl-grad)" height="128" width="128" y="0" x="0"></rect>
-          </mask>
-        </defs>
-        <g fill="var(--loader-base)">
-          <g class="pl1__g">
-            <g transform="translate(20,20) rotate(0,44,44)">
-              <g class="pl1__rect-g">
-                <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-                <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-              </g>
-              <g transform="rotate(180,44,44)" class="pl1__rect-g">
-                <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-                <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-              </g>
-            </g>
-          </g>
-        </g>
-        <g mask="url(#pl-mask)" fill="var(--loader-accent)">
-          <g class="pl1__g">
-            <g transform="translate(20,20) rotate(0,44,44)">
-              <g class="pl1__rect-g">
-                <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-                <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-              </g>
-              <g transform="rotate(180,44,44)" class="pl1__rect-g">
-                <rect height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-                <rect transform="translate(0,48)" height="40" width="40" ry="8" rx="8" class="pl1__rect"></rect>
-              </g>
-            </g>
-          </g>
-        </g>
-      </svg>
-      <p class="login-loading-text">Validando credenciais...</p>
-    </div>
+  <!-- OVERLAY COM IFRAME DO LOADER -->
+  <div class="loader-overlay" id="loaderOverlay" aria-hidden="true">
+    <iframe
+      src="assets/html/loader.html"
+      class="loader-frame"
+      frameborder="0"
+      scrolling="no"
+      title="Carregando..."
+    ></iframe>
   </div>
 
-  <!-- Conteúdo principal -->
-  <div class="container">
-    <!-- Lado esquerdo (texto) -->
-    <section class="left-section" aria-labelledby="portal-title">
-      <div class="header-brand">
-        <!--
-        <div class="logo-container">
-          <img src="assets/imagem/logo.png" alt="Linhagro & Lithoplant" class="logo-image" />
-        </div>
-        -->
-        <div class="brand-text">
-          <h1 id="portal-title">Portal de Dashboards</h1>
-          <p>Visualização integrada Linhagro &amp; Lithoplant</p>
-        </div>
-      </div>
-
-      <div class="hero-section">
-        <h2 class="hero-title">
-          Acesse seus <span>dashboards corporativos</span>
-        </h2>
-        <p class="hero-description">
-          Central único de acesso aos principais indicadores de negócio das empresas Linhagro e Lithoplant,
-          com controle de permissão por usuário.
-        </p>
-      </div>
-    </section>
-
-    <!-- Lado direito (login) -->
-    <section class="right-section" aria-label="Área de login">
-      <div class="login-wrapper">
-        <div class="login-card">
-          <header class="card-header">
-            <h2>Login</h2>
-            <p>Use seu e-mail corporativo ou usuário admin para acessar.</p>
-          </header>
-
-          <div id="erro" class="error-msg" style="display:none;" role="alert">
-            <span>Usuário ou senha inválidos.</span>
-          </div>
-
-          <!-- Formulário de login -->
-          <form onsubmit="event.preventDefault(); login();" novalidate>
-            <div class="form-group">
-              <label class="form-label" for="usuario">Usuário</label>
-              <div class="input-wrapper">
-                <input
-                  type="text"
-                  id="usuario"
-                  name="usuario"
-                  class="form-input"
-                  placeholder="Usuário (e-mail ou admin)"
-                  autocomplete="username"
-                  required
-                />
-                <span class="input-icon" aria-hidden="true">👤</span>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="senha">Senha</label>
-              <div class="input-wrapper">
-                <input
-                  type="password"
-                  id="senha"
-                  name="senha"
-                  class="form-input"
-                  placeholder="Digite sua senha"
-                  autocomplete="current-password"
-                  required
-                  onkeypress="if(event.key==='Enter'){login();}"
-                />
-                <button
-                  type="button"
-                  class="input-icon input-toggle-pwd"
-                  onclick="toggleSenha()"
-                  aria-label="Mostrar ou ocultar senha"
-                >
-                  👁
-                </button>
-              </div>
-            </div>
-
-            <button id="btnLogin" class="login-btn" type="submit">
-              Entrar
-              <span class="btn-loading-spinner"></span>
-            </button>
-          </form>
-
-          <div class="security-badge">
-            <div class="security-icon">✓</div>
-            <span>Acesso restrito. Monitoramento de logins ativos.</span>
-          </div>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <script>
-    function toggleSenha() {
-      const input = document.getElementById('senha');
-      if (!input) return;
-      input.type = input.type === 'password' ? 'text' : 'password';
-    }
-
-    async function login() {
-      const usuario = document.getElementById("usuario").value;
-      const senha = document.getElementById("senha").value;
-      const btn = document.getElementById("btnLogin");
-      const erro = document.getElementById("erro");
-      const overlay = document.getElementById("login-loading-overlay");
-
-      if (erro) erro.style.display = "none";
-
-      btn.disabled = true;
-      if (overlay) overlay.style.display = "flex";
-
-      try {
-        const user = await loginSistema(usuario, senha);
-
-        if (!user) {
-          if (erro) erro.style.display = "flex";
-          return;
-        }
-
-        // Sempre vai para select-company.
-        window.location.href = "html/select-company.html";
-      } catch (e) {
-        console.error("Erro no login:", e);
-        if (erro) erro.style.display = "flex";
-      } finally {
-        if (overlay) overlay.style.display = "none";
-        btn.disabled = false;
-      }
-    }
-
-    (function gerarParticulas() {
-      const container = document.querySelector('.particles-container');
-      if (!container) return;
-      for (let i = 0; i < 35; i++) {
-        const p = document.createElement('div');
-        p.className = 'particle';
-        p.style.left = Math.random() * 100 + 'vw';
-        p.style.animationDelay = (Math.random() * 20) + 's';
-        p.style.opacity = Math.random();
-        container.appendChild(p);
-      }
-    })();
-  </script>
+  <!-- JS da tela de login (three + lógica de submit) em assets/js -->
+  <script type="module" src="assets/js/login.js"></script>
 </body>
 </html>

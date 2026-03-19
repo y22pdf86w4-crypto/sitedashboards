@@ -1,16 +1,27 @@
-// assets/js/gamificacao.js
-
 console.log("[GAMIF] Script gamificacao.js carregado.");
 
-// Base da API: usa window.APIBASE (core global); se não existir, cai no default.
 function getApiBaseGamif() {
   if (typeof window !== "undefined" && window.APIBASE) {
-    return window.APIBASE; // já vem com /api/v1 do global.js
+    return window.APIBASE;
   }
   return "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1";
 }
 
-// Garante usuário logado (mesmo padrão do calendário)
+// Loader global baseado em aria-hidden + display
+function showLoader() {
+  const overlay = document.getElementById("loaderOverlay");
+  if (!overlay) return;
+  overlay.setAttribute("aria-hidden", "false");
+  overlay.style.display = "flex";
+}
+
+function hideLoader() {
+  const overlay = document.getElementById("loaderOverlay");
+  if (!overlay) return;
+  overlay.setAttribute("aria-hidden", "true");
+  overlay.style.display = "none";
+}
+
 function getUsuarioObrigatorioGamif() {
   const user =
     typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
@@ -18,25 +29,17 @@ function getUsuarioObrigatorioGamif() {
     email: user.email,
     nome: user.nome,
     tipo: user.tipo,
-    perfis: user.perfis
+    perfis: user.perfis,
   });
 
-  if (!user) {
+  if (!user || !user.email) {
     console.warn("[GAMIF][getUsuarioObrigatorio] Sem usuário, redirecionando.");
-    window.location.href = "../index.html";
-    return null;
-  }
-  if (!user.email) {
-    console.warn(
-      "[GAMIF][getUsuarioObrigatorio] Usuário sem email, redirecionando."
-    );
-    window.location.href = "../index.html";
+    window.location.href = "/index.html";
     return null;
   }
   return user;
 }
 
-// Headers com token + e-mail, reaproveitando helper global se existir
 function getAuthHeadersGamif() {
   const user = getUsuarioObrigatorioGamif();
   if (!user) {
@@ -49,7 +52,7 @@ function getAuthHeadersGamif() {
   let headers;
 
   if (typeof getAuthHeadersCalendario === "function") {
-    headers = getAuthHeadersCalendario(); // mesmo helper do calendário
+    headers = getAuthHeadersCalendario();
   } else {
     headers = { "Content-Type": "application/json" };
     try {
@@ -79,7 +82,6 @@ function getAuthHeadersGamif() {
   return headers;
 }
 
-// GET genérico para gamificação
 async function apiGetGamif(path) {
   const base = getApiBaseGamif();
   if (!base) {
@@ -99,7 +101,7 @@ async function apiGetGamif(path) {
   try {
     resp = await fetch(url, {
       method: "GET",
-      headers
+      headers,
     });
   } catch (e) {
     console.error("[GAMIF][apiGetGamif] Erro de rede/fetch:", e);
@@ -147,14 +149,10 @@ window.addEventListener("DOMContentLoaded", () => {
   const user = getUsuarioObrigatorioGamif();
   if (!user) return;
 
-  const app = document.getElementById("app");
-  const btnToggle = document.getElementById("btnToggleSidebar");
-  if (app && btnToggle) {
-    btnToggle.addEventListener("click", () => {
-      app.classList.toggle("sidebar-collapsed");
-      ajustarAlturaTabela();
-    });
-  }
+  const nomeEl = document.getElementById("gamifUserNome");
+  const emailEl = document.getElementById("gamifUserEmail");
+  if (nomeEl) nomeEl.textContent = user.nome || "Usuário VISYA";
+  if (emailEl) emailEl.textContent = user.email || "";
 
   const btnBuscar = document.getElementById("btnBuscar");
   const btnLimpar = document.getElementById("btnLimpar");
@@ -166,15 +164,13 @@ window.addEventListener("DOMContentLoaded", () => {
     .getElementById("fVendedorNome")
     ?.addEventListener("input", aplicarFiltroLocal);
 
-  window.addEventListener("resize", ajustarAlturaTabela);
-
   inicializarPeriodoPadrao();
 });
 
 function inicializarPeriodoPadrao() {
   const hoje = new Date();
   const ano = hoje.getFullYear();
-  const mes = hoje.getMonth() + 1; // 1-12
+  const mes = hoje.getMonth() + 1;
 
   const fMes = document.getElementById("fMes");
   const fAno = document.getElementById("fAno");
@@ -276,6 +272,7 @@ async function carregarGamificacao() {
 
   const path = `/gamificacao?${params.toString()}`;
 
+  showLoader();
   try {
     const data = await apiGetGamif(path);
 
@@ -311,6 +308,8 @@ async function carregarGamificacao() {
     if (infoRegistros) infoRegistros.textContent = "Erro ao carregar";
     if (infoPeriodo) infoPeriodo.textContent = "Período não definido";
     atualizarCardsResumo([]);
+  } finally {
+    hideLoader();
   }
 }
 
@@ -327,7 +326,7 @@ function aplicarFiltroLocal() {
   let linhas = gamificacaoBruta.slice();
 
   if (filtroNome) {
-    linhas = linhas.filter(r => {
+    linhas = linhas.filter((r) => {
       const nome = String(r.nmVendedor || r.NMVENDEDOR || "").toLowerCase();
       return nome.includes(filtroNome);
     });
@@ -386,7 +385,6 @@ function aplicarFiltroLocal() {
   }
 
   tbody.innerHTML = html;
-  ajustarAlturaTabela();
 
   if (infoRegistros) {
     infoRegistros.textContent =
@@ -452,31 +450,6 @@ function atualizarCardsResumo(lista) {
     const nome = pior?.nmVendedor ?? pior?.NMVENDEDOR ?? "";
     cardPiorVendedor.textContent = nome ? `Pior: ${nome}` : "—";
   }
-}
-
-function ajustarAlturaTabela() {
-  const wrapper = document.querySelector(".table-wrapper");
-  const tbody = document.getElementById("tbodyGamificacao");
-  if (!wrapper || !tbody) return;
-
-  const firstRow = tbody.querySelector("tr");
-  if (!firstRow) return;
-
-  const rowHeight = firstRow.offsetHeight || 24;
-  const header = wrapper.querySelector("thead");
-  const headerHeight = header ? header.offsetHeight : 0;
-
-  const altura = window.innerHeight || document.documentElement.clientHeight;
-
-  let linhasVisiveis;
-  if (altura <= 800) {
-    linhasVisiveis = 10;
-  } else {
-    linhasVisiveis = 15;
-  }
-
-  const maxHeight = headerHeight + rowHeight * linhasVisiveis;
-  wrapper.style.maxHeight = maxHeight + "px";
 }
 
 function getClassPillClass(classificacao) {
