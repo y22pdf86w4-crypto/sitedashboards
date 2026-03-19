@@ -495,7 +495,7 @@ function marcarTodosVisiveis(marcar) {
   const itens = Array.from(
     listaClientesDiv.querySelectorAll(".cliente-item .cliente-checkbox")
   );
-  const limite = 20;
+  const limite = 50;
   let count = 0;
 
   itens.forEach(cb => {

@@ -650,7 +650,6 @@ function mudarMes(delta) {
 
   initCalendario();
 }
-
 // ================== GRID DO CALENDÁRIO ==================
 function ordenarDespesas(despesas, hojeISO) {
   return (despesas || []).slice().sort((a, b) => {
@@ -672,6 +671,41 @@ function ordenarDespesas(despesas, hojeISO) {
 
     return (a.descricao || "").localeCompare(b.descricao || "");
   });
+}
+
+function injetarDespesasFakeDomingo(ano, mes) {
+  // cópia rasa para não mutar o array original de referência
+  let lista = (window._despesasFiltradas || []).slice();
+
+  const primeiroDia = new Date(ano, mes, 1);
+  const ultimoDia = new Date(ano, mes + 1, 0);
+
+  for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+    const dataAtual = new Date(ano, mes, dia);
+    const ehDomingo = dataAtual.getDay() === 0;
+    if (!ehDomingo) continue;
+
+    const dataStr = dataISO(dataAtual);
+
+    const temReal = lista.some(
+      d => d.vencimento === dataStr && d.origem !== "fake"
+    );
+    if (temReal) continue;
+
+    lista.push({
+      id: `fake-${dataStr}`,
+      descricao: "",
+      vencimento: dataStr,
+      status: "pendente",
+      origem: "fake",
+      responsaveis: [],
+      tiposAviso: [],
+      dataPagamento: null,
+      excluido: false
+    });
+  }
+
+  return lista;
 }
 
 function renderizarCalendario() {
@@ -698,10 +732,12 @@ function renderizarCalendario() {
   }
 
   const hojeISO = dataISO(new Date());
-  const despesasEmpresa = window._despesasFiltradas || [];
+
+  // usa lista com fakes injetadas para domingos vazios
+  const despesasEmpresa = injetarDespesasFakeDomingo(ano, mes);
 
   console.log(
-    "[renderizarCalendario] total _despesasFiltradas:",
+    "[renderizarCalendario] total _despesasFiltradas (c/ fake):",
     despesasEmpresa.length,
     "empresa:",
     EMPRESA_ATUAL
@@ -733,29 +769,39 @@ function renderizarCalendario() {
 
     mostrar.forEach(despesa => {
       const pill = document.createElement("div");
-      pill.className = "event-pill " + classeStatus(despesa, hojeISO);
-      pill.textContent = despesa.descricao;
 
-      pill.addEventListener("mouseenter", e => {
-        showCalTooltip(despesa, e.clientX, e.clientY);
-      });
-      pill.addEventListener("mousemove", e => {
-        showCalTooltip(despesa, e.clientX, e.clientY);
-      });
-      pill.addEventListener("mouseleave", () => {
-        hideCalTooltip();
-      });
+      // Se for fake, aplica classe especial totalmente “apagada”
+      if (despesa.origem === "fake") {
+        pill.className = "event-pill event-pill-fake";
+        pill.textContent = ""; // nada visível
+        // não adiciona tooltip nem clique
+      } else {
+        pill.className = "event-pill " + classeStatus(despesa, hojeISO);
+        pill.textContent = despesa.descricao;
 
-      pill.onclick = e => {
-        e.stopPropagation();
-        abrirModalDia(dataStr, despesa.id);
-      };
+        pill.addEventListener("mouseenter", e => {
+          showCalTooltip(despesa, e.clientX, e.clientY);
+        });
+        pill.addEventListener("mousemove", e => {
+          showCalTooltip(despesa, e.clientX, e.clientY);
+        });
+        pill.addEventListener("mouseleave", () => {
+          hideCalTooltip();
+        });
+
+        pill.onclick = e => {
+          e.stopPropagation();
+          abrirModalDia(dataStr, despesa.id);
+        };
+      }
 
       eventosDiv.appendChild(pill);
     });
 
-    if (qtd > maxMostrar) {
-      const restante = qtd - maxMostrar;
+    // “+X despesas” só considera reais
+    const qtdReais = despesasDoDia.filter(d => d.origem !== "fake").length;
+    if (qtdReais > maxMostrar) {
+      const restante = qtdReais - maxMostrar;
       const mais = document.createElement("div");
       mais.className = "event-pill status-pendente";
       mais.textContent = `+${restante} despesas`;
@@ -777,7 +823,6 @@ function classeStatus(despesa, hojeISO) {
   if (despesa.vencimento === hojeISO) return "status-hoje";
   return "status-pendente";
 }
-
 // ================== TOOLTIP ==================
 function getTooltipHtml(d) {
   if (!d.vencimento)
@@ -862,6 +907,8 @@ function getTooltipHtml(d) {
 }
 
 function showCalTooltip(despesa, x, y) {
+  
+  if (despesa.origem === "fake") return; // não mostra tooltip de fake
   const tooltip = document.getElementById("calTooltip");
   if (!tooltip) return;
   tooltip.innerHTML = getTooltipHtml(despesa);
@@ -886,9 +933,9 @@ function abrirModalDia(dataISOstr, despesaId) {
   const [ano, mes, dia] = dataISOstr.split("-");
   tituloModal.textContent = `Despesas de ${dia}/${mes}/${ano}`;
 
-  let despesasDia = (window._despesasFiltradas || []).filter(
-    d => d.vencimento === dataISOstr
-  );
+ let despesasDia = (window._despesasFiltradas || []).filter(
+  d => d.vencimento === dataISOstr && d.origem !== "fake"
+);
   if (despesaId != null) {
     despesasDia = despesasDia.filter(d => String(d.id) === String(despesaId));
   }
