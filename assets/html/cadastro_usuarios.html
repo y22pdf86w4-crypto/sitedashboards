@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>VISYA - Cadastro de Usuários</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Fonte padrão -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+  />
+
+  <!-- CSS específico Usuários -->
+  <link rel="stylesheet" href="../css/cadastro_usuarios.css" />
+
+  <!-- CSS do loader global -->
+  <link rel="stylesheet" href="../css/loader.css" />
+
+  <!-- JS global (auth etc.) -->
+  <script src="../js/global.js" defer></script>
+
+  <!-- JS específico Usuários -->
+  <script src="../js/cadastro_usuarios.js" defer></script>
+</head>
+<body>
+  <!-- TOAST -->
+  <div id="toastUsuarios" class="toast-ano" aria-hidden="true">
+    <span id="toastUsuariosMsg"></span>
+  </div>
+
+  <!-- PÁGINA DENTRO DO IFRAME -->
+  <main class="carteira-page usuarios-page">
+    <!-- HEADER -->
+    <header class="dash-header">
+      <div class="dash-header-left">
+        <span class="dash-kicker">Administração</span>
+        <h1 class="dash-title">
+          Cadastro <span>de Usuários</span>
+        </h1>
+      </div>
+      <div class="dash-header-right">
+        <div class="cr-user-info">
+          <span id="usuariosUserNome" class="cr-user-nome">Carregando...</span>
+          <span id="usuariosUserEmail" class="cr-user-email"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- FILTROS HORIZONTAIS -->
+    <section class="carteira-filtros usuarios-filtros">
+      <div class="filtro-campo">
+        <label for="fBuscaUsuario">Buscar</label>
+        <input
+          id="fBuscaUsuario"
+          type="text"
+          placeholder="nome, e-mail ou empresa"
+        />
+      </div>
+
+      <div class="filtro-campo filtro-campo-curto">
+        <label for="fPerfil">Perfil</label>
+        <input
+          id="fPerfil"
+          type="text"
+          placeholder="ex: ADMIN"
+        />
+      </div>
+
+      <div class="filtro-campo filtro-campo-curto">
+        <label for="fStatus">Status</label>
+        <select id="fStatus">
+          <option value="">Todos</option>
+          <option value="ativo">Ativo</option>
+          <option value="inativo">Inativo</option>
+        </select>
+      </div>
+
+      <div class="filtro-acoes">
+        <button class="btn-filtro" type="button" id="btnBuscarUsuarios">
+          <span>Buscar</span>
+        </button>
+        <button class="btn-filtro" type="button" id="btnLimparUsuarios">
+          <span>Limpar</span>
+        </button>
+        <button
+          class="btn-filtro btn-filtro-secundario"
+          type="button"
+          id="btnNovoUsuario"
+        >
+          <span>Novo usuário</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <section class="dash-content">
+      <div class="table-header-info">
+        <span id="infoUsuarios">Carregando usuários...</span>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="tblUsuarios" class="carteira-table usuarios-table">
+          <thead>
+            <tr>
+              <th><span>Nome</span></th>
+              <th><span>E-mail</span></th>
+              <th><span>Perfis</span></th>
+              <th><span>Empresas</span></th>
+              <th><span>Status</span></th>
+              <th><span>Ações</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbodyUsuarios">
+            <tr>
+              <td colspan="6" class="empty-state">
+                Carregando usuários...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL USUÁRIO -->
+  <div id="modalUsuario" class="culturas-modal" aria-hidden="true">
+    <div class="culturas-modal-backdrop"></div>
+    <div class="culturas-modal-content usuarios-modal-content">
+      <button
+        type="button"
+        class="culturas-modal-close"
+        id="btnFecharModalUsuario"
+        aria-label="Fechar"
+      >
+        ✕
+      </button>
+      <h2 id="modalUsuarioTitulo" class="culturas-modal-title">
+        Novo usuário
+      </h2>
+      <p class="culturas-modal-sub">
+        Preencha os dados do usuário para acesso ao VISYA.
+      </p>
+
+      <div class="usuarios-modal-body">
+        <input type="hidden" id="usuarioId" />
+
+        <div class="filtro-campo">
+          <label for="usuarioNome">Nome</label>
+          <input id="usuarioNome" type="text" placeholder="Nome completo" />
+        </div>
+
+        <div class="filtro-campo">
+          <label for="usuarioEmail">E-mail</label>
+          <input id="usuarioEmail" type="email" placeholder="email@empresa.com" />
+        </div>
+
+        <div class="filtro-campo" id="grupoSenha">
+          <label for="usuarioSenha">Senha inicial</label>
+          <input
+            id="usuarioSenha"
+            type="password"
+            placeholder="senha inicial"
+          />
+        </div>
+
+<div class="filtro-campo">
+  <label for="usuarioPerfisSelect">Perfis</label>
+  <select id="usuarioPerfisSelect" multiple>
+    <!-- value = CodigoPerfil, texto = NomePerfil -->
+    <option value="ADMIN">Administrador</option>
+    <option value="GESTOR_LITHO">Gestor Lithoplant</option>
+    <option value="GESTOR_LINHA">Gestor Linhagro</option>
+    <option value="VENDEDOR_CAMPO_LITHO">Vendedor de Campo Lithoplant</option>
+    <option value="VENDEDOR_CAMPO_LINHA">Vendedor de Campo Linhagro</option>
+    <option value="VENDEDOR_BALCAO_LITHO">Vendedor de Balcão Lithoplant</option>
+    <option value="VENDEDOR_BALCAO_LINHA">Vendedor de Balcão Linhagro</option>
+  </select>
+  <small class="hint-multiple">
+    Segure Ctrl (ou Cmd) para selecionar vários.
+  </small>
+</div>
+
+        <div class="filtro-campo">
+          <label for="usuarioEmpresasSelect">Empresas</label>
+          <select id="usuarioEmpresasSelect" multiple>
+            <!-- value = CodigoEmpresa, texto = NomeEmpresa -->
+            <option value="linhagro">Linhagro</option>
+            <option value="lithoplant">Lithoplant</option>
+          </select>
+          <small class="hint-multiple">
+            Segure Ctrl (ou Cmd) para selecionar várias.
+          </small>
+        </div>
+
+        <div class="filtro-campo">
+          <label>Status</label>
+          <div>
+            <label style="font-size: 11px; margin-right: 8px;">
+              <input
+                type="radio"
+                name="usuarioStatus"
+                value="ativo"
+                checked
+              />
+              Ativo
+            </label>
+            <label style="font-size: 11px;">
+              <input
+                type="radio"
+                name="usuarioStatus"
+                value="inativo"
+              />
+              Inativo
+            </label>
+          </div>
+        </div>
+
+        <div id="usuarioErro" class="empty-state" style="text-align:left;"></div>
+
+        <div class="filtro-acoes" style="margin-top: 10px;">
+          <button class="btn-filtro" type="button" id="btnSalvarUsuario">
+            <span>Salvar</span>
+          </button>
+          <button
+            class="btn-filtro btn-filtro-secundario"
+            type="button"
+            id="btnCancelarUsuario"
+          >
+            <span>Cancelar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIRMAÇÃO -->
+  <div id="modalConfirmacao" class="culturas-modal" aria-hidden="true">
+    <div class="culturas-modal-backdrop"></div>
+    <div class="culturas-modal-content usuarios-modal-content">
+      <button
+        type="button"
+        class="culturas-modal-close"
+        id="btnFecharConfirmacao"
+        aria-label="Fechar"
+      >
+        ✕
+      </button>
+      <h2 id="confirmTitulo" class="culturas-modal-title">Confirmação</h2>
+      <p id="confirmMensagem" class="culturas-modal-sub">
+        Tem certeza?
+      </p>
+      <div class="filtro-acoes" style="margin-top: 10px;">
+        <button class="btn-filtro" type="button" id="btnConfirmOk">
+          <span>Sim</span>
+        </button>
+        <button
+          class="btn-filtro btn-filtro-secundario"
+          type="button"
+          id="btnConfirmCancelar"
+        >
+          <span>Cancelar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADER GLOBAL -->
+  <div class="loader-overlay" id="loaderOverlay" aria-hidden="true">
+    <iframe
+      src="loader.html"
+      class="loader-frame"
+      frameborder="0"
+      scrolling="no"
+      title="Carregando..."
+    ></iframe>
+  </div>
+
+  <!-- Tema sincronizado com sidebar -->
+  <script>
+    const THEME_KEY = 'visya-sidebar-theme';
+
+    function applyLocalThemeUsuarios() {
+      let saved = null;
+      try {
+        saved = localStorage.getItem(THEME_KEY);
+      } catch (e) {
+        console.warn('[USUARIOS] erro ao ler tema do localStorage:', e);
+      }
+      const theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+    }
+
+    applyLocalThemeUsuarios();
+
+    window.addEventListener('message', (event) => {
+      if (!event.data || event.data.type !== 'visya-theme') return;
+      const theme = event.data.theme;
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      try {
+        localStorage.setItem(THEME_KEY, theme);
+      } catch (e) {
+        console.warn('[USUARIOS] erro ao salvar tema:', e);
+      }
+    });
+  </script>
+</body>
+</html>

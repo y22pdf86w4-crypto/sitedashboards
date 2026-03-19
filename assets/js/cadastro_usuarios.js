@@ -1,31 +1,66 @@
-// cadastro_usuarios.js
-
 const USUARIOS_API_BASE_PATH = "/usuarios";
-
 let usuariosBruto = [];
 let usuariosFiltrados = [];
 let confirmCallback = null;
 
-/* ==========================================================
-   AUTH / API HELPERS (padrão calendário)
-   ========================================================== */
+const loaderOverlay = document.getElementById("loaderOverlay");
+let loaderTimerId = null;
+
+// ================== LOADER ==================
+
+function setLoadingUsuarios(ativo) {
+  if (!loaderOverlay) return;
+
+  if (ativo) {
+    if (loaderTimerId !== null) clearTimeout(loaderTimerId);
+    loaderTimerId = setTimeout(() => {
+      loaderOverlay.style.display = "flex";
+      loaderOverlay.setAttribute("aria-hidden", "false");
+    }, 50);
+  } else {
+    if (loaderTimerId !== null) {
+      clearTimeout(loaderTimerId);
+      loaderTimerId = null;
+    }
+    loaderOverlay.style.display = "none";
+    loaderOverlay.setAttribute("aria-hidden", "true");
+  }
+}
+
+// ================== TOAST ==================
+
+function mostrarToastUsuarios(msg) {
+  const toast = document.getElementById("toastUsuarios");
+  const span = document.getElementById("toastUsuariosMsg");
+  if (!toast || !span) return;
+  span.textContent = msg;
+  toast.classList.add("toast-ano-visible");
+  toast.setAttribute("aria-hidden", "false");
+  setTimeout(() => {
+    toast.classList.remove("toast-ano-visible");
+    toast.setAttribute("aria-hidden", "true");
+  }, 3500);
+}
+
+// ================== AUTH / API HELPERS ==================
 
 function getAuthHeadersUsuarios() {
   try {
-    const token =
-      window.sessionStorage && window.sessionStorage.getItem("authToken");
-    const headers = {
-      "Content-Type": "application/json",
-    };
-
-    if (token) {
-      headers.Authorization = "Bearer " + token;
-    }
+    const headers = { "Content-Type": "application/json" };
 
     const user =
       typeof getUsuarioAtual === "function" ? getUsuarioAtual() : null;
-    if (user && user.email) {
-      headers["x-usuario-email"] = user.email;
+    if (!user || !user.email) return headers;
+
+    headers["x-usuario-email"] = user.email;
+
+    try {
+      const token =
+        (window.sessionStorage && window.sessionStorage.getItem("authToken")) ||
+        null;
+      if (token) headers.Authorization = "Bearer " + token;
+    } catch (e) {
+      console.warn("[USUARIOS] erro ao ler token:", e);
     }
 
     return headers;
@@ -37,7 +72,7 @@ function getAuthHeadersUsuarios() {
 
 function getApiBaseUsuarios() {
   return (
-    window.API_BASE ||
+    (window && (window.API_BASE || window.APIBASE)) ||
     "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1"
   );
 }
@@ -50,7 +85,6 @@ async function apiGetUsuarios(path) {
     headers: getAuthHeadersUsuarios(),
   });
   console.log("[USUARIOS] GET status:", resp.status);
-
   if (!resp.ok) {
     const txt = await resp.text().catch(() => "");
     console.error("[USUARIOS] GET erro body:", txt);
@@ -68,7 +102,6 @@ async function apiPostUsuarios(path, body) {
     body: JSON.stringify(body),
   });
   console.log("[USUARIOS] POST status:", resp.status);
-
   if (!resp.ok) {
     const txt = await resp.text().catch(() => "");
     console.error("[USUARIOS] POST erro body:", txt);
@@ -86,7 +119,6 @@ async function apiPutUsuarios(path, body) {
     body: JSON.stringify(body),
   });
   console.log("[USUARIOS] PUT status:", resp.status);
-
   if (!resp.ok) {
     const txt = await resp.text().catch(() => "");
     console.error("[USUARIOS] PUT erro body:", txt);
@@ -95,9 +127,7 @@ async function apiPutUsuarios(path, body) {
   return resp.json().catch(() => null);
 }
 
-/* ==========================================================
-   USUÁRIO OBRIGATÓRIO / PROTEÇÃO DE PERFIL
-   ========================================================== */
+// ================== PROTEÇÃO PERFIL ADMIN ==================
 
 function getUsuarioObrigatorio() {
   if (typeof getUsuarioAtual !== "function") {
@@ -111,7 +141,6 @@ function getUsuarioObrigatorio() {
     window.location.href = "../../index.html";
     return null;
   }
-
   const perfis = Array.isArray(user.perfis) ? user.perfis : user.perfis || [];
   const temAdmin =
     perfis.includes("ADMIN") ||
@@ -122,13 +151,10 @@ function getUsuarioObrigatorio() {
     window.location.href = "../../menu.html";
     return null;
   }
-
   return user;
 }
 
-/* ==========================================================
-   INIT
-   ========================================================== */
+// ================== INIT ==================
 
 window.addEventListener("DOMContentLoaded", () => {
   console.log("[USUARIOS] DOMContentLoaded");
@@ -136,22 +162,10 @@ window.addEventListener("DOMContentLoaded", () => {
   const user = getUsuarioObrigatorio();
   if (!user) return;
 
-  const app = document.getElementById("app");
-  const btnToggle = document.getElementById("btnToggleSidebar");
-  if (app && btnToggle) {
-    btnToggle.addEventListener("click", () => {
-      app.classList.toggle("sidebar-collapsed");
-    });
-  }
-
-  // header (saudação / nome)
-  if (typeof preencherHeaderUsuario === "function") {
-    preencherHeaderUsuario(user, "saudacaoSidebar", "userNameSidebar");
-  }
-  const userNameEl = document.getElementById("userName");
-  if (userNameEl) {
-    userNameEl.textContent = user.nome || user.email || "Usuário Admin";
-  }
+  const nomeEl = document.getElementById("usuariosUserNome");
+  const emailEl = document.getElementById("usuariosUserEmail");
+  if (nomeEl) nomeEl.textContent = user.nome || "Usuário Admin";
+  if (emailEl) emailEl.textContent = user.email || "";
 
   // Filtros
   document
@@ -159,7 +173,7 @@ window.addEventListener("DOMContentLoaded", () => {
     ?.addEventListener("input", aplicarFiltroLocal);
   document
     .getElementById("fPerfil")
-    ?.addEventListener("change", aplicarFiltroLocal);
+    ?.addEventListener("input", aplicarFiltroLocal);
   document
     .getElementById("fStatus")
     ?.addEventListener("change", aplicarFiltroLocal);
@@ -204,22 +218,34 @@ window.addEventListener("DOMContentLoaded", () => {
       fecharModalConfirmacao();
     });
 
+  // Fechar modais clicando no backdrop
+  document
+    .getElementById("modalUsuario")
+    ?.addEventListener("click", (e) => {
+      if (e.target.classList.contains("culturas-modal-backdrop")) {
+        fecharModalUsuario();
+      }
+    });
+  document
+    .getElementById("modalConfirmacao")
+    ?.addEventListener("click", (e) => {
+      if (e.target.classList.contains("culturas-modal-backdrop")) {
+        fecharModalConfirmacao();
+      }
+    });
+
   carregarUsuarios();
 });
 
-/* ==========================================================
-   FILTROS / CARREGAMENTO
-   ========================================================== */
+// ================== FILTROS / CARREGAMENTO ==================
 
 function limparFiltros() {
   const fBusca = document.getElementById("fBuscaUsuario");
   const fPerfil = document.getElementById("fPerfil");
   const fStatus = document.getElementById("fStatus");
-
   if (fBusca) fBusca.value = "";
   if (fPerfil) fPerfil.value = "";
   if (fStatus) fStatus.value = "";
-
   aplicarFiltroLocal();
 }
 
@@ -241,9 +267,9 @@ async function carregarUsuarios() {
   const user = getUsuarioObrigatorio();
   if (!user) return;
 
+  setLoadingUsuarios(true);
   try {
     const data = await apiGetUsuarios(USUARIOS_API_BASE_PATH);
-    // backend: { usuarios: [ { Id, Nome, Email, Ativo, Empresas, Perfis } ] }
     usuariosBruto = Array.isArray(data.usuarios) ? data.usuarios : [];
     aplicarFiltroLocal();
   } catch (e) {
@@ -255,8 +281,10 @@ async function carregarUsuarios() {
         </td>
       </tr>
     `;
-    if (info) info.textContent = "Erro ao carregar usuários";
-    atualizarCardsResumo({ ativos: 0, admins: 0, inativos: 0 });
+    if (info) info.textContent = "Erro ao carregar usuários.";
+    mostrarToastUsuarios("Erro ao carregar usuários.");
+  } finally {
+    setLoadingUsuarios(false);
   }
 }
 
@@ -265,13 +293,11 @@ function aplicarFiltroLocal() {
   const info = document.getElementById("infoUsuarios");
   if (!tbody) return;
 
-  const busca = (
-    document.getElementById("fBuscaUsuario")?.value || ""
-  )
+  const busca = (document.getElementById("fBuscaUsuario")?.value || "")
     .toLowerCase()
     .trim();
-  const perfilFiltro = document.getElementById("fPerfil")?.value || "";
-  const statusFiltro = document.getElementById("fStatus")?.value || "";
+  const perfilFiltro = (document.getElementById("fPerfil")?.value || "").trim();
+  const statusFiltro = (document.getElementById("fStatus")?.value || "").trim();
 
   let itens = usuariosBruto.slice();
 
@@ -316,8 +342,7 @@ function aplicarFiltroLocal() {
         </td>
       </tr>
     `;
-    if (info) info.textContent = "Nenhum usuário encontrado";
-    atualizarCardsResumo({ ativos: 0, admins: 0, inativos: 0 });
+    if (info) info.textContent = "Nenhum usuário encontrado.";
     return;
   }
 
@@ -328,7 +353,7 @@ function aplicarFiltroLocal() {
 
   for (const u of itens) {
     const id = u.Id;
-    const nome = u.Nome || "(sem nome)";
+    const nome = u.Nome || "sem nome";
     const email = u.Email || "";
     const ativo = Number(u.Ativo ?? 1) === 1;
     const empresasStr = u.Empresas || "";
@@ -355,13 +380,14 @@ function aplicarFiltroLocal() {
             perfisArr.length
               ? perfisArr
                   .map(
-                    (p) =>
-                      `<span class="perfil-tag ${
-                        p === "ADMIN" ? "perfil-admin" : ""
-                      }">${encodeHtml(p)}</span>`
+                    (p) => `
+                <span class="perfil-tag ${
+                  p === "ADMIN" ? "perfil-admin" : ""
+                }">${encodeHtml(p)}</span>
+              `
                   )
-                  .join(" ")
-              : "—"
+                  .join("")
+              : "-"
           }
         </td>
         <td>${encodeHtml(empresasStr)}</td>
@@ -399,32 +425,17 @@ function aplicarFiltroLocal() {
   }
 
   tbody.innerHTML = html;
+
   tbody
     .querySelectorAll("button[data-acao]")
-    .forEach((btn) =>
-      btn.addEventListener("click", onClickAcaoUsuario)
-    );
+    .forEach((btn) => btn.addEventListener("click", onClickAcaoUsuario));
 
   if (info) {
-    info.textContent = `Total filtrado: ${itens.length} usuário(s)`;
+    info.textContent = `Total filtrado: ${itens.length} usuários (Ativos: ${ativos}, Admin: ${admins}, Inativos: ${inativos})`;
   }
-
-  atualizarCardsResumo({ ativos, admins, inativos });
 }
 
-function atualizarCardsResumo({ ativos, admins, inativos }) {
-  const cardAtivos = document.getElementById("cardUsuariosAtivos");
-  const cardAdmins = document.getElementById("cardUsuariosAdmin");
-  const cardInativos = document.getElementById("cardUsuariosInativos");
-
-  if (cardAtivos) cardAtivos.textContent = String(ativos ?? 0);
-  if (cardAdmins) cardAdmins.textContent = String(admins ?? 0);
-  if (cardInativos) cardInativos.textContent = String(inativos ?? 0);
-}
-
-/* ==========================================================
-   AÇÕES POR LINHA
-   ========================================================== */
+// ================== AÇÕES POR LINHA ==================
 
 function onClickAcaoUsuario(ev) {
   const btn = ev.currentTarget;
@@ -433,10 +444,7 @@ function onClickAcaoUsuario(ev) {
 
   const id = tr.getAttribute("data-id");
   const acao = btn.getAttribute("data-acao");
-
-  const usuario = usuariosBruto.find(
-    (u) => String(u.Id) === String(id)
-  );
+  const usuario = usuariosBruto.find((u) => String(u.Id) === String(id));
   if (!usuario) return;
 
   if (acao === "editar") {
@@ -447,7 +455,7 @@ function onClickAcaoUsuario(ev) {
     abrirConfirmacao(
       novoAtivo ? "Reativar usuário" : "Desativar usuário",
       `Confirma ${novoAtivo ? "reativar" : "desativar"} o usuário ${
-        usuario.Nome || usuario.Email
+        usuario.Nome || usuario.Email || ""
       }?`,
       () => alterarStatusUsuario(usuario, novoAtivo)
     );
@@ -455,16 +463,22 @@ function onClickAcaoUsuario(ev) {
     abrirConfirmacao(
       "Resetar senha",
       `Gerar nova senha para o usuário ${
-        usuario.Nome || usuario.Email
+        usuario.Nome || usuario.Email || ""
       }?`,
       () => resetarSenhaUsuario(usuario)
     );
   }
 }
 
-/* ==========================================================
-   MODAL USUÁRIO
-   ========================================================== */
+// ================== MODAL USUÁRIO ==================
+
+function setSelectMultipleValues(selectEl, valores) {
+  if (!selectEl) return;
+  const set = new Set((valores || []).map(String));
+  Array.from(selectEl.options).forEach((opt) => {
+    opt.selected = set.has(String(opt.value));
+  });
+}
 
 function abrirModalUsuario(u) {
   const modal = document.getElementById("modalUsuario");
@@ -475,8 +489,8 @@ function abrirModalUsuario(u) {
   const nomeInput = document.getElementById("usuarioNome");
   const emailInput = document.getElementById("usuarioEmail");
   const senhaInput = document.getElementById("usuarioSenha");
-  const perfisInput = document.getElementById("usuarioPerfis");
-  const empresasInput = document.getElementById("usuarioEmpresas");
+  const perfisSelect = document.getElementById("usuarioPerfisSelect");
+  const empresasSelect = document.getElementById("usuarioEmpresasSelect");
   const erroEl = document.getElementById("usuarioErro");
   const grupoSenha = document.getElementById("grupoSenha");
 
@@ -487,13 +501,25 @@ function abrirModalUsuario(u) {
     idInput.value = u.Id;
     nomeInput.value = u.Nome || "";
     emailInput.value = u.Email || "";
-    perfisInput.value = u.Perfis || "";
-    empresasInput.value = u.Empresas || "";
+
+    const arrPerfis = String(u.Perfis || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const arrEmpresas = String(u.Empresas || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    setSelectMultipleValues(perfisSelect, arrPerfis);
+    setSelectMultipleValues(empresasSelect, arrEmpresas);
+
     const ativo = Number(u.Ativo ?? 1) === 1;
     const radio = document.querySelector(
       `input[name="usuarioStatus"][value="${ativo ? "ativo" : "inativo"}"]`
     );
     if (radio) radio.checked = true;
+
     if (grupoSenha) grupoSenha.style.display = "none";
     if (senhaInput) senhaInput.value = "";
     if (erroEl) erroEl.textContent = "";
@@ -502,45 +528,53 @@ function abrirModalUsuario(u) {
     idInput.value = "";
     nomeInput.value = "";
     emailInput.value = "";
-    perfisInput.value = "USER";
-    empresasInput.value = "";
+
+    setSelectMultipleValues(perfisSelect, ["USER"]);
+    setSelectMultipleValues(empresasSelect, []);
+
     if (senhaInput) senhaInput.value = "";
     const radioAtivo = document.querySelector(
-      'input[name="usuarioStatus"][value="ativo"]'
+      `input[name="usuarioStatus"][value="ativo"]`
     );
     if (radioAtivo) radioAtivo.checked = true;
     if (grupoSenha) grupoSenha.style.display = "block";
     if (erroEl) erroEl.textContent = "";
   }
 
-  modal.style.display = "flex";
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden", "false");
 }
 
 function fecharModalUsuario() {
   const modal = document.getElementById("modalUsuario");
-  if (modal) modal.style.display = "none";
+  if (modal) {
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+  }
 }
 
-/* ==========================================================
-   SALVAR USUÁRIO
-   ========================================================== */
+// ================== SALVAR USUÁRIO ==================
+
+function getSelectMultipleValues(selectEl) {
+  if (!selectEl) return [];
+  return Array.from(selectEl.selectedOptions).map((opt) => opt.value);
+}
 
 async function salvarUsuario() {
-  const id = document.getElementById("usuarioId")?.value || "";
-  const nome = document.getElementById("usuarioNome")?.value.trim() || "";
-  const email = document.getElementById("usuarioEmail")?.value.trim() || "";
-  const senha = document.getElementById("usuarioSenha")?.value || "";
-  const perfisRaw =
-    document.getElementById("usuarioPerfis")?.value || "";
-  const empresasRaw =
-    document.getElementById("usuarioEmpresas")?.value || "";
+  const id = document.getElementById("usuarioId")?.value;
+  const nome = document.getElementById("usuarioNome")?.value.trim();
+  const email = document.getElementById("usuarioEmail")?.value.trim();
+  const senha = document.getElementById("usuarioSenha")?.value;
+  const perfisSelect = document.getElementById("usuarioPerfisSelect");
+  const empresasSelect = document.getElementById("usuarioEmpresasSelect");
   const erroEl = document.getElementById("usuarioErro");
-  const status =
-    document.querySelector("input[name='usuarioStatus']:checked")
-      ?.value || "ativo";
+  const status = document.querySelector(
+    'input[name="usuarioStatus"]:checked'
+  )?.value;
 
   if (!nome || !email) {
-    if (erroEl) erroEl.textContent = "Nome e e-mail são obrigatórios.";
+    if (erroEl)
+      erroEl.textContent = "Nome e e-mail são obrigatórios.";
     return;
   }
 
@@ -551,16 +585,8 @@ async function salvarUsuario() {
     return;
   }
 
-  const empresasCodigos = empresasRaw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const perfisCodigos = perfisRaw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
+  const perfisCodigos = getSelectMultipleValues(perfisSelect);
+  const empresasCodigos = getSelectMultipleValues(empresasSelect);
   const ativo = status === "ativo";
 
   const payload = {
@@ -570,24 +596,23 @@ async function salvarUsuario() {
     empresasCodigos,
     perfisCodigos,
   };
-
-  if (criando) {
-    payload.senha = senha;
-  }
+  if (criando) payload.senha = senha;
 
   const user = getUsuarioObrigatorio();
   if (!user) return;
 
+  setLoadingUsuarios(true);
   try {
     if (criando) {
       await apiPostUsuarios(USUARIOS_API_BASE_PATH, payload);
+      mostrarToastUsuarios("Usuário criado com sucesso.");
     } else {
       await apiPutUsuarios(
-        USUARIOS_API_BASE_PATH + "/" + encodeURIComponent(id),
+        `${USUARIOS_API_BASE_PATH}/${encodeURIComponent(id)}`,
         payload
       );
+      mostrarToastUsuarios("Usuário atualizado com sucesso.");
     }
-
     await carregarUsuarios();
     fecharModalUsuario();
   } catch (e) {
@@ -595,26 +620,31 @@ async function salvarUsuario() {
     if (erroEl)
       erroEl.textContent =
         "Erro ao salvar usuário. Verifique os dados e tente novamente.";
+    mostrarToastUsuarios("Erro ao salvar usuário.");
+  } finally {
+    setLoadingUsuarios(false);
   }
 }
 
-/* ==========================================================
-   STATUS / RESET SENHA
-   ========================================================== */
+// ================== STATUS / RESET SENHA ==================
 
 async function alterarStatusUsuario(usuario, novoAtivo) {
   const user = getUsuarioObrigatorio();
   if (!user) return;
 
-  const path =
-    USUARIOS_API_BASE_PATH + "/" + encodeURIComponent(usuario.Id);
-
+  const path = `${USUARIOS_API_BASE_PATH}/${encodeURIComponent(
+    usuario.Id
+  )}/ativo`;
+  setLoadingUsuarios(true);
   try {
     await apiPutUsuarios(path, { ativo: novoAtivo });
+    mostrarToastUsuarios("Status do usuário atualizado.");
     await carregarUsuarios();
   } catch (e) {
     console.error("Erro ao alterar status:", e);
     alert("Erro ao alterar status do usuário.");
+  } finally {
+    setLoadingUsuarios(false);
   }
 }
 
@@ -627,48 +657,46 @@ async function resetarSenhaUsuario(usuario) {
   );
   if (!novaSenha) return;
 
-  const path =
-    USUARIOS_API_BASE_PATH +
-    "/" +
-    encodeURIComponent(usuario.Id) +
-    "/senha";
-
+  const path = `${USUARIOS_API_BASE_PATH}/${encodeURIComponent(
+    usuario.Id
+  )}/senha`;
+  setLoadingUsuarios(true);
   try {
-    await apiPutUsuarios(path, { novaSenha });
+    await apiPutUsuarios(path, { senha: novaSenha });
     alert("Senha alterada com sucesso.");
   } catch (e) {
     console.error("Erro ao alterar senha:", e);
     alert("Erro ao alterar senha do usuário.");
+  } finally {
+    setLoadingUsuarios(false);
   }
 }
 
-/* ==========================================================
-   MODAL CONFIRMAÇÃO
-   ========================================================== */
+// ================== MODAL CONFIRMAÇÃO ==================
 
 function abrirConfirmacao(titulo, mensagem, callback) {
   const modal = document.getElementById("modalConfirmacao");
   const tit = document.getElementById("confirmTitulo");
   const msg = document.getElementById("confirmMensagem");
-
   if (!modal || !tit || !msg) return;
 
   tit.textContent = titulo || "Confirmação";
   msg.textContent = mensagem || "Tem certeza?";
   confirmCallback = callback;
-
-  modal.style.display = "flex";
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden", "false");
 }
 
 function fecharModalConfirmacao() {
   const modal = document.getElementById("modalConfirmacao");
-  if (modal) modal.style.display = "none";
+  if (modal) {
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+  }
   confirmCallback = null;
 }
 
-/* ==========================================================
-   HELPERS
-   ========================================================== */
+// ================== HELPERS ==================
 
 function encodeHtml(str) {
   return String(str || "")
