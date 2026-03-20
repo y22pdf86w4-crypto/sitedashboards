@@ -660,9 +660,10 @@ async function resetarSenhaUsuario(usuario) {
   const path = `${USUARIOS_API_BASE_PATH}/${encodeURIComponent(
     usuario.Id
   )}/senha`;
+
   setLoadingUsuarios(true);
   try {
-    await apiPutUsuarios(path, { senha: novaSenha });
+    await apiPutUsuarios(path, { novaSenha }); // <--- troca aqui
     alert("Senha alterada com sucesso.");
   } catch (e) {
     console.error("Erro ao alterar senha:", e);
