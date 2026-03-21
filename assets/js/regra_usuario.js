@@ -1,7 +1,8 @@
 // ================== CONFIG / ESTADO ==================
 
 if (!window.API_BASE) {
-  window.API_BASE = "http://localhost:3000/api/v1"; // ajuste se precisar
+  window.API_BASE =
+    "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1";
 }
 
 let permissoesAtuais = []; // array MERGEADO: 1 item por tela
