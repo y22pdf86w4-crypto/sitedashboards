@@ -29,7 +29,8 @@
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont,
+        sans-serif;
       background-color: #000;
     }
 
@@ -38,7 +39,6 @@
       overflow: hidden;
     }
 
-    /* Área de conteúdo à direita do sidebar */
     .app-main-content {
       position: relative;
       flex: 1;
@@ -54,7 +54,6 @@
       display: block;
     }
 
-    /* Quando sidebar colapsar (80px) vamos ajustar via classe no body */
     body.sidebar-collapsed {
       --sidebar-width: 80px;
     }
@@ -73,7 +72,7 @@
 
     @media (max-width: 720px) {
       .app-main-content {
-        margin-left: 80px; /* forçar sidebar estreito em telas pequenas */
+        margin-left: 80px;
       }
     }
   </style>
@@ -102,17 +101,28 @@
 
     <nav class="sidebar-nav">
       <ul class="nav-list primary-nav">
-        <!-- Início (sempre primeiro) -->
+        <!-- Início (sempre visível) -->
         <li class="nav-item" id="menu-inicio">
-          <a href="inicio.html" class="nav-link" data-frame-target="visya-frame">
+          <a
+            href="inicio.html"
+            class="nav-link"
+            data-frame-target="visya-frame"
+            data-modulo="INICIO"
+            data-codigo="INICIO_HOME"
+          >
             <span class="material-symbols-rounded">home</span>
             <span class="nav-label">Início</span>
           </a>
         </li>
 
-        <!-- Atividades -->
+        <!-- Atividades / Gamificação -->
         <li class="nav-item dropdown-container" id="menu-atividades">
-          <a href="#" class="nav-link dropdown-toggle">
+          <a
+            class="nav-link dropdown-toggle"
+            data-frame-target="visya-frame"
+            data-modulo="ATIVIDADES"
+            data-codigo="ATIVIDADES_HOME"
+          >
             <span class="material-symbols-rounded">notifications</span>
             <span class="nav-label">Atividades</span>
             <span class="dropdown-icon material-symbols-rounded">
@@ -120,9 +130,14 @@
             </span>
           </a>
           <ul class="dropdown-menu" id="submenu-atividades">
-            <!-- Dualforce removido aqui -->
             <li class="nav-item">
-              <a href="gamificacao.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+              <a
+                href="gamificacao.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+                data-modulo="GAMIFICACAO"
+                data-codigo="GAMIFICACAO"
+              >
                 Gamificação
               </a>
             </li>
@@ -130,8 +145,14 @@
         </li>
 
         <!-- Carteira -->
-        <li class="nav-item">
-          <a href="construcao.html" class="nav-link" data-frame-target="visya-frame">
+        <li class="nav-item" id="menu-carteira">
+          <a
+            href="construcao.html"
+            class="nav-link"
+            data-frame-target="visya-frame"
+            data-modulo="COMERCIAL"
+            data-codigo="CARTEIRA"
+          >
             <span class="material-symbols-rounded">account_balance_wallet</span>
             <span class="nav-label">Carteira</span>
           </a>
@@ -148,7 +169,13 @@
           </a>
           <ul class="dropdown-menu" id="submenu-clientes">
             <li class="nav-item">
-              <a href="carteira-analytics.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+              <a
+                href="carteira-analytics.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+                data-modulo="CLIENTES"
+                data-codigo="CARTEIRA_ANALYTICS"
+              >
                 Carteira (Analytics)
               </a>
             </li>
@@ -166,7 +193,13 @@
           </a>
           <ul class="dropdown-menu" id="submenu-estoque">
             <li class="nav-item">
-              <a href="estoque.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+              <a
+                href="estoque.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+                data-modulo="ESTOQUE"
+                data-codigo="ESTOQUE_GERAL"
+              >
                 Visão Geral de Estoque
               </a>
             </li>
@@ -184,12 +217,24 @@
           </a>
           <ul class="dropdown-menu" id="submenu-extras">
             <li class="nav-item">
-              <a href="construcao.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+              <a
+                href="construcao.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+                data-modulo="EXTRAS"
+                data-codigo="ORG_LINHAGRO"
+              >
                 Organograma Linhagro
               </a>
             </li>
             <li class="nav-item">
-              <a href="construcao.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+              <a
+                href="construcao.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+                data-modulo="EXTRAS"
+                data-codigo="ORG_LITHOPLANT"
+              >
                 Organograma Lithoplant
               </a>
             </li>
@@ -206,14 +251,25 @@
             </span>
           </a>
           <ul class="dropdown-menu" id="submenu-financeiro">
-            <!-- Visão Geral removido aqui -->
             <li class="nav-item">
-              <a href="contas_a_receber.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+              <a
+                href="contas_a_receber.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+                data-modulo="FINANCEIRO"
+                data-codigo="CONTAS_RECEBER"
+              >
                 Contas a Receber
               </a>
             </li>
             <li class="nav-item">
-              <a href="contas_a_pagar.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+              <a
+                href="contas_a_pagar.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+                data-modulo="FINANCEIRO"
+                data-codigo="CONTAS_PAGAR"
+              >
                 Contas a Pagar
               </a>
             </li>
@@ -235,6 +291,8 @@
                 href="construcao.html"
                 class="nav-link dropdown-link"
                 data-frame-target="visya-frame"
+                data-modulo="LOGISTICA"
+                data-codigo="CADASTRO_CAMINHAO"
               >
                 Cadastro Caminhão
               </a>
@@ -244,16 +302,19 @@
                 href="construcao.html"
                 class="nav-link dropdown-link"
                 data-frame-target="visya-frame"
+                data-modulo="LOGISTICA"
+                data-codigo="CADASTRO_MOTORISTA"
               >
                 Cadastro Motorista
               </a>
             </li>
-            <!-- Carregamento removido aqui -->
             <li class="nav-item">
               <a
                 href="controle_horas_log.html"
                 class="nav-link dropdown-link"
                 data-frame-target="visya-frame"
+                data-modulo="LOGISTICA"
+                data-codigo="CONTROLE_CARREGAMENTO"
               >
                 Controle de Carregamento
               </a>
@@ -263,6 +324,8 @@
                 href="rotas.html"
                 class="nav-link dropdown-link"
                 data-frame-target="visya-frame"
+                data-modulo="LOGISTICA"
+                data-codigo="ROTAS"
               >
                 Rotas
               </a>
@@ -270,7 +333,7 @@
           </ul>
         </li>
 
-        <!-- Usuários com submenu FIXO -->
+        <!-- Usuários -->
         <li class="nav-item dropdown-container" id="menu-usuarios">
           <a href="#" class="nav-link dropdown-toggle">
             <span class="material-symbols-rounded">group</span>
@@ -281,17 +344,35 @@
           </a>
           <ul class="dropdown-menu" id="submenu-usuarios">
             <li class="nav-item">
-              <a href="cadastro_usuarios.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+              <a
+                href="cadastro_usuarios.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+                data-modulo="USUARIOS"
+                data-codigo="CADASTRO_USUARIOS"
+              >
                 Usuários
               </a>
             </li>
             <li class="nav-item">
-              <a href="construcao.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+              <a
+                href="construcao.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+                data-modulo="USUARIOS"
+                data-codigo="GRUPO_USUARIOS"
+              >
                 Grupo de Usuários
               </a>
             </li>
             <li class="nav-item">
-              <a href="construcao.html" class="nav-link dropdown-link" data-frame-target="visya-frame">
+              <a
+                href="regra_usuario.html"
+                class="nav-link dropdown-link"
+                data-frame-target="visya-frame"
+                data-modulo="USUARIOS"
+                data-codigo="REGRAS_USUARIOS"
+              >
                 Regras de Usuários
               </a>
             </li>
@@ -344,12 +425,20 @@
     // ================== AUTENTICAÇÃO / CONTEXTO ==================
     function getAuthData() {
       try {
-        const raw = localStorage.getItem('orgdash_auth');
+        const raw = localStorage.getItem("orgdash_auth");
         if (!raw) return null;
         return JSON.parse(raw);
       } catch (e) {
-        console.warn('[APP] erro ao ler auth do localStorage:', e);
+        console.warn("[APP] erro ao ler auth do localStorage:", e);
         return null;
+      }
+    }
+
+    function setAuthData(auth) {
+      try {
+        localStorage.setItem("orgdash_auth", JSON.stringify(auth));
+      } catch (e) {
+        console.warn("[APP] erro ao salvar auth no localStorage:", e);
       }
     }
 
@@ -364,36 +453,36 @@
     (function enforceAuth() {
       const usuario = getUsuarioLogadoSidebar();
       if (!usuario) {
-        window.location.href = '../../index.html';
+        window.location.href = "../../index.html";
       } else {
         window.USUARIO_LOGADO = usuario;
       }
     })();
 
     const bodyElement = document.body;
-    const sidebarElement = document.querySelector('.sidebar');
-    const mainFrame = document.querySelector('.app-main-frame');
-    const togglerButton = document.querySelector('.sidebar-toggler');
-    const themeToggleBtn = document.querySelector('.theme-toggle-btn');
-    const logoIcon = document.getElementById('sidebarLogoIcon');
-    const logoText = document.getElementById('sidebarLogoText');
+    const sidebarElement = document.querySelector(".sidebar");
+    const mainFrame = document.querySelector(".app-main-frame");
+    const togglerButton = document.querySelector(".sidebar-toggler");
+    const themeToggleBtn = document.querySelector(".theme-toggle-btn");
+    const logoIcon = document.getElementById("sidebarLogoIcon");
+    const logoText = document.getElementById("sidebarLogoText");
 
-    const LOGO_ICON_DARK = '../logo/VISYALICONEBRANCO.png';
-    const LOGO_ICON_LIGHT = '../logo/VISYALICONEPRETO.png';
-    const LOGO_TEXT_DARK = '../logo/VISYALLOGOBRANCA.png';
-    const LOGO_TEXT_LIGHT = '../logo/VISYALLOGOPRETA.png';
+    const LOGO_ICON_DARK = "../logo/VISYALICONEBRANCO.png";
+    const LOGO_ICON_LIGHT = "../logo/VISYALICONEPRETO.png";
+    const LOGO_TEXT_DARK = "../logo/VISYALLOGOBRANCA.png";
+    const LOGO_TEXT_LIGHT = "../logo/VISYALLOGOPRETA.png";
 
-    const STORAGE_THEME_KEY = 'visya-sidebar-theme';
-    const STORAGE_PAGE_KEY  = 'visya-current-page';
+    const STORAGE_THEME_KEY = "visya-sidebar-theme";
+    const STORAGE_PAGE_KEY = "visya-current-page";
 
     // ========== TEMA ==========
 
     function applyTheme(theme) {
-      const isLight = theme === 'light';
+      const isLight = theme === "light";
       if (!sidebarElement) return;
 
-      sidebarElement.classList.toggle('light-theme', isLight);
-      bodyElement.classList.toggle('light-theme', isLight);
+      sidebarElement.classList.toggle("light-theme", isLight);
+      bodyElement.classList.toggle("light-theme", isLight);
 
       if (logoIcon) {
         logoIcon.src = isLight ? LOGO_ICON_LIGHT : LOGO_ICON_DARK;
@@ -405,18 +494,17 @@
       try {
         localStorage.setItem(STORAGE_THEME_KEY, theme);
       } catch (e) {
-        console.warn('[APP] erro ao salvar tema:', e);
+        console.warn("[APP] erro ao salvar tema:", e);
       }
 
-      // propaga tema para o iframe
       if (mainFrame && mainFrame.contentWindow) {
         try {
           mainFrame.contentWindow.postMessage(
-            { type: 'visya-theme', theme },
-            '*'
+            { type: "visya-theme", theme },
+            "*"
           );
         } catch (e) {
-          console.warn('[APP] erro ao enviar tema para iframe:', e);
+          console.warn("[APP] erro ao enviar tema para iframe:", e);
         }
       }
     }
@@ -426,13 +514,12 @@
       try {
         saved = localStorage.getItem(STORAGE_THEME_KEY);
       } catch (e) {
-        console.warn('[APP] erro ao ler tema:', e);
+        console.warn("[APP] erro ao ler tema:", e);
       }
-
-      if (saved === 'light' || saved === 'dark') {
+      if (saved === "light" || saved === "dark") {
         applyTheme(saved);
       } else {
-        applyTheme('dark');
+        applyTheme("dark");
       }
     }
 
@@ -442,17 +529,17 @@
       try {
         localStorage.setItem(STORAGE_PAGE_KEY, href);
       } catch (e) {
-        console.warn('[APP] erro ao salvar página atual:', e);
+        console.warn("[APP] erro ao salvar página atual:", e);
       }
     }
 
     function loadCurrentPage() {
-      let page = 'inicio.html';
+      let page = "inicio.html";
       try {
         const saved = localStorage.getItem(STORAGE_PAGE_KEY);
         if (saved) page = saved;
       } catch (e) {
-        console.warn('[APP] erro ao ler página atual:', e);
+        console.warn("[APP] erro ao ler página atual:", e);
       }
       if (mainFrame) {
         mainFrame.src = page;
@@ -462,104 +549,183 @@
     // ========== DROPDOWNS, COLAPSE, LINKS ==========
 
     function toggleDropdown(dropdown, menu, isOpen) {
-      dropdown.classList.toggle('open', isOpen);
-      menu.style.height = isOpen ? menu.scrollHeight + 'px' : 0;
+      dropdown.classList.toggle("open", isOpen);
+      menu.style.height = isOpen ? menu.scrollHeight + "px" : 0;
     }
 
     function closeAllDropdowns() {
       document
-        .querySelectorAll('.dropdown-container.open')
-        .forEach(openDropdown => {
-          const menu = openDropdown.querySelector('.dropdown-menu');
+        .querySelectorAll(".dropdown-container.open")
+        .forEach((openDropdown) => {
+          const menu = openDropdown.querySelector(".dropdown-menu");
           if (menu) {
             toggleDropdown(openDropdown, menu, false);
           }
         });
     }
 
-    document.querySelectorAll('.dropdown-toggle').forEach(dropdownToggle => {
-      dropdownToggle.addEventListener('click', function (e) {
+    document.querySelectorAll(".dropdown-toggle").forEach((dropdownToggle) => {
+      dropdownToggle.addEventListener("click", function (e) {
         e.preventDefault();
 
-        const dropdown = dropdownToggle.closest('.dropdown-container');
+        const dropdown = dropdownToggle.closest(".dropdown-container");
         if (!dropdown) return;
 
-        const menu = dropdown.querySelector('.dropdown-menu');
+        const menu = dropdown.querySelector(".dropdown-menu");
         if (!menu) return;
 
-        const isOpen = dropdown.classList.contains('open');
+        const isOpen = dropdown.classList.contains("open");
         closeAllDropdowns();
         toggleDropdown(dropdown, menu, !isOpen);
       });
     });
 
     if (togglerButton && sidebarElement) {
-      togglerButton.addEventListener('click', function () {
+      togglerButton.addEventListener("click", function () {
         closeAllDropdowns();
-        sidebarElement.classList.toggle('collapsed');
-        bodyElement.classList.toggle('sidebar-collapsed');
+        sidebarElement.classList.toggle("collapsed");
+        bodyElement.classList.toggle("sidebar-collapsed");
       });
     }
 
     if (themeToggleBtn && sidebarElement) {
-      themeToggleBtn.addEventListener('click', function () {
-        const isLight = sidebarElement.classList.contains('light-theme');
-        const nextTheme = isLight ? 'dark' : 'light';
+      themeToggleBtn.addEventListener("click", function () {
+        const isLight = sidebarElement.classList.contains("light-theme");
+        const nextTheme = isLight ? "dark" : "light";
         applyTheme(nextTheme);
       });
     }
 
     // Links do sidebar que devem carregar dentro do iframe
-    document.querySelectorAll('a[data-frame-target]').forEach(link => {
-      link.addEventListener('click', function (e) {
+    document.querySelectorAll("a[data-frame-target]").forEach((link) => {
+      link.addEventListener("click", function (e) {
         e.preventDefault();
-        const href = link.getAttribute('href');
+        const href = link.getAttribute("href");
         if (!href || !mainFrame) return;
         mainFrame.src = href;
         setCurrentPage(href);
       });
     });
 
-    // ========= MENU DINÂMICO USUÁRIOS =========
-    function montarMenuDinamico() {
-      const usuario = window.USUARIO_LOGADO;
-      if (!usuario) return;
+    // ========== RECARREGAR AUTH DO BACKEND AO CARREGAR ==========
 
-      const telas = (usuario.telas || []).filter(t => t.ativo && t.podeVer);
+    async function bootstrapAuth() {
+      const auth = getAuthData();
+      if (!auth || !auth.token) return;
 
-      const telaInicio = telas.find(t => t.codigo === 'INICIO');
-      const menuInicio = document.getElementById('menu-inicio');
-      if (menuInicio && telaInicio) {
-        const link = menuInicio.querySelector('a.nav-link');
-        if (link) {
-          link.dataset.frameTarget = 'visya-frame';
-          link.href = telaInicio.rota;
+      const base =
+        "https://org-dash-api-e4epa4anfpguandz.canadacentral-01.azurewebsites.net/api/v1";
+      const url = base + "/auth/me"; // AJUSTE AQUI se sua rota for diferente
+
+      try {
+        const resp = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + auth.token,
+          },
+        });
+
+        if (!resp.ok) {
+          console.warn("[APP] não foi possível recarregar usuario:", resp.status);
+          return;
         }
+
+        const data = await resp.json();
+        const novoAuth = {
+          token: data.token || auth.token,
+          usuario: data.usuario || auth.usuario,
+        };
+        setAuthData(novoAuth);
+      } catch (e) {
+        console.error("[APP] erro ao recarregar usuario:", e);
       }
-
-      const telasUsuarios = telas
-        .filter(t => t.modulo === 'Usuários')
-        .sort((a, b) => a.nome.localeCompare(b.nome));
-
-      const submenu = document.getElementById('submenu-usuarios');
-      if (!submenu) return;
-
-      telasUsuarios.forEach(tela => {
-        const li = document.createElement('li');
-        li.className = 'nav-item';
-        const a = document.createElement('a');
-        a.className = 'nav-link dropdown-link';
-        a.href = tela.rota;
-        a.dataset.frameTarget = 'visya-frame';
-        a.textContent = tela.nome;
-        li.appendChild(a);
-        submenu.appendChild(li);
-      });
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    // ========== BUSCAR PERMISSÕES DO USUÁRIO (LOCAL) ==========
+
+    async function carregarTelasPermitidas() {
+      const auth = getAuthData();
+      if (!auth || !auth.usuario || !Array.isArray(auth.usuario.telas)) {
+        console.warn("[APP] Usuário sem telas definidas no auth.");
+        return [];
+      }
+
+      return auth.usuario.telas.map((tela) => ({
+        modulo: tela.modulo,
+        codigoTela: tela.codigo,
+        rota: tela.rota,
+        podeVer: tela.podeVer !== false,
+      }));
+    }
+
+    // ========== APLICAR PERMISSÕES NO SIDEBAR ==========
+
+    async function aplicarPermissoesSidebar() {
+      const permissoes = await carregarTelasPermitidas();
+
+      // garante INICIO_HOME sempre permitido
+      permissoes.push({
+        modulo: "INICIO",
+        codigoTela: "INICIO_HOME",
+        podeVer: true,
+      });
+
+      const permitido = new Set(
+        permissoes
+          .filter((p) => p.podeVer)
+          .map(
+            (p) =>
+              `${(p.modulo || "").toUpperCase()}|${(p.codigoTela || "").toUpperCase()}`
+          )
+      );
+
+      document
+        .querySelectorAll(".sidebar-nav a[data-modulo][data-codigo]")
+        .forEach((a) => {
+          const modulo = (a.dataset.modulo || "").toUpperCase();
+          const codigo = (a.dataset.codigo || "").toUpperCase();
+          const key = `${modulo}|${codigo}`;
+
+          const li = a.closest("li.nav-item");
+          if (!li) return;
+
+          if (modulo === "INICIO" && codigo === "INICIO_HOME") {
+            li.style.display = "";
+            return;
+          }
+
+          if (!permitido.has(key)) {
+            li.style.display = "none";
+          } else {
+            li.style.display = "";
+          }
+        });
+
+      document
+        .querySelectorAll(".nav-item.dropdown-container")
+        .forEach((container) => {
+          const submenu = container.querySelector(".dropdown-menu");
+          if (!submenu) return;
+
+          const hasVisibleItem = Array.from(
+            submenu.querySelectorAll("li.nav-item")
+          ).some((li) => li.style.display !== "none");
+
+          if (!hasVisibleItem) {
+            container.style.display = "none";
+          } else {
+            container.style.display = "";
+          }
+        });
+    }
+
+    // ========== BOOTSTRAP ==========
+
+    document.addEventListener("DOMContentLoaded", async () => {
       loadSavedTheme();
-      montarMenuDinamico();
+      await bootstrapAuth();          // recarrega usuario.telas do backend
+      await aplicarPermissoesSidebar();
       loadCurrentPage();
     });
   </script>

@@ -51,15 +51,25 @@
       <ul class="nav-list primary-nav">
         <!-- Início -->
         <li class="nav-item" id="menu-inicio">
-          <a href="inicio.html" class="nav-link">
+          <a
+            href="inicio.html"
+            class="nav-link"
+            data-modulo="INICIO"
+            data-codigo="INICIO_HOME"
+          >
             <span class="material-symbols-rounded">home</span>
             <span class="nav-label">Início</span>
           </a>
         </li>
 
-        <!-- Atividades -->
+        <!-- Atividades (exemplo simples, um código genérico) -->
         <li class="nav-item">
-          <a href="atividades.html" class="nav-link">
+          <a
+            href="atividades.html"
+            class="nav-link"
+            data-modulo="ATIVIDADES"
+            data-codigo="ATIVIDADES_HOME"
+          >
             <span class="material-symbols-rounded">notifications</span>
             <span class="nav-label">Atividades</span>
           </a>
@@ -67,7 +77,12 @@
 
         <!-- Carteira -->
         <li class="nav-item">
-          <a href="carteira.html" class="nav-link">
+          <a
+            href="carteira.html"
+            class="nav-link"
+            data-modulo="COMERCIAL"
+            data-codigo="CARTEIRA"
+          >
             <span class="material-symbols-rounded">account_balance_wallet</span>
             <span class="nav-label">Carteira</span>
           </a>
@@ -84,49 +99,62 @@
           </a>
           <ul class="dropdown-menu" id="submenu-estoque">
             <li class="nav-item">
-              <a href="estoque.html" class="nav-link dropdown-link">
+              <a
+                href="estoque.html"
+                class="nav-link dropdown-link"
+                data-modulo="ESTOQUE"
+                data-codigo="ESTOQUE_GERAL"
+              >
                 Visão geral de estoque
               </a>
             </li>
-            <!-- depois a gente pode adicionar: produtos, depósitos, etc. -->
           </ul>
         </li>
 
         <!-- Financeiro -->
         <li class="nav-item">
-          <a href="financeiro.html" class="nav-link">
+          <a
+            href="financeiro.html"
+            class="nav-link"
+            data-modulo="FINANCEIRO"
+            data-codigo="FINANCEIRO_HOME"
+          >
             <span class="material-symbols-rounded">payments</span>
             <span class="nav-label">Financeiro</span>
           </a>
         </li>
 
-        <!-- Logística -->
-<!-- LOGÍSTICA (SUBMENU) -->
-<li class="nav-item dropdown-container" id="menu-logistica">
-  <a href="#" class="nav-link dropdown-toggle">
-    <span class="material-symbols-rounded">local_shipping</span>
-    <span class="nav-label">Logística</span>
-    <span class="dropdown-icon material-symbols-rounded">
-      keyboard_arrow_down
-    </span>
-  </a>
-  <ul class="dropdown-menu" id="submenu-logistica">
-    <li class="nav-item">
-      <a
-        href="rota.html"
-        class="nav-link dropdown-link"
-        data-frame-target="visya-frame"
-      >
-        Rotas
-      </a>
-    </li>
-    <!-- depois você pode adicionar mais itens aqui -->
-  </ul>
-</li>
+        <!-- LOGÍSTICA (SUBMENU) -->
+        <li class="nav-item dropdown-container" id="menu-logistica">
+          <a href="#" class="nav-link dropdown-toggle">
+            <span class="material-symbols-rounded">local_shipping</span>
+            <span class="nav-label">Logística</span>
+            <span class="dropdown-icon material-symbols-rounded">
+              keyboard_arrow_down
+            </span>
+          </a>
+          <ul class="dropdown-menu" id="submenu-logistica">
+            <li class="nav-item">
+              <a
+                href="rota.html"
+                class="nav-link dropdown-link"
+                data-modulo="LOGISTICA"
+                data-codigo="ROTAS"
+              >
+                Rotas
+              </a>
+            </li>
+          </ul>
+        </li>
 
         <!-- Regras de Negócio -->
         <li class="nav-item">
-          <a href="regras-negocio.html" class="nav-link">
+          <a
+            href="regras-negocio.html"
+            class="nav-link"
+            data-modulo="EXTRAS"
+            data-codigo="REGRAS_NEGOCIO"
+          >
             <span class="material-symbols-rounded">rule</span>
             <span class="nav-label">Regras de Negócio</span>
           </a>
@@ -142,7 +170,7 @@
             </span>
           </a>
           <ul class="dropdown-menu" id="submenu-usuarios">
-            <!-- JS preenche com telas do módulo "Usuários" -->
+            <!-- JS vai preencher com telas do módulo USUARIOS, baseado em permissões -->
           </ul>
         </li>
       </ul>
@@ -179,14 +207,19 @@
   </aside>
 
   <script>
+    // ================== CONFIG API ==================
+    if (!window.API_BASE) {
+      window.API_BASE = "http://localhost:3000/api/v1";
+    }
+
     // ================== AUTENTICAÇÃO / CONTEXTO ==================
     function getAuthData() {
       try {
-        const raw = localStorage.getItem('orgdash_auth'); // salvo pelo loginSistema
+        const raw = localStorage.getItem("orgdash_auth");
         if (!raw) return null;
         return JSON.parse(raw);
       } catch (e) {
-        console.warn('[SIDEBAR] erro ao ler auth do localStorage:', e);
+        console.warn("[SIDEBAR] erro ao ler auth do localStorage:", e);
         return null;
       }
     }
@@ -199,33 +232,32 @@
       return auth.usuario;
     }
 
-    // Se não tiver login, redireciona para index.html
     (function enforceAuth() {
       const usuario = getUsuarioLogadoSidebar();
       if (!usuario) {
-        window.location.href = '/index.html';
+        window.location.href = "/index.html";
       } else {
         window.USUARIO_LOGADO = usuario;
       }
     })();
 
     // ================== SIDEBAR EXISTENTE ==================
-    const sidebarElement = document.querySelector('.sidebar');
-    const togglerButton = document.querySelector('.sidebar-toggler');
-    const themeToggleBtn = document.querySelector('.theme-toggle-btn');
-    const logoIcon = document.getElementById('sidebarLogoIcon');
-    const logoText = document.getElementById('sidebarLogoText');
+    const sidebarElement = document.querySelector(".sidebar");
+    const togglerButton = document.querySelector(".sidebar-toggler");
+    const themeToggleBtn = document.querySelector(".theme-toggle-btn");
+    const logoIcon = document.getElementById("sidebarLogoIcon");
+    const logoText = document.getElementById("sidebarLogoText");
 
-    const LOGO_ICON_DARK = '../logo/VISYALICONEBRANCO.png';
-    const LOGO_ICON_LIGHT = '../logo/VISYALICONEPRETO.png';
-    const LOGO_TEXT_DARK = '../logo/VISYALLOGOBRANCA.png';
-    const LOGO_TEXT_LIGHT = '../logo/VISYALLOGOPRETA.png';
+    const LOGO_ICON_DARK = "../logo/VISYALICONEBRANCO.png";
+    const LOGO_ICON_LIGHT = "../logo/VISYALICONEPRETO.png";
+    const LOGO_TEXT_DARK = "../logo/VISYALLOGOBRANCA.png";
+    const LOGO_TEXT_LIGHT = "../logo/VISYALLOGOPRETA.png";
 
     function applyTheme(theme) {
-      const isLight = theme === 'light';
+      const isLight = theme === "light";
       if (!sidebarElement) return;
 
-      sidebarElement.classList.toggle('light-theme', isLight);
+      sidebarElement.classList.toggle("light-theme", isLight);
 
       if (logoIcon) {
         logoIcon.src = isLight ? LOGO_ICON_LIGHT : LOGO_ICON_DARK;
@@ -235,18 +267,19 @@
       }
 
       try {
-        localStorage.setItem('visya-sidebar-theme', theme);
+        localStorage.setItem("visya-sidebar-theme", theme);
       } catch (e) {
-        console.warn('[SIDEBAR] erro ao salvar tema:', e);
+        console.warn("[SIDEBAR] erro ao salvar tema:", e);
       }
 
+      // avisa o parent para sincronizar tema do conteúdo
       if (window.parent) {
         window.parent.postMessage(
           {
-            type: 'visya-sidebar-theme',
-            theme: theme
+            type: "visya-sidebar-theme",
+            theme: theme,
           },
-          '*'
+          "*"
         );
       }
     }
@@ -254,137 +287,209 @@
     function loadSavedTheme() {
       let saved = null;
       try {
-        saved = localStorage.getItem('visya-sidebar-theme');
+        saved = localStorage.getItem("visya-sidebar-theme");
       } catch (e) {
-        console.warn('[SIDEBAR] erro ao ler tema:', e);
+        console.warn("[SIDEBAR] erro ao ler tema:", e);
       }
 
-      if (saved === 'light' || saved === 'dark') {
+      if (saved === "light" || saved === "dark") {
         applyTheme(saved);
       } else {
-        applyTheme('dark');
+        applyTheme("dark");
       }
     }
 
     function toggleDropdown(dropdown, menu, isOpen) {
-      dropdown.classList.toggle('open', isOpen);
-      menu.style.height = isOpen ? menu.scrollHeight + 'px' : 0;
+      dropdown.classList.toggle("open", isOpen);
+      menu.style.height = isOpen ? menu.scrollHeight + "px" : 0;
     }
 
     function closeAllDropdowns() {
       document
-        .querySelectorAll('.dropdown-container.open')
-        .forEach(openDropdown => {
-          const menu = openDropdown.querySelector('.dropdown-menu');
+        .querySelectorAll(".dropdown-container.open")
+        .forEach((openDropdown) => {
+          const menu = openDropdown.querySelector(".dropdown-menu");
           if (menu) {
             toggleDropdown(openDropdown, menu, false);
           }
         });
     }
 
-    document.querySelectorAll('.dropdown-toggle').forEach(dropdownToggle => {
-      dropdownToggle.addEventListener('click', function (e) {
+    // dropdowns
+    document.querySelectorAll(".dropdown-toggle").forEach((dropdownToggle) => {
+      dropdownToggle.addEventListener("click", function (e) {
         e.preventDefault();
 
-        const dropdown = dropdownToggle.closest('.dropdown-container');
+        const dropdown = dropdownToggle.closest(".dropdown-container");
         if (!dropdown) return;
 
-        const menu = dropdown.querySelector('.dropdown-menu');
+        const menu = dropdown.querySelector(".dropdown-menu");
         if (!menu) return;
 
-        const isOpen = dropdown.classList.contains('open');
+        const isOpen = dropdown.classList.contains("open");
         closeAllDropdowns();
         toggleDropdown(dropdown, menu, !isOpen);
       });
     });
 
+    // collapse
     if (togglerButton && sidebarElement) {
-      togglerButton.addEventListener('click', function () {
+      togglerButton.addEventListener("click", function () {
         closeAllDropdowns();
-        sidebarElement.classList.toggle('collapsed');
+        sidebarElement.classList.toggle("collapsed");
 
         if (window.parent) {
           window.parent.postMessage(
             {
-              type: 'visya-sidebar-toggle',
-              collapsed: sidebarElement.classList.contains('collapsed')
+              type: "visya-sidebar-toggle",
+              collapsed: sidebarElement.classList.contains("collapsed"),
             },
-            '*'
+            "*"
           );
         }
       });
     }
 
+    // toggle tema
     if (themeToggleBtn && sidebarElement) {
-      themeToggleBtn.addEventListener('click', function () {
-        const isLight = sidebarElement.classList.contains('light-theme');
-        const nextTheme = isLight ? 'dark' : 'light';
+      themeToggleBtn.addEventListener("click", function () {
+        const isLight = sidebarElement.classList.contains("light-theme");
+        const nextTheme = isLight ? "dark" : "light";
         applyTheme(nextTheme);
       });
     }
 
+    // tema inicial
     loadSavedTheme();
 
-    // ================== MENU DINÂMICO A PARTIR DE usuario.telas ==================
-    function montarMenuDinamico() {
-      const usuario = window.USUARIO_LOGADO;
-      if (!usuario) return;
+    // ================== PERMISSÕES VIA /usuarios/telas-permissoes ==================
 
-      const telas = (usuario.telas || []).filter(t => t.ativo && t.podeVer);
+    async function carregarTelasPermitidas() {
+      const auth = getAuthData();
+      if (!auth || !auth.token) return [];
 
-      // 1) Início (Dashboard / INICIO)
-      const telaInicio = telas.find(t => t.codigo === 'INICIO');
-      const menuInicio = document.getElementById('menu-inicio');
-      if (menuInicio && telaInicio) {
-        const link = menuInicio.querySelector('a.nav-link');
-        if (link) {
-          link.href = telaInicio.rota;
+      const base = window.API_BASE || "http://localhost:3000/api/v1";
+      const url = base + "/usuarios/telas-permissoes";
+
+      try {
+        const resp = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + auth.token,
+          },
+        });
+
+        if (!resp.ok) {
+          console.error(
+            "[SIDEBAR] Erro HTTP ao carregar telas-permissoes:",
+            resp.status
+          );
+          return [];
         }
-      }
 
-      // 2) Usuários (módulo "Usuários")
-      const telasUsuarios = telas
-        .filter(t => t.modulo === 'Usuários')
-        .sort((a, b) => a.nome.localeCompare(b.nome));
-
-      const menuContainer = document.getElementById('menu-usuarios');
-      const submenu = document.getElementById('submenu-usuarios');
-      if (!menuContainer || !submenu) {
-        console.warn('[SIDEBAR] menu de usuários não encontrado no HTML');
-        return;
-      }
-
-      submenu.innerHTML = '';
-
-      if (telasUsuarios.length) {
-        const liTitle = document.createElement('li');
-        liTitle.className = 'nav-item';
-        const aTitle = document.createElement('a');
-        aTitle.className = 'nav-link dropdown-title';
-        aTitle.textContent = 'Usuários';
-        liTitle.appendChild(aTitle);
-        submenu.appendChild(liTitle);
-      }
-
-      telasUsuarios.forEach(tela => {
-        const li = document.createElement('li');
-        li.className = 'nav-item';
-        const a = document.createElement('a');
-        a.className = 'nav-link dropdown-link';
-        a.href = tela.rota;
-        a.textContent = tela.nome;
-        li.appendChild(a);
-        submenu.appendChild(li);
-      });
-
-      if (!telasUsuarios.length) {
-        menuContainer.style.display = 'none';
-      } else {
-        menuContainer.style.display = '';
+        const data = await resp.json();
+        return Array.isArray(data.permissoes) ? data.permissoes : [];
+      } catch (e) {
+        console.error("[SIDEBAR] Erro ao buscar telas-permissoes:", e);
+        return [];
       }
     }
 
-    document.addEventListener('DOMContentLoaded', montarMenuDinamico);
+    async function aplicarPermissoesSidebar() {
+      const permissoes = await carregarTelasPermitidas();
+      if (!permissoes.length) {
+        console.warn("[SIDEBAR] Nenhuma permissão retornada para o usuário.");
+        return;
+      }
+
+      // Map de MODULO|CODIGO_TELA -> objeto permissão
+      const mapaPerm = new Map();
+      permissoes.forEach((p) => {
+        const key = `${(p.modulo || "").toUpperCase()}|${(p.codigoTela || "").toUpperCase()}`;
+        mapaPerm.set(key, p);
+      });
+
+      // 1) Esconde / mostra itens simples (sem submenu)
+      document
+        .querySelectorAll(".sidebar-nav a[data-modulo][data-codigo]")
+        .forEach((a) => {
+          const modulo = (a.dataset.modulo || "").toUpperCase();
+          const codigo = (a.dataset.codigo || "").toUpperCase();
+          const key = `${modulo}|${codigo}`;
+
+          const li = a.closest("li.nav-item");
+          if (!li) return;
+
+          const perm = mapaPerm.get(key);
+          if (!perm || !perm.podeVer) {
+            li.style.display = "none";
+          } else {
+            li.style.display = "";
+          }
+        });
+
+      // 2) Monta submenu "Usuários" dinamicamente com base nas permissões
+      const menuUsuarios = document.getElementById("menu-usuarios");
+      const submenuUsuarios = document.getElementById("submenu-usuarios");
+      if (menuUsuarios && submenuUsuarios) {
+        submenuUsuarios.innerHTML = "";
+
+        const telasUsuarios = permissoes
+          .filter(
+            (p) =>
+              (p.modulo || "").toUpperCase() === "USUARIOS" && p.podeVer
+          )
+          .sort((a, b) => (a.nomeTela || "").localeCompare(b.nomeTela || ""));
+
+        if (!telasUsuarios.length) {
+          menuUsuarios.style.display = "none";
+        } else {
+          menuUsuarios.style.display = "";
+          // título opcional
+          const liTitle = document.createElement("li");
+          liTitle.className = "nav-item";
+          const aTitle = document.createElement("a");
+          aTitle.className = "nav-link dropdown-title";
+          aTitle.textContent = "Usuários";
+          liTitle.appendChild(aTitle);
+          submenuUsuarios.appendChild(liTitle);
+
+          telasUsuarios.forEach((p) => {
+            const li = document.createElement("li");
+            li.className = "nav-item";
+            const a = document.createElement("a");
+            a.className = "nav-link dropdown-link";
+            a.href = p.rota || "#";
+            a.textContent = p.nomeTela || p.codigoTela || "Tela";
+            li.appendChild(a);
+            submenuUsuarios.appendChild(li);
+          });
+        }
+      }
+
+      // 3) Esconde dropdown-container que ficaram sem itens visíveis
+      document
+        .querySelectorAll(".nav-item.dropdown-container")
+        .forEach((container) => {
+          const submenu = container.querySelector(".dropdown-menu");
+          if (!submenu) return;
+
+          const hasVisibleItem = Array.from(
+            submenu.querySelectorAll("li.nav-item")
+          ).some((li) => li.style.display !== "none");
+
+          if (!hasVisibleItem) {
+            container.style.display = "none";
+          } else {
+            container.style.display = "";
+          }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      aplicarPermissoesSidebar();
+    });
   </script>
 </body>
 </html>

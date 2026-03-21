@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>VISYA - Regras de Usuários</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+  />
+
+  <link rel="stylesheet" href="../css/regra_usuario.css" />
+  <link rel="stylesheet" href="../css/loader.css" />
+
+  <script src="../js/global.js" defer></script>
+  <script src="../js/regra_usuario.js" defer></script>
+</head>
+<body>
+  <main class="regras-page">
+    <header class="regras-header">
+      <div class="regras-header-left">
+        <h1 class="regras-titulo">Regras de Usuários</h1>
+        <p class="regras-subtitulo">
+          Defina o nível de acesso para cada módulo e tela por usuário.
+        </p>
+      </div>
+      <div class="regras-header-right">
+        <div class="regras-user-info">
+          <span id="regrasUserNome" class="regras-user-nome"></span>
+          <span id="regrasUserEmail" class="regras-user-email"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- FILTROS / CONTROLES -->
+    <section class="regras-filtros">
+      <div class="filtro-campo">
+        <label for="fUsuario">Usuário</label>
+        <select id="fUsuario">
+          <option value="">Selecione um usuário...</option>
+        </select>
+      </div>
+
+      <div class="filtro-campo">
+        <label for="fModulo">Módulo</label>
+        <input
+          id="fModulo"
+          type="text"
+          placeholder="ex: USUARIOS, FINANCEIRO"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="filtro-campo"></div>
+      <div class="filtro-campo"></div>
+      <div class="filtro-campo"></div>
+
+      <button type="button" class="btn-filtro" id="btnRecarregarPermissoes">
+        <span>↻</span>
+        Recarregar
+      </button>
+
+      <button type="button" class="btn-filtro" id="btnSalvarPermissoes">
+        <span>💾</span>
+        Salvar
+      </button>
+    </section>
+
+    <!-- RESUMO -->
+    <section class="regras-resumo">
+      <div class="resumo-card">
+        <span class="resumo-label">Telas com acesso</span>
+        <strong class="resumo-valor" id="cardTelasComAcesso">0</strong>
+      </div>
+
+      <div class="resumo-card">
+        <span class="resumo-label">Somente leitura</span>
+        <strong class="resumo-valor" id="cardTelasLeitura">0</strong>
+      </div>
+
+      <div class="resumo-card">
+        <span class="resumo-label">Leitura e escrita</span>
+        <strong class="resumo-valor" id="cardTelasEscrita">0</strong>
+      </div>
+
+      <div class="resumo-card">
+        <span class="resumo-label">Sem acesso</span>
+        <strong class="resumo-valor" id="cardTelasNenhum">0</strong>
+      </div>
+    </section>
+
+    <!-- TABELA DE PERMISSÕES EM CASCATA -->
+    <section class="regras-tabela-bloco">
+      <div class="regras-tabela-header">
+        <span id="infoRegistrosRegras">
+          Selecione um usuário para ver as permissões.
+        </span>
+      </div>
+
+      <div class="regras-table-wrapper">
+        <table class="regras-table">
+          <thead>
+            <tr>
+              <th>Módulo</th>
+              <th>Tela</th>
+              <th style="text-align:center;">
+                <button
+                  type="button"
+                  class="btn-filtro btn-filtro-compacto"
+                  id="btnSelecionarTodos"
+                >
+                  Selecionar todos
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="tbodyPermissoes">
+            <tr>
+              <td colspan="3" class="regras-empty">
+                Selecione um usuário para começar.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- LOADER GLOBAL -->
+  <div class="loader-overlay" id="loaderOverlay" aria-hidden="true">
+    <iframe
+      src="loader.html"
+      class="loader-frame"
+      frameborder="0"
+      scrolling="no"
+      title="Carregando..."
+    ></iframe>
+  </div>
+
+  <!-- Tema (mesmo que antes) -->
+  <script>
+    const THEME_KEY = 'visya-sidebar-theme';
+
+    function applyLocalThemeRegras() {
+      let saved = null;
+      try {
+        saved = localStorage.getItem(THEME_KEY);
+      } catch (e) {
+        console.warn('[REGRAS] erro ao ler tema do localStorage:', e);
+      }
+      const theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+    }
+
+    applyLocalThemeRegras();
+
+    window.addEventListener('message', (event) => {
+      if (!event.data || event.data.type !== 'visya-theme') return;
+      const theme = event.data.theme;
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light-theme', isLight);
+      try {
+        localStorage.setItem(THEME_KEY, theme);
+      } catch (e) {
+        console.warn('[REGRAS] erro ao salvar tema:', e);
+      }
+    });
+  </script>
+</body>
+</html>
